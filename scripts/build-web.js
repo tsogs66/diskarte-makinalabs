@@ -1,7 +1,8 @@
 /* Fills www/ for the Android and Windows apps: the 3D dashboard, the desktop pages, and the phone pages with their shell. Everything works offline: Google Fonts is swapped for bundled copies. */
 const fs=require('fs'),path=require('path'),esbuild=require('esbuild');
 const ROOT=path.join(__dirname,'..'),SRC=path.join(ROOT,'src'),WWW=path.join(ROOT,'www'),SIM_VAULT='C:/Users/ts0gs/project-mind/vault/projects/upaw/',SIM_REPO=path.join(ROOT,'sim-source')+path.sep;
-const simFile=f=>{const a=path.join(SIM_VAULT,f),b=path.join(SIM_REPO,f);if(fs.existsSync(a))return a;if(fs.existsSync(b))return b;throw new Error('Missing simulator '+f);};
+/* Vault first (owner live edits), else sim-source in this repo. Missing purifier/fwg on cloud is OK — skip those pages. */
+const simFile=f=>{const a=path.join(SIM_VAULT,f),b=path.join(SIM_REPO,f);if(fs.existsSync(a))return a;if(fs.existsSync(b))return b;return null;};
 const S=f=>fs.readFileSync(path.join(SRC,'shared',f),'utf8'),wsCss=S('ws.css'),wsPhone=S('ws-phone.css'),wsJs=S('ws.js').replace('__STAMP__',()=>S('makinalabs-wordmark.svg').replace(/"/g,"'").replace(/ width='\d+' height='\d+'/,''));
 const lay=(t,phone)=>{const i=t.lastIndexOf('</script>');return t.slice(0,i+9)+'\n<style>'+wsCss+(phone?wsPhone:'')+'</style>\n<script>\nwindow.WS_PHONE='+phone+';\n'+wsJs+'</script>\n'+t.slice(i+9);};
 fs.rmSync(WWW,{recursive:true,force:true});fs.mkdirSync(path.join(WWW,'fonts'),{recursive:true});
@@ -17,12 +18,14 @@ const offline=t=>{const out=t.replace(/<link rel="preconnect"[^>]*>\n?/g,'').rep
 const page=b=>'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>'+b+'</body></html>';
 
 for(const [src,out,desk] of [['purifier-simulator.html','mobile-purifier.html','purifier.html'],['fwg-simulator.html','mobile-fwg.html','fwg-simulator-app.html'],['boiler-simulator.html','mobile-boiler.html','boiler-simulator-app.html']]){
- const raw=fs.readFileSync(simFile(src),'utf8').replace(/\r\n/g,'\n').replace('<meta name="claude:viewport-fit-sides" content="cover">\n','');
+ const pathSrc=simFile(src);if(!pathSrc){console.warn('skip missing simulator '+src);continue;}
+ const raw=fs.readFileSync(pathSrc,'utf8').replace(/\r\n/g,'\n').replace('<meta name="claude:viewport-fit-sides" content="cover">\n','');
  const d=lay(raw,false),t=lay(raw,true);
  try{fs.writeFileSync(path.join(SIM_VAULT,'app-'+desk),d);fs.writeFileSync(path.join(SIM_VAULT,out),page(t));}catch(e){}
  fs.writeFileSync(path.join(WWW,desk),page(offline(d)));
  fs.writeFileSync(path.join(WWW,out),page(offline(t)));
- try{fs.mkdirSync(SIM_REPO,{recursive:true});fs.writeFileSync(path.join(SIM_REPO,src),raw);}catch(e){}}
+ /* Keep sim-source mirror for boiler when vault was the read path; do not clobber if we just read from SIM_REPO. */
+ try{if(pathSrc.startsWith(SIM_VAULT)){fs.mkdirSync(SIM_REPO,{recursive:true});fs.writeFileSync(path.join(SIM_REPO,src),raw);}}catch(e){}}
 
 /* dashboard: three.js is bundled with the code, split so the cards show before the 3D loads */
 esbuild.buildSync({entryPoints:[path.join(SRC,'home','home.js')],bundle:true,minify:true,format:'esm',splitting:true,chunkNames:'home-[name]-[hash]',outdir:WWW,target:['es2020'],legalComments:'none'});

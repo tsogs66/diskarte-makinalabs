@@ -1,0 +1,22 @@
+<h2>Marine boiler</h2>
+<h3>Introduction</h3>
+<p>A marine auxiliary (or composite) boiler makes steam for hotel services, cargo heating, fuel heating and tank cleaning. On many ships the same drum takes heat from an oil burner and from the main-engine exhaust through an exhaust-gas (EG) section.</p>
+<h3>Purpose</h3>
+<ul>
+<li>Raise and hold steam pressure for the consumers that need it.</li>
+<li>Use exhaust-gas heat when the main engine is loaded, so oil firing can stay low or off.</li>
+<li>Keep boiler water chemistry in band so tubes stay clean and condensate returns safely.</li>
+</ul>
+<h3>Principle of operation</h3>
+<p>Fuel oil burns under the furnace; heat turns water in the drum into steam. Exhaust gas from the main engine can add heat through an EG bank or economiser section into the same steam space. Steam leaves through the stop valve to the plant. Extra steam that the plant cannot take is dumped so pressure does not climb.</p>
+<ol>
+<li><b>Feed:</b> distillate make-up fills the cascade (hotwell). The feed pump lifts water into the drum. If the make-up pump air-binds, bleed the casing — restart alone will not restore flow.</li>
+<li><b>Firing:</b> FD fan and FO pump run; FO must be warm enough for the grade (viscosity gate). The burner sequence is purge → pilot → main.</li>
+<li><b>Pressure control:</b> a pressure PID trims burner load. Dump Auto is a separate PID that opens the dump valve against its own set-point.</li>
+<li><b>EG:</b> with the engine loaded, EG steam rises. Some makers (for example SAACKE when fitted) need a circulating pump before the EG section is in service — dry-run protection trips the circ if water is unsafe.</li>
+<li><b>Water:</b> tests drive dose and blowdown. Chloride is never “dosed away”; high Cl means blow down and find the leak.</li>
+</ol>
+<h3>Shrink and swell</h3>
+<p>Indicated drum level moves with steam bubbles and pressure, not only with mass. Steam demand up → pressure dips → level can swell. Demand down or pressure rising fast → shrink. The model shows this so you do not chase the glass with the feed valve alone.</p>
+<h3>In this program</h3>
+<p>Four faces share one SI plant: Mission OC (Touch-style cues), SAACKE FMB-VM (BMS + EG circ when fitted), Kangrim PC (panel cues), Miura GK (sequencer lamps). HMI labels and menus are provisional until each maker PDF is mapped — see MANUAL-MAPS. Your own manual and company procedures take priority.</p>
