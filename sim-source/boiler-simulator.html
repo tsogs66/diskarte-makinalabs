@@ -1,0 +1,853 @@
+<title>Diskarte — Marine Boiler</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --enamel:#d3d7d0;--enamel-2:#e3e6df;--enamel-3:#c2c7bf;--paper:#f2f3ee;
+  --ink:#1b2321;--ink-2:#4b5652;--ink-3:#6d7873;--line:#9aa49d;
+  --screen:#111a1b;--screen-2:#1e2a2b;--screen-ink:#dfe8e2;--screen-dim:#7f918b;
+  --steam:#5a6e7a;--oil:#8a5a2b;--eg:#6b4a3a;--water:#1f6db5;--chem:#2a7a5a;
+  --good:#1c8446;--warn:#c98a00;--bad:#c4211f;--led:#54e08c;
+  --disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow","Segoe UI",Arial,sans-serif;
+  --mono:"Share Tech Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--enamel);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.4;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--screen)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--screen);color:var(--screen-ink);
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.logo{width:36px;height:36px;border-radius:6px}
+.brand{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:12px;letter-spacing:0;text-transform:none;color:var(--screen-dim)}
+.progn{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.progn small{display:block;font-family:var(--body);font-weight:400;font-size:11px;letter-spacing:0;text-transform:none;color:var(--screen-dim)}
+.mode{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.08em;padding:3px 10px;border-radius:2px;background:var(--screen-2);border:1px solid #3a4a4a;white-space:nowrap}
+.mode[data-s="ok"]{background:var(--good);color:#fff;border-color:var(--good)}
+.mode[data-s="warn"]{background:var(--warn);color:#14110a;border-color:var(--warn)}
+.mode[data-s="bad"]{background:var(--bad);color:#fff;border-color:var(--bad)}
+.clock{font-family:var(--mono);font-size:18px;color:var(--led)}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid #3a4a4a;border-radius:2px;overflow:hidden}
+.seg button{background:var(--screen-2);color:var(--screen-ink);border:0;padding:5px 10px;cursor:pointer;font-family:var(--mono)}
+.seg button+button{border-left:1px solid #3a4a4a}
+.seg button[aria-pressed="true"]{background:var(--led);color:#0c1612}
+.tbtn{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:5px 10px;cursor:pointer}
+.tbtn:hover{border-color:var(--screen-ink)}
+.stabs{display:inline-flex;flex-wrap:wrap;gap:4px}
+.stabs button{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:4px 8px;cursor:pointer;font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.stabs button[aria-selected="true"]{background:var(--led);color:#0c1612;border-color:var(--led)}
+.tsel{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:5px 6px;max-width:280px}
+.scBox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.scLab{font:700 13px var(--disp);letter-spacing:.04em;text-transform:uppercase;color:var(--screen-dim)}
+.wrap{padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px;max-width:1720px;margin:0 auto}
+.console{display:grid;grid-template-columns:290px minmax(0,1fr) 320px;gap:12px;align-items:start}
+.panel{background:var(--enamel-2);border:1px solid var(--line);border-radius:3px;min-width:0}
+.ph{font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.07em;text-transform:uppercase;padding:7px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ph .r{margin-left:auto}
+.pb{padding:10px 12px}
+.sbtn{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:4px 10px;cursor:pointer;font-weight:500}
+.sbtn:hover{border-color:var(--ink)}
+.sbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.note{font-size:12.5px;color:var(--ink-2)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.steps li{display:grid;grid-template-columns:24px 1fr;gap:6px;padding:5px 6px;border-radius:2px;font-size:13px;line-height:1.3;color:var(--ink-3)}
+.steps .n{font-family:var(--mono);width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;font-size:12px;background:var(--paper)}
+.steps li.done{color:var(--ink-2)}
+.steps li.done .n{background:var(--good);border-color:var(--good);color:#fff}
+.steps li.now{background:var(--paper);color:var(--ink);outline:2px solid var(--water)}
+.steps li.now .n{background:var(--water);border-color:var(--water);color:#fff}
+.why{display:block;font-size:12px;color:var(--ink-2);margin-top:3px}
+.autoline{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.mimic{overflow:auto;background:var(--paper)}
+.mimic svg{display:block;width:100%;min-width:820px;height:auto}
+.mimic text{font-family:var(--disp);font-size:12px;fill:var(--ink);font-weight:600}
+.mimic text.small{font-size:10px;fill:var(--ink-2);font-weight:500}
+.mimic text.tagv{font-family:var(--mono);font-size:12px;fill:var(--led);font-weight:400}
+.gauges{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px;border-top:1px solid var(--line)}
+.gauge{text-align:center;min-width:0;padding:4px}
+.gauge .gl{font-family:var(--disp);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.gauge .gv{font-family:var(--mono);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:6px;background:var(--screen)}
+.tile{font-family:var(--disp);font-weight:600;font-size:11px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em;text-align:center;
+  min-height:36px;display:grid;place-items:center;padding:3px;background:#263233;color:#71817c;border-radius:1px}
+.tile[data-l="1"]{background:var(--warn);color:#17120a}
+.tile[data-l="2"]{background:var(--bad);color:#fff}
+.tile.flash{animation:fl 1s steps(2,jump-none) infinite}
+@keyframes fl{50%{filter:brightness(.55)}}
+.log{height:140px;overflow:auto;font-family:var(--mono);font-size:12px;background:var(--paper);border-top:1px solid var(--line);padding:5px 8px}
+.log div{padding:1px 0;display:grid;grid-template-columns:62px 1fr;gap:6px}
+.log .a{color:var(--bad)}.log .w{color:#8a5f00}.log .n{color:var(--water)}.log .c{color:var(--ink-3)}
+.pwrow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.sec-h{font-family:var(--disp);font-size:18px;letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0}
+.hmibox{background:var(--screen);color:var(--screen-ink);min-height:280px;display:grid;grid-template-rows:auto 1fr auto;border:1px solid #000}
+.hmihd{display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#0a1010;border-bottom:1px solid #2a3838}
+.hmibtn{background:var(--screen-2);border:1px solid #3a4a4a;color:var(--screen-ink);padding:4px 8px;cursor:pointer;font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.hmibtn.on{background:var(--led);color:#0c1612;border-color:var(--led)}
+.hmibody{padding:10px 12px;font-size:13px}
+.hmibody .row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dotted #2a3838}
+.hmibody .v{font-family:var(--mono);color:var(--led)}
+.hmift{padding:6px;border-top:1px solid #2a3838;display:flex;gap:6px;flex-wrap:wrap;background:#0a1010}
+.lamp{display:inline-flex;align-items:center;gap:5px;font-family:var(--disp);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:12px}
+.lamp::before{content:"";width:12px;height:12px;border-radius:50%;background:#2b3736;border:1px solid #000}
+.lamp.on-g::before{background:var(--led);box-shadow:0 0 6px var(--led)}
+.lamp.on-r::before{background:#ff5a4f;box-shadow:0 0 6px #ff5a4f}
+.pbtn{font-family:var(--disp);font-weight:700;letter-spacing:.06em;border:1px solid #000;border-radius:2px;padding:6px 12px;cursor:pointer;color:#fff}
+.pbtn.st{background:#23713f}.pbtn.sp{background:#a22320}
+.pumpbox{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 0}
+.ctl{display:grid;gap:2px;padding:6px 0;border-top:1px dotted var(--line)}
+.ctl:first-of-type{border-top:0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-weight:500;font-size:13px}
+.ctl output{font-family:var(--mono);white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.startergrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.starter{background:var(--paper);border:1px solid var(--line);padding:8px}
+.starter h4{margin:0 0 6px;font-family:var(--disp);font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--disp);font-weight:600;letter-spacing:.05em;text-transform:uppercase;text-align:left;font-size:12px;color:var(--ink-2);padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:3px 6px;border-bottom:1px dotted var(--enamel-3);vertical-align:top}
+td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
+.pill{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.05em;padding:0 6px;border-radius:2px;display:inline-block;min-width:38px;text-align:center}
+.pill.ok{background:#cfe6d6;color:#145c32}.pill.lo,.pill.hi{background:#f6e0a8;color:#5c4000}.pill.xx{background:var(--bad);color:#fff}
+.rec{background:#e8f0ea;border:1px solid var(--chem);padding:8px 10px;margin-top:8px;font-size:13px}
+.strips{display:grid;gap:8px}
+.strip .st{display:flex;justify-content:space-between;font-size:12px;font-weight:600}
+.strip svg{display:block;width:100%;height:72px;background:var(--paper);border:1px solid var(--line)}
+.prose{max-width:75ch}.prose p{margin:0 0 8px}.prose ul{margin:0 0 8px;padding-left:18px}
+.prose h3{font-family:var(--disp);letter-spacing:.04em;font-size:16px;margin:10px 0 4px;text-transform:uppercase}
+.mwarn{display:flex;gap:8px;align-items:center;padding:6px 10px;background:#263233;color:#aeb8b4;font-size:13px}
+.mwarn[data-l="1"]{background:var(--warn);color:#17120a}
+.mwarn[data-l="2"]{background:var(--bad);color:#fff}
+.mwarn svg{width:18px;height:18px;flex:none}
+#bms{display:contents}
+#infoOv{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:grid;place-items:center;padding:16px}
+.infoBox{background:var(--paper);border:1px solid var(--line);max-width:720px;max-height:85vh;overflow:auto;width:100%}
+.infoHd{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--screen);color:var(--screen-ink)}
+.infoHd .r{margin-left:auto}
+.infoBody{padding:12px 14px}
+</style>
+
+<div id="bms" hidden aria-hidden="true"></div>
+<header class="bar">
+  <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijg0IiBmaWxsPSIjZmZmIi8+PHRleHQgeD0iMjU2IiB5PSIzMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyMDAiIGZpbGw9IiMwRjJBNDciPkI8L3RleHQ+PC9zdmc+" alt="Diskarte">
+  <div class="brand">Diskarte<small>by MakinaLabs</small></div>
+  <button class="tbtn homeb" id="homeBtn">Home</button>
+  <span class="progn"><b>Marine boiler</b><small id="bsub">Composite · provisional HMI</small></span>
+  <span class="stabs" role="tablist" aria-label="Boiler unit">
+    <button role="tab" data-m="mission" aria-selected="true">Mission OC</button>
+    <button role="tab" data-m="saacke" aria-selected="false">SAACKE FMB-VM</button>
+    <button role="tab" data-m="kangrim" aria-selected="false">Kangrim PC</button>
+    <button role="tab" data-m="miura" aria-selected="false">Miura GK</button>
+  </span>
+  <span class="mode" id="mode" role="status">SECURED</span>
+  <span class="clock" id="clock">00:00:00</span>
+  <span class="spacer"></span>
+  <span class="seg" id="speed" role="group" aria-label="Simulation speed"></span>
+  <button class="tbtn" id="pause">Pause</button>
+  <span class="scBox"><span class="scLab">Scenario:</span><select class="tsel" id="scenario"></select><button class="tbtn" id="scInit">Initialize</button></span>
+  <button class="tbtn" id="info">Info</button>
+</header>
+
+<main class="wrap">
+  <p class="minfo" id="minfo" style="margin:0"></p>
+  <section class="console">
+    <div class="panel">
+      <div class="ph">Procedure <span class="r"><button class="sbtn" id="auto" aria-pressed="false">Auto-run</button> <button class="sbtn" id="procReset">Reset</button></span></div>
+      <div class="pb"><ol class="steps" id="steps"></ol></div>
+    </div>
+    <div class="panel">
+      <div class="ph">Process mimic <span class="note r">Composite oil + EG · dump · cascade · distillate bleed · dosing</span></div>
+      <div class="mwarn" id="mwarn" data-l="0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 23 22H1Z" fill="currentColor"/><path d="M12 9v6M12 17.5v2" stroke="#000" stroke-opacity=".75" stroke-width="2.4" fill="none"/></svg><span id="mwarnT">No active alarms</span></div>
+      <div class="mimic" id="mimic"></div>
+      <div class="gauges" id="gauges"></div>
+    </div>
+    <div class="panel">
+      <div class="ph">Alarms <span class="r"><button class="sbtn" id="ack">Acknowledge</button></span></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="log" id="log" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="pwrow">
+    <div class="panel">
+      <div class="ph">HMI <span class="note r" id="hmiName">provisional until maker PDF</span></div>
+      <div class="pb"><div class="hmibox" id="hmi"></div></div>
+    </div>
+    <div class="panel">
+      <div class="ph">Local control</div>
+      <div class="pb" id="door"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ph">Starters</div>
+    <div class="pb startergrid" id="starters"></div>
+  </section>
+
+  <section class="panel">
+    <div class="ph">Controls</div>
+    <div class="pb" id="controls"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <div class="ph">Readings</div>
+      <div class="pb"><div class="tablebox"><table id="readings"></table></div></div>
+    </div>
+    <div class="panel">
+      <div class="ph">Water lab</div>
+      <div class="pb" id="waterLab"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="ph">Trends <span class="note r" id="trendSpan"></span></div>
+    <div class="pb strips" id="strips"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel"><div class="ph">Inspection</div><div class="pb" id="inspect"></div></div>
+    <div class="panel"><div class="ph">Drills</div><div class="pb" id="drills"></div></div>
+  </section>
+  <section class="panel"><div class="ph">Inject faults <span class="r"><button class="sbtn" id="clrF">Clear all</button></span></div><div class="pb" id="faults"></div></section>
+  <section class="panel"><div class="ph">Troubleshoot</div><div class="pb" id="trb"></div></section>
+  <section class="panel"><div class="ph">Alarm list</div><div class="pb"><table id="almT"></table></div></section>
+  <section class="panel"><div class="ph">Actual</div><div class="pb"><table id="actTbl"></table><div id="actDx"></div></div></section>
+  <h2 class="sec-h">About this model</h2>
+  <section class="panel"><div class="pb prose" id="about">
+    <p>Composite marine boiler trainer: shared SI mass/energy plant; four maker faces. HMI labels and sequences are <b>provisional</b> until each maker instruction PDF is mapped — see <code>boiler-manuals/MANUAL-MAPS.md</code>.</p>
+    <h3>Physics</h3>
+    <ul>
+      <li>Steam from oil fire + EG economizer into one drum (energy balance). Oil and EG t/h shown separately.</li>
+      <li>Fuel grade changes LHV and viscosity gate. EG-only tracks ME load / exhaust temperature.</li>
+      <li>Dump Auto is a separate PID from pressure→burner load; Manual bypass is bumpless.</li>
+      <li>Distillate make-up can air-bind; bleed restores delivery. Cascade feeds the drum.</li>
+      <li>Water tests drive recommendations; dosing pump and manual dose move residuals.</li>
+    </ul>
+    <h3>Units</h3>
+    <ul>
+      <li><b>Mission OC:</b> Aalborg/Alfa Laval composite — Touch HMI provisional.</li>
+      <li><b>SAACKE FMB-VM:</b> BMS + forced EG circ flag when fitted.</li>
+      <li><b>Kangrim PC:</b> pin-tube composite cues; panel provisional.</li>
+      <li><b>Miura GK:</b> sequencer-style cues; SOM map provisional.</li>
+    </ul>
+  </div></section>
+</main>
+
+<script>
+/* Diskarte Marine Boiler — shared SI plant, four composite units. Step 0.25 s. */
+const $=id=>document.getElementById(id);
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const ATM=1.01325; /* bar abs */
+
+/* Saturation helpers — Antoine water, bar abs / °C (teaching accuracy). */
+const psat=T=>Math.pow(10,5.1962-1730.63/(233.426+T))/750.06; /* bar abs approx */
+const tsat=p=>{const mm=p*750.06;return 1730.63/(5.1962-Math.log10(mm))-233.426;};
+const hfg=T=>2257-2.36*(T-100); /* kJ/kg rough */
+const cpW=4.18,cpSt=2.1;
+
+const FUELS={
+  HFO:{name:'HFO',LHV:40500,Tmin:110,viscGate:true},
+  MDO:{name:'MDO',LHV:42700,Tmin:40,viscGate:true},
+  MGO:{name:'MGO',LHV:42700,Tmin:20,viscGate:false},
+  LSFO:{name:'LSFO',LHV:41200,Tmin:90,viscGate:true}
+};
+
+/* Ratings estimated until maker data; relationships are correct. */
+const MODELS={
+  mission:{id:'mission',tab:'Mission OC',maker:'Aalborg / Alfa Laval',egCirc:false,
+    Pwork:7.0,Prated:8.0,steamOil:2.5,steamEgMax:1.8,drumKg:1800,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
+    cascKg:900,distKg:2500,doseKg:80,FO:FUELS.HFO,
+    pidP:{kp:18,ti:45,td:0},pidDump:{kp:12,ti:30,td:0},pidLvl:{kp:8,ti:60,td:2},
+    hmi:'Mission Control Touch (provisional)'},
+  saacke:{id:'saacke',tab:'SAACKE FMB-VM',maker:'SAACKE',egCirc:true,
+    Pwork:7.0,Prated:8.5,steamOil:3.0,steamEgMax:2.2,drumKg:2200,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
+    cascKg:1000,distKg:2500,doseKg:80,FO:FUELS.HFO,
+    pidP:{kp:16,ti:50,td:0},pidDump:{kp:10,ti:35,td:0},pidLvl:{kp:8,ti:60,td:2},
+    hmi:'SAACKE BMS / HMI (provisional)'},
+  kangrim:{id:'kangrim',tab:'Kangrim PC',maker:'Kangrim',egCirc:false,
+    Pwork:7.0,Prated:8.0,steamOil:2.2,steamEgMax:1.6,drumKg:1600,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
+    cascKg:850,distKg:2500,doseKg:80,FO:FUELS.HFO,
+    pidP:{kp:17,ti:48,td:0},pidDump:{kp:11,ti:32,td:0},pidLvl:{kp:8,ti:60,td:2},
+    hmi:'Kangrim panel (provisional)'},
+  miura:{id:'miura',tab:'Miura GK',maker:'Miura',egCirc:false,
+    Pwork:7.0,Prated:8.0,steamOil:2.0,steamEgMax:1.5,drumKg:1400,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
+    cascKg:800,distKg:2500,doseKg:80,FO:FUELS.HFO,
+    pidP:{kp:15,ti:55,td:0},pidDump:{kp:10,ti:40,td:0},pidLvl:{kp:7,ti:65,td:2},
+    hmi:'Miura sequencer (provisional)'}
+};
+let M=MODELS.mission;
+
+function pidCreate(g){return {kp:g.kp,ti:g.ti,td:g.td,i:0,prev:null,man:false,out:0};}
+function pidStep(c,pv,sp,dt,lo,hi){
+  const e=sp-pv;
+  if(c.man){c.prev=e;return clamp(c.out,lo,hi);}
+  const p=c.kp*e;
+  let d=0;if(c.prev!=null&&c.td>0)d=c.kp*c.td*(e-c.prev)/Math.max(dt,1e-3);
+  c.prev=e;
+  let out=p+c.i+d;
+  if(out>hi){out=hi;if(e<0)c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;}
+  else if(out<lo){out=lo;if(e>0)c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;}
+  else c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;
+  c.out=out;return out;
+}
+
+function coldState(){
+  return {
+    t:0,P:ATM+0.05,T:tsat(ATM+0.05),level:0.45,mw:M.drumKg*0.45,ms:M.drumKg*0.02,
+    casc:M.cascKg*0.55,cascT:45,dist:M.distKg*0.7,dose:M.doseKg*0.6,
+    flame:false,seq:'off',purgeT:0,load:0,egSteam:0,oilSteam:0,totalSteam:0,
+    dump:0,dumpMode:'auto',burnerMode:'off',
+    FO_T:35,FO_P:0,smoke:0,egT:180,egDP:0.8,meLoad:0.75,exhAvail:true,
+    fuel:'HFO',demand:0.4,
+    chem:{pAlk:8,pH:10.2,Cl:40,cond:180,scav:0.4,condPH:8.7},
+    airBound:false,bleedOpen:false,
+    lockout:false,trips:{},acks:{}
+  };
+}
+let s=coldState(),u={},f={},pidP,pidDump,pidLvl;
+function resetLoops(){
+  pidP=pidCreate(M.pidP);pidDump=pidCreate(M.pidDump);pidLvl=pidCreate(M.pidLvl);
+  pidP.out=0;pidDump.out=0;pidLvl.out=40;
+}
+
+u={feed:false,dist:false,dose:false,fo:false,fd:false,egCirc:false,
+   steamStop:false,dumpMan:0,dumpAuto:true,burnerStart:false,burnerStop:false,
+   mode:'off',loadMan:0,loadAuto:true,bleed:false,doseRate:30,manualDoseL:0,
+   blowdown:0,demand:0.4,meLoad:0.75,fuel:'HFO',Psp:7.0,dumpSp:7.4,LvlSp:0.55,
+   foHeat:false,ack:false,estop:false,lampTest:false};
+
+f={flameEye:false,foFilter:false,dumpStuck:false,fdFail:false,foPump:false,doseEmpty:false,
+   suctionShut:false,cascLeak:false,egSoot:false,llwlTest:false,lwlTest:false,flameTest:false};
+
+const ALARMS=[
+  {id:'LWL',lab:'Low water',sev:1},
+  {id:'LLWL',lab:'Low-low water',sev:2},
+  {id:'HWL',lab:'High water',sev:1},
+  {id:'HP',lab:'High steam P',sev:2},
+  {id:'FF',lab:'Flame failure',sev:2},
+  {id:'FO_T',lab:'FO temp low',sev:1},
+  {id:'FO_P',lab:'FO pressure',sev:1},
+  {id:'FD',lab:'FD fan fail',sev:2},
+  {id:'CASC',lab:'Cascade low',sev:1},
+  {id:'AIR',lab:'Distillate air-bound',sev:1},
+  {id:'EGDP',lab:'EG high ΔP',sev:1},
+  {id:'LOCK',lab:'Burner lockout',sev:2},
+  {id:'ESTOP',lab:'Emergency stop',sev:2}
+];
+
+function note(msg,cls='n'){
+  const el=$('log');if(!el)return;
+  const d=document.createElement('div');d.className=cls;
+  const t=Math.floor(s.t),hh=String(Math.floor(t/3600)).padStart(2,'0'),mm=String(Math.floor(t/60)%60).padStart(2,'0'),ss=String(t%60).padStart(2,'0');
+  d.innerHTML=`<span>${hh}:${mm}:${ss}</span><span>${msg}</span>`;el.prepend(d);while(el.children.length>80)el.lastChild.remove();
+}
+
+function step(dt){
+  if(u.estop){s.lockout=true;s.flame=false;s.seq='trip';s.load=0;}
+  const fuel=FUELS[u.fuel]||M.FO;
+  s.fuel=u.fuel;s.demand=u.demand;s.meLoad=u.meLoad;
+
+  /* FO heater / pressure */
+  if(u.foHeat)s.FO_T+=(120-s.FO_T)*0.05*dt;else s.FO_T+=(35-s.FO_T)*0.02*dt;
+  s.FO_P=u.fo&&!f.foPump?(f.foFilter?1.2:3.0):0;
+  const viscOk=!fuel.viscGate||s.FO_T>=fuel.Tmin-5;
+
+  /* Distillate → cascade */
+  if(f.suctionShut)s.airBound=true;
+  if(u.bleed)s.bleedOpen=true;
+  if(s.bleedOpen&&s.dist>50&&!f.suctionShut){s.airBound=false;s.bleedOpen=false;u.bleed=false;note('Distillate casing bled — prime restored');}
+  let distFlow=0;
+  if(u.dist){
+    if(s.airBound||s.dist<20){distFlow=0;if(!s.airBound&&s.dist<20)s.airBound=true;}
+    else{distFlow=2.5;s.dist=Math.max(0,s.dist-distFlow*dt);s.casc=Math.min(M.cascKg,s.casc+distFlow*dt);}
+  }
+  if(f.cascLeak)s.casc=Math.max(0,s.casc-0.4*dt);
+
+  /* Dosing */
+  const doseEff=u.dose&&!f.doseEmpty&&s.dose>1?u.doseRate/100:0;
+  if(doseEff){s.dose=Math.max(0,s.dose-0.02*doseEff*dt);s.chem.pAlk=clamp(s.chem.pAlk+0.015*doseEff*dt,0,30);s.chem.pH=clamp(9.5+s.chem.pAlk*0.08,7,12);s.chem.scav=clamp(s.chem.scav+0.01*doseEff*dt,0,2);}
+  if(u.manualDoseL>0){const L=u.manualDoseL;u.manualDoseL=0;s.chem.pAlk=clamp(s.chem.pAlk+L*0.4,0,30);s.chem.pH=clamp(9.5+s.chem.pAlk*0.08,7,12);note(`Manual dose ${L.toFixed(1)} L into cascade`);}
+
+  /* Feed */
+  const cascFrac=s.casc/M.cascKg;
+  let feedKg=0;
+  if(u.feed&&cascFrac>0.08){
+    const want=pidStep(pidLvl,s.level,u.LvlSp,dt,0,100);
+    feedKg=(want/100)*1.8; /* kg/s proxy */
+    if(f.llwlTest||s.level<=M.Llwl)feedKg*=s.lockout?0:1;
+    s.casc=Math.max(0,s.casc-feedKg*dt);
+    s.mw+=feedKg*dt;
+  }
+  if(u.blowdown>0){const bd=u.blowdown*0.15*dt;s.mw=Math.max(50,s.mw-bd);s.chem.Cl=Math.max(5,s.chem.Cl-bd*0.02);s.chem.cond=Math.max(50,s.chem.cond-bd*0.05);}
+
+  /* Burner sequence */
+  const fdOk=u.fd&&!f.fdFail;
+  const canLight=fdOk&&u.fo&&viscOk&&s.FO_P>2&&!s.lockout&&!u.estop&&s.level>M.Llwl&&!f.flameEye&&!f.flameTest;
+  if(u.burnerStop||u.mode==='off'){if(s.flame){s.flame=false;s.seq='post';s.purgeT=8;note('Burner stop — post-purge');}u.burnerStart=false;}
+  if(u.mode==='auto'||u.mode==='man'){
+    if(u.burnerStart&&!s.flame&&s.seq==='off'&&canLight){s.seq='purge';s.purgeT=12;note('Purge start');u.burnerStart=false;}
+    if(s.seq==='purge'){s.purgeT-=dt;if(s.purgeT<=0){s.seq='pilot';s.purgeT=3;note('Pilot trial');}}
+    if(s.seq==='pilot'){s.purgeT-=dt;if(s.purgeT<=0){if(canLight){s.flame=true;s.seq='main';note('Main flame established');}else{s.seq='trip';s.lockout=true;s.trips.FF=true;note('Flame failure on light-up','a');}}}
+    if(s.seq==='post'){s.purgeT-=dt;if(s.purgeT<=0)s.seq='off';}
+  }
+  if(f.flameTest||f.flameEye){if(s.flame){s.flame=false;s.lockout=true;s.trips.FF=true;s.seq='trip';note('Flame failure','a');}}
+
+  /* Pressure PID → burner load */
+  if(u.loadAuto&&s.flame&&(u.mode==='auto')){
+    pidP.man=false;s.load=pidStep(pidP,s.P,u.Psp,dt,5,100);
+  }else if(s.flame&&u.mode==='man'){pidP.man=true;pidP.out=u.loadMan;s.load=u.loadMan;}
+  else if(!s.flame)s.load=0;
+
+  /* Heat release */
+  const eta=0.82*(fdOk?1:0.2);
+  const mFuel=s.flame?(s.load/100)*(M.steamOil*1000/3600)/(fuel.LHV*eta/hfg(s.T)+1e-9)*0.35:0; /* rough */
+  const Qoil=s.flame?eta*mFuel*fuel.LHV:0; /* kW */
+  const egFrac=s.exhAvail?clamp(u.meLoad,0,1):0;
+  const Qeg=(u.egCirc||!M.egCirc?1:(u.egCirc?1:0))*(egFrac*M.steamEgMax*1000/3600)*hfg(s.T)*(f.egSoot?0.7:1);
+  /* SAACKE needs circ for EG */
+  const egOk=!M.egCirc||u.egCirc;
+  const QegUse=egOk?Qeg:0;
+  s.egT=120+egFrac*200+(f.egSoot?40:0);
+  s.egDP=0.6+egFrac*0.5+(f.egSoot?1.2:0);
+
+  const Qnet=Qoil+QegUse; /* kW */
+  const mSteamOil=(Qoil/Math.max(hfg(s.T),100))/1000*3600; /* t/h */
+  const mSteamEg=(QegUse/Math.max(hfg(s.T),100))/1000*3600;
+  s.oilSteam=mSteamOil;s.egSteam=mSteamEg;s.totalSteam=mSteamOil+mSteamEg;
+
+  /* Steam take-off + dump */
+  const demandTh=u.demand*M.steamOil; /* t/h hotel/cargo relative */
+  let dumpCmd;
+  if(u.dumpAuto){pidDump.man=false;dumpCmd=pidStep(pidDump,s.P,u.dumpSp,dt,0,100);}
+  else{pidDump.man=true;pidDump.out=u.dumpMan;dumpCmd=u.dumpMan;}
+  if(f.dumpStuck)dumpCmd=0;
+  s.dump=dumpCmd;
+  const mOut=(demandTh+(dumpCmd/100)*Math.max(0,s.totalSteam-demandTh*0.3))/3600*1000; /* kg/s */
+  const mGen=s.totalSteam/3600*1000;
+  s.mw+= (feedKg - mGen)*dt;
+  /* pressure from energy surplus */
+  const dQ=(Qnet - mOut*hfg(s.T)*1)*dt; /* kJ */
+  const C=s.mw*cpW+80;
+  s.T+=dQ/C;
+  s.P=clamp(psat(s.T),ATM,M.Prated+2);
+  s.T=tsat(s.P);
+  const mTot=Math.max(s.mw,1);s.level=clamp(s.mw/M.drumKg,0.05,0.98);
+
+  /* Chemistry drift */
+  s.chem.Cl+= (0.002+ (f.cascLeak?0.05:0))*dt;
+  s.chem.cond=80+s.chem.Cl*2.2+s.chem.pAlk*3;
+  s.chem.condPH+=(8.8-s.chem.condPH)*0.01*dt;
+
+  /* Trips */
+  const L=f.lwlTest?M.Lwl-0.01:s.level, LL=f.llwlTest?M.Llwl-0.01:s.level;
+  if(LL<=M.Llwl){s.trips.LLWL=true;s.lockout=true;s.flame=false;s.seq='trip';}
+  else if(L<=M.Lwl)s.trips.LWL=true; else {delete s.trips.LWL;}
+  if(s.level>=M.Lhi)s.trips.HWL=true; else delete s.trips.HWL;
+  if(s.P>=M.Prated){s.trips.HP=true;s.flame=false;s.load=0;} else delete s.trips.HP;
+  if(!viscOk&&u.fo)s.trips.FO_T=true; else delete s.trips.FO_T;
+  if(u.fo&&s.FO_P<2&&s.seq!=='off')s.trips.FO_P=true; else delete s.trips.FO_P;
+  if(f.fdFail&&u.fd)s.trips.FD=true; else delete s.trips.FD;
+  if(cascFrac<0.1)s.trips.CASC=true; else delete s.trips.CASC;
+  if(s.airBound&&u.dist)s.trips.AIR=true; else delete s.trips.AIR;
+  if(s.egDP>1.8)s.trips.EGDP=true; else delete s.trips.EGDP;
+  if(s.lockout)s.trips.LOCK=true; else delete s.trips.LOCK;
+  if(u.estop)s.trips.ESTOP=true; else delete s.trips.ESTOP;
+
+  s.smoke=s.flame?(s.load>90&&!fdOk?0.8:0.15):0;
+  s.t+=dt;
+}
+
+/* ===== UI ===== */
+let hmiPage='home',paused=false,speed=1,autoRun=false,stepIdx=0;
+const SPEEDS=[1,2,5,10];
+const SC=[
+  {id:'cold',name:'Cold start',cold:true},
+  {id:'steady',name:'Steady oil + EG'},
+  {id:'egonly',name:'EG only'},
+  {id:'dump',name:'Dump Auto under excess EG'},
+  {id:'air',name:'Distillate air-bound'},
+  {id:'water',name:'Water exercise'},
+  {id:'pid',name:'PID lab'},
+  {id:'inspect',name:'Inspection pack'}
+];
+
+const PROC={
+  mission:[
+    {t:'Check cascade level; make up with distillate if low',ok:()=>s.casc/M.cascKg>0.35},
+    {t:'If distillate air-bound, open casing bleed until water',ok:()=>!s.airBound||!u.dist},
+    {t:'Start feed pump; fill drum to normal',ok:()=>u.feed&&s.level>M.Lnml-0.05},
+    {t:'Run boiler-water test; apply Water lab recommendation',ok:()=>true},
+    {t:'Start FD fan, then FO pump; heat FO to viscosity',ok:()=>u.fd&&u.fo&&s.FO_T>=(FUELS[u.fuel]||M.FO).Tmin-5},
+    {t:'HMI Auto — start burner; watch purge→pilot→main',ok:()=>s.flame},
+    {t:'Open steam stop; raise pressure to working',ok:()=>u.steamStop&&s.P>=u.Psp-0.3},
+    {t:'Put EG in service; confirm oil vs EG t/h',ok:()=>s.egSteam>0.05||u.meLoad>0.3},
+    {t:'Prove dump Auto, then Manual bypass, return Auto',ok:()=>true},
+    {t:'Secure: stop burner, post-purge, stop motors, steam stop',ok:()=>!s.flame&&u.mode==='off'}
+  ]
+};
+PROC.saacke=PROC.mission.map(x=>({...x}));
+PROC.kangrim=PROC.mission.map(x=>({...x}));
+PROC.miura=PROC.mission.map(x=>({...x}));
+
+function loadScenario(i){
+  const c=SC[i]||SC[0];
+  s=coldState();resetLoops();Object.keys(f).forEach(k=>f[k]=false);
+  u.feed=u.dist=u.dose=u.fo=u.fd=u.egCirc=false;u.steamStop=false;u.mode='off';u.burnerStart=false;u.estop=false;
+  u.dumpAuto=true;u.loadAuto=true;u.demand=0.4;u.meLoad=0.75;u.fuel='HFO';u.Psp=M.Pwork;u.dumpSp=M.Pwork+0.4;u.LvlSp=M.Lnml;
+  if(c.id==='steady'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.T=tsat(s.P);s.flame=true;s.seq='main';s.load=55;
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;s.FO_P=3;u.egCirc=M.egCirc;
+  }else if(c.id==='egonly'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork-0.3;s.T=tsat(s.P);s.flame=false;s.seq='off';
+    u.feed=u.steamStop=true;u.mode='off';u.meLoad=0.85;u.egCirc=M.egCirc;u.demand=0.35;
+  }else if(c.id==='dump'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork+0.2;s.T=tsat(s.P);s.flame=true;s.seq='main';s.load=20;
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.meLoad=0.95;u.demand=0.15;u.egCirc=M.egCirc;
+  }else if(c.id==='air'){
+    s.casc=M.cascKg*0.2;s.airBound=true;u.dist=true;
+  }else if(c.id==='water'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.chem.pAlk=4;s.chem.pH=9.4;s.chem.Cl=120;
+    u.feed=true;u.mode='off';
+  }else if(c.id==='pid'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.flame=true;s.seq='main';s.load=40;
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.demand=0.5;
+  }else if(c.id==='inspect'){
+    s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.flame=true;s.seq='main';
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;
+  }
+  stepIdx=0;note('Scenario: '+c.name);paintAll();
+}
+
+function waterRec(){
+  const c=s.chem,lines=[];
+  if(c.pAlk<6)lines.push('P-alkalinity low — increase boiler treatment: dosing pump +10% or manual 2 L into cascade.');
+  else if(c.pAlk>18)lines.push('P-alkalinity high — reduce dose; increase blowdown.');
+  if(c.Cl>80)lines.push('Chloride high — do not dose; blow down and find seawater in-leak / bad make-up.');
+  if(c.condPH<8.5)lines.push('Condensate pH low — raise amine / check hotwell temperature.');
+  if(c.cond>400)lines.push('Conductivity high — increase blowdown.');
+  if(!lines.length)lines.push('Residuals in band — maintain present dose and sample schedule.');
+  return lines;
+}
+
+function buildMimic(){
+  const eg=M.egCirc?'EG circ':'EG bank';
+  $('mimic').innerHTML=`<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+  <rect x="40" y="200" width="100" height="90" fill="#cfe0f0" stroke="#1b2321"/><text x="90" y="195" text-anchor="middle">Distillate</text>
+  <text class="tagv" id="vDist" x="90" y="250" text-anchor="middle">—</text>
+  <rect x="180" y="210" width="90" height="70" fill="#dce8df" stroke="#1b2321"/><text x="225" y="205" text-anchor="middle">Cascade</text>
+  <text class="tagv" id="vCasc" x="225" y="250" text-anchor="middle">—</text>
+  <text class="small" x="225" y="270" text-anchor="middle">dose / bleed</text>
+  <rect x="360" y="120" width="160" height="200" rx="8" fill="#c8cdc4" stroke="#1b2321" stroke-width="2"/><text x="440" y="110" text-anchor="middle">Steam drum</text>
+  <text class="tagv" id="vP" x="440" y="200" text-anchor="middle">—</text>
+  <text class="tagv" id="vL" x="440" y="225" text-anchor="middle">—</text>
+  <rect x="560" y="140" width="110" height="70" fill="#e8d5c0" stroke="#1b2321"/><text x="615" y="130" text-anchor="middle">Oil burner</text>
+  <text class="tagv" id="vOil" x="615" y="180" text-anchor="middle">—</text>
+  <rect x="560" y="240" width="110" height="70" fill="#e0d0c8" stroke="#1b2321"/><text x="615" y="230" text-anchor="middle">${eg}</text>
+  <text class="tagv" id="vEg" x="615" y="280" text-anchor="middle">—</text>
+  <rect x="720" y="160" width="100" height="50" fill="#d0d8e0" stroke="#1b2321"/><text x="770" y="150" text-anchor="middle">Dump</text>
+  <text class="tagv" id="vDump" x="770" y="190" text-anchor="middle">—</text>
+  <line x1="140" y1="245" x2="180" y2="245" stroke="#1f6db5" stroke-width="3"/>
+  <line x1="270" y1="245" x2="360" y2="245" stroke="#1f6db5" stroke-width="3"/>
+  <line x1="520" y1="180" x2="560" y2="175" stroke="#8a5a2b" stroke-width="3"/>
+  <line x1="520" y1="280" x2="560" y2="275" stroke="#6b4a3a" stroke-width="3"/>
+  <line x1="520" y1="140" x2="720" y2="175" stroke="#5a6e7a" stroke-width="2"/>
+  <text class="small" x="440" y="340" text-anchor="middle">${M.tab} · ${M.maker}</text>
+  <text class="tagv" id="vTot" x="440" y="360" text-anchor="middle">—</text>
+  </svg>`;
+}
+function paintMimic(){
+  const set=(id,t)=>{const e=$(id);if(e)e.textContent=t;};
+  set('vDist',(s.dist/M.distKg*100).toFixed(0)+'%'+ (s.airBound?' AIR':''));
+  set('vCasc',(s.casc/M.cascKg*100).toFixed(0)+'%');
+  set('vP',s.P.toFixed(2)+' bar');
+  set('vL',(s.level*100).toFixed(0)+'%');
+  set('vOil',s.oilSteam.toFixed(2)+' t/h');
+  set('vEg',s.egSteam.toFixed(2)+' t/h');
+  set('vDump',s.dump.toFixed(0)+'% '+(u.dumpAuto?'A':'M'));
+  set('vTot','Total '+s.totalSteam.toFixed(2)+' t/h · demand '+(u.demand*M.steamOil).toFixed(2));
+}
+
+function paintHmi(){
+  const pages=['home','burner','dump','alarms','water','pid','service'];
+  const hd=pages.map(p=>`<button class="hmibtn${hmiPage===p?' on':''}" data-p="${p}">${p}</button>`).join('');
+  let body='';
+  if(hmiPage==='home')body=`
+    <div class="row"><span>Steam pressure</span><span class="v">${s.P.toFixed(2)} bar</span></div>
+    <div class="row"><span>Drum level</span><span class="v">${(s.level*100).toFixed(1)} %</span></div>
+    <div class="row"><span>Burner / seq</span><span class="v">${s.flame?'FLAME':'—'} ${s.seq}</span></div>
+    <div class="row"><span>Oil / EG / Total</span><span class="v">${s.oilSteam.toFixed(2)} / ${s.egSteam.toFixed(2)} / ${s.totalSteam.toFixed(2)} t/h</span></div>
+    <div class="row"><span>Dump</span><span class="v">${u.dumpAuto?'Auto':'Manual'} ${s.dump.toFixed(0)} %</span></div>
+    <div class="row"><span>Mode</span><span class="v">${u.mode.toUpperCase()}${s.lockout?' LOCKOUT':''}</span></div>
+    <p class="note" style="color:#9aa">${s.flame?'': (s.exhAvail&&s.egSteam>0.05?'EG only — ME '+(u.meLoad*100).toFixed(0)+'% load':'Standby')}</p>`;
+  else if(hmiPage==='burner')body=`
+    <div class="row"><span>Sequence</span><span class="v">${s.seq}</span></div>
+    <div class="row"><span>Load (MV)</span><span class="v">${s.load.toFixed(0)} %</span></div>
+    <div class="row"><span>Pressure SP</span><span class="v">${u.Psp.toFixed(2)} bar</span></div>
+    <div class="row"><span>Fuel</span><span class="v">${u.fuel} · FO ${s.FO_T.toFixed(0)} °C · ${s.FO_P.toFixed(1)} bar</span></div>
+    <div class="hmift" style="margin-top:8px;background:transparent;border:0;padding:0">
+      <button class="pbtn st" id="hmiStart">Burner start</button>
+      <button class="pbtn sp" id="hmiStop">Burner stop</button>
+      <button class="sbtn" id="hmiReset">Reset lockout</button>
+    </div>`;
+  else if(hmiPage==='dump')body=`
+    <div class="row"><span>Dump mode</span><span class="v">${u.dumpAuto?'Auto PID':'Manual bypass'}</span></div>
+    <div class="row"><span>Dump SP</span><span class="v">${u.dumpSp.toFixed(2)} bar</span></div>
+    <div class="row"><span>Valve</span><span class="v">${s.dump.toFixed(0)} %</span></div>
+    <div class="ctl"><label>Manual position <output id="dumpManO">${u.dumpMan}%</output></label><input type="range" id="dumpMan" min="0" max="100" value="${u.dumpMan}"></div>
+    <button class="sbtn" id="dumpToggle">${u.dumpAuto?'Switch to Manual':'Switch to Auto'}</button>`;
+  else if(hmiPage==='alarms')body=ALARMS.map(a=>{const on=!!s.trips[a.id];return `<div class="row"><span>${a.lab}</span><span class="v">${on?(s.acks[a.id]?'ACK':'ACTIVE'):'—'}</span></div>`;}).join('')+`<button class="sbtn" id="hmiAck" style="margin-top:8px">Accept / Acknowledge</button>`;
+  else if(hmiPage==='water')body=`<div class="row"><span>P-alk</span><span class="v">${s.chem.pAlk.toFixed(1)}</span></div>
+    <div class="row"><span>pH / Cl / Cond</span><span class="v">${s.chem.pH.toFixed(1)} / ${s.chem.Cl.toFixed(0)} / ${s.chem.cond.toFixed(0)}</span></div>
+    <div class="row"><span>Condensate pH</span><span class="v">${s.chem.condPH.toFixed(1)}</span></div>`;
+  else if(hmiPage==='pid')body=`
+    <p class="note" style="color:#9aa;margin:0 0 8px">Pressure→burner and dump PIDs. Wrong tuning is a real risk — Reset restores maker defaults (estimated).</p>
+    <div class="row"><span>P loop Kp/Ti/Td</span><span class="v">${pidP.kp}/${pidP.ti}/${pidP.td}</span></div>
+    <div class="row"><span>P err / MV</span><span class="v">${(u.Psp-s.P).toFixed(2)} / ${s.load.toFixed(0)}%</span></div>
+    <div class="row"><span>Dump Kp/Ti</span><span class="v">${pidDump.kp}/${pidDump.ti}</span></div>
+    <div class="ctl"><label>Kp pressure <output>${pidP.kp}</output></label><input type="range" id="kpP" min="2" max="40" value="${pidP.kp}"></div>
+    <div class="ctl"><label>Ti pressure <output>${pidP.ti}</output></label><input type="range" id="tiP" min="5" max="120" value="${pidP.ti}"></div>
+    <button class="sbtn" id="pidDef">Load maker defaults</button>`;
+  else body=`<p class="note" style="color:#9aa">Service / test paths only as in maker manual. Inspection drills drive real trips.</p>
+    <button class="sbtn" data-insp="lwl">Test LWL</button> <button class="sbtn" data-insp="llwl">Test LLWL</button> <button class="sbtn" data-insp="ff">Test flame fail</button>`;
+  $('hmi').innerHTML=`<div class="hmihd">${hd}</div><div class="hmibody">${body}</div><div class="hmift"><span class="lamp ${s.flame?'on-g':''}">Flame</span><span class="lamp ${s.lockout?'on-r':''}">Lockout</span><span class="lamp ${u.dumpAuto?'on-g':''}">Dump Auto</span></div>`;
+  $('hmiName').textContent=M.hmi;
+  $('hmi').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.p;paintHmi();});
+  const hs=$('hmiStart'),hst=$('hmiStop'),hr=$('hmiReset');
+  if(hs)hs.onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
+  if(hst)hst.onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
+  if(hr)hr.onclick=()=>{if(s.level>M.Llwl&&!u.estop){s.lockout=false;s.seq='off';delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;note('Lockout reset');}};
+  const dt=$('dumpToggle');if(dt)dt.onclick=()=>{u.dumpAuto=!u.dumpAuto;if(u.dumpAuto)u.dumpMan=s.dump;paintHmi();};
+  const dm=$('dumpMan');if(dm)dm.oninput=()=>{u.dumpMan=+dm.value;$('dumpManO').textContent=u.dumpMan+'%';};
+  const ha=$('hmiAck');if(ha)ha.onclick=()=>ackAll();
+  const kp=$('kpP'),ti=$('tiP');if(kp)kp.oninput=()=>{pidP.kp=+kp.value;kp.previousElementSibling.querySelector('output').textContent=pidP.kp;};
+  if(ti)ti.oninput=()=>{pidP.ti=+ti.value;ti.previousElementSibling.querySelector('output').textContent=pidP.ti;};
+  const pd=$('pidDef');if(pd)pd.onclick=()=>{resetLoops();note('PID defaults restored');paintHmi();};
+  $('hmi').querySelectorAll('[data-insp]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.insp;if(k==='lwl')f.lwlTest=true;if(k==='llwl')f.llwlTest=true;if(k==='ff')f.flameTest=true;
+    note('Inspection test: '+k,'w');setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},2);
+  });
+}
+
+function paintDoor(){
+  $('door').innerHTML=`
+    <div class="ctl"><label>Mode</label>
+      <span class="seg" id="modeSeg">${['off','auto','man','emergency'].map(m=>`<button data-mode="${m}" aria-pressed="${u.mode===m}">${m}</button>`).join('')}</span></div>
+    <div class="pumpbox">
+      <button class="pbtn st" id="locStart">Start</button><button class="pbtn sp" id="locStop">Stop</button>
+      <button class="sbtn" id="locAck">Accept</button><button class="sbtn" id="locLamp">Lamp test</button>
+      <button class="pbtn sp" id="locEstop">E-STOP</button>
+    </div>
+    <span class="lamp ${s.flame?'on-g':''}">Flame</span> <span class="lamp ${s.lockout?'on-r':''}">Trip</span>`;
+  $('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;u.mode=b.dataset.mode;paintDoor();};
+  $('locStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
+  $('locStop').onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
+  $('locAck').onclick=()=>ackAll();
+  $('locLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
+  $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
+}
+
+function mkStarter(id,lab,key){
+  return `<div class="starter" data-k="${key}"><h4>${lab}</h4>
+    <div class="pumpbox"><button class="pbtn st" data-on="1">Start</button><button class="pbtn sp" data-on="0">Stop</button>
+    <span class="lamp ${u[key]?'on-g':''}">Run</span></div>
+    <div class="note">${key==='dist'&&s.airBound?'Amps light — air-bound':key==='egCirc'&&!M.egCirc?'Not fitted':''}</div></div>`;
+}
+function paintStarters(){
+  let html=mkStarter('feed','Feed pump','feed')+mkStarter('dist','Distillate / make-up','dist')+mkStarter('dose','Dosing pump','dose')+mkStarter('fo','FO pump','fo')+mkStarter('fd','FD fan','fd');
+  if(M.egCirc)html+=mkStarter('eg','EG circulating pump','egCirc');
+  html+=`<div class="starter"><h4>Distillate air bleed</h4><button class="sbtn" id="bleedBtn" aria-pressed="${u.bleed}">Bleed casing</button><p class="note">Open until solid water, then shut.</p></div>`;
+  $('starters').innerHTML=html;
+  $('starters').onclick=e=>{
+    const st=e.target.closest('.starter');if(!st)return;
+    if(e.target.id==='bleedBtn'){u.bleed=true;note('Bleed open');return;}
+    const on=e.target.dataset.on;if(on==null)return;u[st.dataset.k]=on==='1';
+    if(st.dataset.k==='dist'&&on==='1'&&(s.dist<30||f.suctionShut))s.airBound=true;
+    paintStarters();
+  };
+}
+
+function paintControls(){
+  $('controls').innerHTML=`
+    <div class="ctl"><label>Steam demand <output>${(u.demand*100).toFixed(0)}%</output></label><input type="range" id="dem" min="0" max="100" value="${u.demand*100}"></div>
+    <div class="ctl"><label>ME load (EG) <output>${(u.meLoad*100).toFixed(0)}%</output></label><input type="range" id="mel" min="0" max="100" value="${u.meLoad*100}"></div>
+    <div class="ctl"><label>Fuel grade</label><select id="fuelSel">${Object.keys(FUELS).map(k=>`<option ${u.fuel===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    <div class="ctl"><label>Pressure SP <output>${u.Psp.toFixed(1)}</output></label><input type="range" id="psp" min="5" max="8.5" step="0.1" value="${u.Psp}"></div>
+    <div class="ctl"><label>FO heater</label><button class="sbtn" id="foHeat" aria-pressed="${u.foHeat}">${u.foHeat?'On':'Off'}</button></div>
+    <div class="ctl"><label>Steam stop</label><button class="sbtn" id="steamStop" aria-pressed="${u.steamStop}">${u.steamStop?'Open':'Shut'}</button></div>
+    <div class="ctl"><label>Blowdown <output>${u.blowdown}</output></label><input type="range" id="bd" min="0" max="100" value="${u.blowdown}"></div>
+    <div class="ctl"><label>Dosing rate % <output>${u.doseRate}</output></label><input type="range" id="dr" min="0" max="100" value="${u.doseRate}"></div>
+    <div class="ctl"><label>Manual dose (L)</label><input type="number" id="mdose" min="0" max="20" step="0.5" value="0"> <button class="sbtn" id="mdoseGo">Dose</button></div>`;
+  const bind=(id,fn)=>{const el=$(id);if(el)el.oninput=el.onchange=fn;};
+  bind('dem',e=>{u.demand=e.target.value/100;e.target.previousElementSibling.querySelector('output').textContent=(u.demand*100).toFixed(0)+'%';});
+  bind('mel',e=>{u.meLoad=e.target.value/100;e.target.previousElementSibling.querySelector('output').textContent=(u.meLoad*100).toFixed(0)+'%';});
+  bind('fuelSel',e=>u.fuel=e.target.value);
+  bind('psp',e=>{u.Psp=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.Psp.toFixed(1);});
+  $('foHeat').onclick=()=>{u.foHeat=!u.foHeat;paintControls();};
+  $('steamStop').onclick=()=>{u.steamStop=!u.steamStop;paintControls();};
+  bind('bd',e=>{u.blowdown=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.blowdown;});
+  bind('dr',e=>{u.doseRate=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.doseRate;});
+  $('mdoseGo').onclick=()=>{u.manualDoseL=+$('mdose').value||0;$('mdose').value=0;};
+}
+
+function paintWater(){
+  const rec=waterRec();
+  $('waterLab').innerHTML=`
+    <table><tr><th>Test</th><th>Result</th><th>Band</th></tr>
+    <tr><td>P-alkalinity</td><td class="v">${s.chem.pAlk.toFixed(1)}</td><td>6–18</td></tr>
+    <tr><td>pH</td><td class="v">${s.chem.pH.toFixed(1)}</td><td>9.5–11</td></tr>
+    <tr><td>Chloride</td><td class="v">${s.chem.Cl.toFixed(0)} ppm</td><td>&lt;80</td></tr>
+    <tr><td>Conductivity</td><td class="v">${s.chem.cond.toFixed(0)}</td><td>&lt;400</td></tr>
+    <tr><td>Scavenger</td><td class="v">${s.chem.scav.toFixed(2)}</td><td>0.2–1.0</td></tr>
+    <tr><td>Condensate pH</td><td class="v">${s.chem.condPH.toFixed(1)}</td><td>8.5–9.5</td></tr></table>
+    <div class="rec"><b>Recommendation</b><ul>${rec.map(r=>`<li>${r}</li>`).join('')}</ul>
+    <button class="sbtn" id="runTest">Re-sample</button></div>`;
+  $('runTest').onclick=()=>note('Sample taken — residuals from model state');
+}
+
+function paintReadings(){
+  $('readings').innerHTML=`<tr><th>Point</th><th>Value</th><th></th></tr>
+  <tr><td>Steam P</td><td class="v">${s.P.toFixed(2)} bar a</td><td></td></tr>
+  <tr><td>Drum level</td><td class="v">${(s.level*100).toFixed(1)} %</td><td></td></tr>
+  <tr><td>Oil steam</td><td class="v">${s.oilSteam.toFixed(2)} t/h</td><td></td></tr>
+  <tr><td>EG steam</td><td class="v">${s.egSteam.toFixed(2)} t/h</td><td></td></tr>
+  <tr><td>Total steam</td><td class="v">${s.totalSteam.toFixed(2)} t/h</td><td></td></tr>
+  <tr><td>Dump valve</td><td class="v">${s.dump.toFixed(0)} %</td><td>${u.dumpAuto?'Auto':'Man'}</td></tr>
+  <tr><td>Burner load</td><td class="v">${s.load.toFixed(0)} %</td><td>${s.seq}</td></tr>
+  <tr><td>FO T / P</td><td class="v">${s.FO_T.toFixed(0)} °C / ${s.FO_P.toFixed(1)} bar</td><td>${u.fuel}</td></tr>
+  <tr><td>EG gas T / ΔP</td><td class="v">${s.egT.toFixed(0)} °C / ${s.egDP.toFixed(2)}</td><td></td></tr>
+  <tr><td>Cascade</td><td class="v">${(s.casc/M.cascKg*100).toFixed(0)} %</td><td></td></tr>`;
+}
+
+function paintGauges(){
+  $('gauges').innerHTML=[
+    ['Steam P',s.P.toFixed(2)+' bar'],
+    ['Level',(s.level*100).toFixed(0)+'%'],
+    ['Oil t/h',s.oilSteam.toFixed(2)],
+    ['EG t/h',s.egSteam.toFixed(2)],
+    ['Dump',s.dump.toFixed(0)+'%'],
+    ['FO T',s.FO_T.toFixed(0)+'°C']
+  ].map(([l,v])=>`<div class="gauge"><div class="gl">${l}</div><div class="gv">${v}</div></div>`).join('');
+}
+
+function paintAlarms(){
+  let max=0;
+  $('tiles').innerHTML=ALARMS.map(a=>{
+    const on=!!s.trips[a.id],ack=!!s.acks[a.id];
+    if(on)max=Math.max(max,a.sev);
+    return `<div class="tile${on&&!ack?' flash':''}" data-l="${on?a.sev:0}">${a.lab}</div>`;
+  }).join('');
+  $('mwarn').dataset.l=max;$('mwarnT').textContent=max?ALARMS.filter(a=>s.trips[a.id]).map(a=>a.lab).join(' · '):'No active alarms';
+  const mode=$('mode');
+  if(u.estop||s.lockout){mode.textContent='LOCKOUT';mode.dataset.s='bad';}
+  else if(s.flame){mode.textContent='FIRING';mode.dataset.s='ok';}
+  else if(s.egSteam>0.1){mode.textContent='EG ONLY';mode.dataset.s='warn';}
+  else{mode.textContent=u.mode==='off'?'SECURED':u.mode.toUpperCase();mode.dataset.s='';}
+  try{parent.postMessage({prog:'boiler',alarms:max},'*');}catch(e){}
+}
+
+function ackAll(){ALARMS.forEach(a=>{if(s.trips[a.id])s.acks[a.id]=true;});note('Alarms acknowledged');paintAlarms();}
+
+function paintSteps(){
+  const P=PROC[M.id]||PROC.mission;
+  if(autoRun&&stepIdx<P.length&&P[stepIdx].ok())stepIdx++;
+  $('steps').innerHTML=P.map((p,i)=>`<li class="${i<stepIdx?'done':i===stepIdx?'now':''}"><span class="n">${i+1}</span><span>${p.t}${i===stepIdx?'<span class="why">Current</span>':''}</span></li>`).join('');
+}
+
+function paintInspect(){
+  $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. Each drives real trips.</p>
+    ${[['lwl','LWL'],['llwl','LLWL'],['ff','Flame failure'],['hp','High steam P']].map(([k,l])=>`<button class="sbtn" data-i="${k}">${l}</button> `).join('')}
+    <div id="inspLog" class="note" style="margin-top:8px"></div>`;
+  $('inspect').onclick=e=>{
+    const b=e.target.closest('[data-i]');if(!b)return;
+    const k=b.dataset.i;
+    if(k==='lwl')f.lwlTest=true;if(k==='llwl')f.llwlTest=true;if(k==='ff')f.flameTest=true;
+    if(k==='hp'){u.demand=0.05;u.meLoad=1;u.dumpAuto=false;u.dumpMan=0;f.dumpStuck=true;}
+    note('Inspection: '+k,'w');$('inspLog').textContent='Ran '+k+' — observe HMI/panel, ack, restore, reset.';
+    setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},3);
+  };
+}
+
+function paintDrills(){
+  const D=[['Flame fail (dirty eye)','flameEye'],['FO filter dirty','foFilter'],['Dump stuck shut','dumpStuck'],['FD fail','fdFail'],['Distillate suction shut','suctionShut'],['EG soot','egSoot'],['Dose tank empty','doseEmpty']];
+  $('drills').innerHTML=D.map(([n,k])=>`<button class="sbtn" data-f="${k}">${n}</button> `).join('');
+  $('drills').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;f[b.dataset.f]=true;if(b.dataset.f==='suctionShut')s.airBound=true;note('Drill: '+b.textContent,'w');};
+  $('faults').innerHTML=Object.keys(f).map(k=>`<label class="check"><input type="checkbox" data-fk="${k}" ${f[k]?'checked':''}> ${k}</label>`).join(' ');
+  $('faults').onchange=e=>{if(e.target.dataset.fk)f[e.target.dataset.fk]=e.target.checked;};
+}
+
+function paintTrb(){
+  $('trb').innerHTML=`<ul>
+    <li><b>Flame failure:</b> maker sequence — FO valve/filter/pump, flame eye, air–fuel, uncleared trip. Field tips secondary.</li>
+    <li><b>Air-bound distillate:</b> bleed casing; check suction valve and tank level. Do not only restart.</li>
+    <li><b>High chloride:</b> blow down and find leak — do not dose away.</li>
+    <li><b>Dump / high P under EG:</b> confirm dump Auto or Manual; stuck dump is a teachable fault.</li>
+  </ul><p class="note">Full maker fault chapters replace this when PDFs are mapped.</p>`;
+  $('almT').innerHTML='<tr><th>Alarm</th><th>Action (provisional)</th></tr>'+ALARMS.map(a=>`<tr><td>${a.lab}</td><td>Ack on HMI and local panel; clear cause; reset per maker.</td></tr>`).join('');
+}
+
+const hist={P:[],L:[],oil:[],eg:[],load:[]};
+function paintTrends(){
+  const push=(a,v)=>{a.push(v);if(a.length>60)a.shift();};
+  push(hist.P,s.P);push(hist.L,s.level*10);push(hist.oil,s.oilSteam);push(hist.eg,s.egSteam);push(hist.load,s.load/20);
+  const spark=(arr,c)=>{const w=280,h=64,mx=Math.max(...arr,0.1),mn=Math.min(...arr,0);const pts=arr.map((v,i)=>`${i/(arr.length-1||1)*w},${h-4-((v-mn)/(mx-mn||1))*(h-8)}`).join(' ');
+    return `<svg viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${c}" stroke-width="1.5" points="${pts}"/></svg>`;};
+  $('strips').innerHTML=`<div class="strip"><div class="st"><span>Steam P</span><span>${s.P.toFixed(2)}</span></div>${spark(hist.P,'#1c8446')}</div>
+    <div class="strip"><div class="st"><span>Oil / EG t/h</span><span>${s.oilSteam.toFixed(2)} / ${s.egSteam.toFixed(2)}</span></div>${spark(hist.oil,'#8a5a2b')}${spark(hist.eg,'#6b4a3a')}</div>
+    <div class="strip"><div class="st"><span>Burner load</span><span>${s.load.toFixed(0)}%</span></div>${spark(hist.load,'#1f6db5')}</div>`;
+}
+
+function paintAll(){
+  paintMimic();paintHmi();paintDoor();paintStarters();paintControls();paintWater();paintReadings();paintGauges();paintAlarms();paintSteps();paintTrends();
+  const t=Math.floor(s.t);$('clock').textContent=[Math.floor(t/3600),Math.floor(t/60)%60,t%60].map(x=>String(x).padStart(2,'0')).join(':');
+  $('bsub').textContent=M.tab+' · '+M.maker;
+}
+
+function switchModel(id){
+  M=MODELS[id]||MODELS.mission;
+  document.querySelectorAll('.stabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===M.id));
+  buildMimic();loadScenario(+$('scenario').value||0);
+}
+
+/* boot */
+resetLoops();
+$('scenario').innerHTML=SC.map((c,i)=>`<option value="${i}">${c.name}</option>`).join('');
+SPEEDS.forEach((v,i)=>{const b=document.createElement('button');b.textContent=v+'×';b.setAttribute('aria-pressed',v===1);b.onclick=()=>{speed=v;[...$('speed').children].forEach(x=>x.setAttribute('aria-pressed',x===b));};$('speed').append(b);});
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause';};
+$('scInit').onclick=()=>loadScenario(+$('scenario').value);
+$('auto').onclick=()=>{autoRun=!autoRun;$('auto').setAttribute('aria-pressed',autoRun);};
+$('procReset').onclick=()=>{stepIdx=0;paintSteps();};
+$('ack').onclick=()=>ackAll();
+$('clrF').onclick=()=>{Object.keys(f).forEach(k=>f[k]=false);paintDrills();note('Faults cleared');};
+$('homeBtn').onclick=()=>{try{parent.postMessage({home:1},'*');}catch(e){}};
+document.querySelector('.stabs').onclick=e=>{const b=e.target.closest('button');if(b)switchModel(b.dataset.m);};
+$('info').onclick=()=>{
+  let ov=$('infoOv');if(!ov){ov=document.createElement('div');ov.id='infoOv';document.body.append(ov);}
+  ov.hidden=false;ov.innerHTML=`<div class="infoBox"><div class="infoHd"><b>Marine Boiler</b><button class="tbtn r" id="infoClose">Close</button></div>
+  <div class="infoBody"><p>Four composite units share one SI plant. HMI is provisional until maker manuals are filed under boiler-manuals/.</p>
+  <p>Operate: cascade → distillate (bleed if air-bound) → feed → FD/FO → HMI burner → steam → EG → dump Auto/Manual → water tests.</p></div></div>`;
+  $('infoClose').onclick=()=>ov.hidden=true;ov.onclick=e=>{if(e.target===ov)ov.hidden=true;};
+};
+
+buildMimic();paintInspect();paintDrills();paintTrb();
+switchModel('mission');
+
+let acc=0,last=performance.now();
+function frame(now){
+  const real=(now-last)/1000;last=now;
+  if(!paused){
+    acc+=real*speed;
+    while(acc>=0.25){step(0.25);acc-=0.25;}
+    paintAll();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
