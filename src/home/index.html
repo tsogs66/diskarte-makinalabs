@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#08131a">
+<title>Diskarte by MakinaLabs</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="home.css">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div id="load" aria-hidden="true"><img src="logo.svg" alt=""><span>Starting the engine room</span><img class="loadCo" src="makinalabs-wordmark.svg" alt="MakinaLabs"></div>
+<div id="ui">
+ <header class="top glass">
+  <img class="logo" src="logo.svg" alt="Diskarte logo">
+  <div class="name"><b>Diskarte</b><small>by MakinaLabs</small></div>
+  <span class="grow"></span>
+  <img class="coLogo" src="makinalabs-wordmark.svg" alt="MakinaLabs">
+  <span class="ver">Version 2.7.2</span>
+  <button class="ghost mag" id="aboutBtn"><span>About</span></button>
+ </header>
+ <section class="hero">
+  <p class="eyebrow">Marine engineer simulators</p>
+  <h1>Learn the machinery.<br>Fix it before it fails.</h1>
+  <p class="lede">Hands-on training for ship's auxiliary machinery. Operate real panels, follow real procedures, and find faults the way you would on board.</p>
+ </section>
+ <section id="cards" aria-label="Programs"></section>
+ <footer class="foot">Training aid only. Your instruction manuals and company procedures take priority.</footer>
+</div>
+<div id="stage"></div>
+<div id="about" hidden role="dialog" aria-modal="true" aria-labelledby="abT">
+ <div class="abBox glass">
+  <div class="abHd"><b id="abT">About Diskarte</b><button class="ghost" id="aboutClose">Close</button></div>
+  <p><b>Diskarte</b> is a set of simulators for engine equipment and auxiliary machinery on cargo ships, made for marine engineers by <b>MakinaLabs</b>.</p>
+  <p>Each program models one system from its maker's manuals: start and stop procedures, control panels, alarms, faults and troubleshooting. Simulators keep running in the background when you come back to this page.</p>
+  <p>Works offline. All figures are for training and do not replace your own manuals.</p>
+  <div class="abCred"><img src="diskarte-logo.svg" alt="Diskarte logo"><div><b>Diskarte by MakinaLabs</b><span>We make it simple, we make it clear. For every marine engineer.</span><span>Creator: C/E Marvin C. Endozo</span></div><img src="makinalabs-logo.svg" alt="MakinaLabs logo"></div>
+ </div>
+</div>
+<script type="module" src="home.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fresh Water Generator Simulator">
+  <!-- Evaporator shell in section: condenser plates above, sea water below, fresh water drop between. Flat colours so the 3D script can split it. -->
+  <rect x="24" y="24" width="464" height="464" rx="88" fill="#1E9FD6"/>
+  <rect x="56" y="56" width="400" height="400" rx="62" fill="#0F2A47"/>
+  <!-- domed shell -->
+  <path fill="#E7ECF5" fill-rule="evenodd" d="M256 84C330 84 386 132 386 202V396C386 412 376 424 360 424H152C136 424 126 412 126 396V202C126 132 182 84 256 84ZM256 110C196 110 152 148 152 204V386C152 394 156 398 164 398H348C356 398 360 394 360 386V204C360 148 316 110 256 110Z"/>
+  <!-- condenser plates -->
+  <path fill="#2FC4B2" d="M172 186 200 158 228 186 256 158 284 186 312 158 340 186V212L312 184 284 212 256 184 228 212 200 184 172 212Z"/>
+  <!-- sea water -->
+  <path fill="#1E9FD6" d="M152 330C172 312 194 312 214 330S256 348 276 330 318 312 338 330C346 337 354 340 360 340V386C360 394 356 398 348 398H164C156 398 152 394 152 386Z"/>
+  <!-- fresh water drop -->
+  <path fill="#FFFFFF" d="M256 222C256 222 306 276 306 310C306 338 284 360 256 360S206 338 206 310C206 276 256 222 256 222Z"/>
+  <path fill="#1E9FD6" d="M226 312C226 330 238 342 254 344 240 336 236 324 238 306 234 302 228 304 226 312Z"/>
+</svg>

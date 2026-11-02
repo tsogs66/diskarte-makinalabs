@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Purifier Simulator">
+  <!-- Oil purifier bowl in section: disc stack on the distributor, spindle below, arrow for rotation. Flat colours so the 3D script can split it. -->
+  <rect x="24" y="24" width="464" height="464" rx="88" fill="#D19A22"/>
+  <rect x="56" y="56" width="400" height="400" rx="62" fill="#0F2A47"/>
+  <!-- rotation arrow -->
+  <path d="M124 150C170 96 300 88 356 122L372 98L404 176L322 170L338 146C290 120 186 124 142 168Z" fill="#2FC4B2"/>
+  <!-- bowl body -->
+  <path fill="#E7ECF5" fill-rule="evenodd" d="M214 150H298V176L352 188C372 193 384 208 384 228V262C384 286 372 304 350 316L298 344H214L162 316C140 304 128 286 128 262V228C128 208 140 193 160 188L214 176ZM226 200 170 212C160 214 154 220 154 230V260C154 274 160 284 172 292L222 320H290L340 292C352 284 358 274 358 260V230C358 220 352 214 342 212L286 200Z"/>
+  <!-- disc stack -->
+  <path fill="#D19A22" d="M256 212 340 244V260L256 228 172 260V244Z"/>
+  <path fill="#D19A22" d="M256 240 340 272V284L322 290 256 266 190 290 172 284V272Z"/>
+  <path fill="#D19A22" d="M256 276 306 294 288 306 256 296 224 306 206 294Z"/>
+  <!-- distributor -->
+  <rect x="244" y="150" width="24" height="66" fill="#D19A22"/>
+  <!-- spindle and foot -->
+  <path fill="#E7ECF5" d="M238 344H274V398H238Z"/>
+  <path fill="#E7ECF5" d="M196 398H316C322 398 326 402 326 408V414C326 420 322 424 316 424H196C190 424 186 420 186 414V408C186 402 190 398 196 398Z"/>
+</svg>

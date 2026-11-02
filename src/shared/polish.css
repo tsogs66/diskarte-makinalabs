@@ -1,0 +1,36 @@
+/* shared look for every program: glass header, soft panels, smooth controls */
+.logo{width:38px;height:38px;flex:none;border-radius:9px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.bar{background:linear-gradient(180deg,rgba(21,33,36,.96),rgba(12,20,22,.94));backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);box-shadow:0 8px 24px rgba(8,14,16,.28);border-bottom:1px solid rgba(120,220,210,.16)}
+.brand{text-transform:none;letter-spacing:.02em}
+.brand small{letter-spacing:.04em}
+.homeb{background:linear-gradient(180deg,#2bb7a8,#14808a);border-color:#3bd0c0;color:#fff;font-weight:600}
+.homeb:hover{filter:brightness(1.12);border-color:#fff}
+.progn{display:flex;flex-direction:column;min-width:0;max-width:300px;line-height:1.1;font-family:var(--disp)}
+.progn b{font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--screen-ink)}
+.progn small{font-family:var(--body);font-size:11.5px;color:var(--screen-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body{background:radial-gradient(1200px 700px at 70% -10%,#dfe7e3 0,var(--enamel) 55%,#c3c9c2 100%) fixed}
+.panel{border-radius:10px;box-shadow:0 1px 2px rgba(20,30,28,.12),0 8px 22px rgba(20,30,28,.09);border-color:rgba(90,104,98,.45);overflow:hidden;transition:box-shadow .25s}
+.panel:hover{box-shadow:0 1px 2px rgba(20,30,28,.14),0 12px 30px rgba(20,30,28,.14)}
+.ph{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.05))}
+.sbtn,.tbtn,.tgl,.drillbtn,.stp,.pbtn{transition:transform .12s,filter .15s,background .15s,border-color .15s}
+.sbtn:active,.tbtn:active,.tgl:active,.stp:active{transform:scale(.96)}
+.tile{border-radius:4px;transition:background .25s,color .25s,box-shadow .25s}
+.tile[data-l="2"]{box-shadow:0 0 12px rgba(255,70,60,.65)}
+.tile[data-l="1"]{box-shadow:0 0 9px rgba(255,190,60,.5)}
+.vp{border-radius:10px;background:rgba(246,248,244,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(10,20,20,.32)}
+.gauge svg{filter:drop-shadow(0 2px 3px rgba(10,20,20,.3))}
+#gauges line[id^="ndl"]{transform-origin:60px 60px;transform-box:view-box;transition:transform .24s cubic-bezier(.3,.7,.3,1.2)}
+.pkdoor{filter:drop-shadow(0 6px 12px rgba(10,20,20,.28))}
+.flowl,.flowb{filter:drop-shadow(0 0 2px rgba(255,255,255,.9))}
+/* info page */
+#infoOv{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:clamp(8px,3vmin,30px);background:rgba(8,15,17,.58);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:ovIn .2s ease-out}
+#infoOv[hidden]{display:none}
+@keyframes ovIn{from{opacity:0}}
+.infoBox{width:min(880px,100%);max-height:100%;display:flex;flex-direction:column;background:rgba(244,247,243,.97);border:1px solid rgba(255,255,255,.7);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;animation:boxIn .24s cubic-bezier(.2,.8,.3,1.1)}
+@keyframes boxIn{from{transform:translateY(14px) scale(.98)}}
+.infoHd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;background:var(--screen);color:var(--screen-ink);font:700 18px var(--disp);letter-spacing:.05em;text-transform:uppercase}
+.infoBody{overflow:auto;padding:12px 20px 20px;font-size:15px;line-height:1.5;color:var(--ink);-webkit-overflow-scrolling:touch}
+.infoBody h2{font:700 21px var(--disp);letter-spacing:.04em;text-transform:uppercase;margin:14px 0 4px;color:#14606a}
+.infoBody h3{font:700 16px var(--disp);letter-spacing:.04em;text-transform:uppercase;margin:12px 0 3px}
+.infoBody p{margin:0 0 8px}.infoBody ul,.infoBody ol{margin:0 0 8px;padding-left:20px}.infoBody li{margin-bottom:3px}
+@media(prefers-reduced-motion:reduce){#infoOv,.infoBox{animation:none}#gauges line[id^="ndl"]{transition:none}}

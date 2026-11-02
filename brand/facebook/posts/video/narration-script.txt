@@ -1,0 +1,20 @@
+DISKARTE VIDEO AD: NARRATION SCRIPT (40 seconds)
+Voice: Kokoro-82M neural voice "am_michael" (Apache 2.0), speed 1.05.
+Diskarte is said "dis-KAR-teh". MakinaLabs is said "ma-KEE-na labs".
+Each line must finish before the next one starts.
+
+[0:00] The alarm sounds. Can you keep the plant running?
+
+[0:04] This is Diskarte, a 3D engine room on your phone and computer.
+Run four oil purifiers, modelled on the makers' manuals.
+
+[0:16] Look inside the bowl, step by step.
+
+[0:20] Work the panels. Read the gauges.
+
+[0:23] Then make fresh water. Pull the vacuum, hold the salinity,
+on three plate and tube generators.
+
+[0:32] When an alarm comes, find the fault before it finds you.
+
+[0:36] Diskarte, by MakinaLabs. Fix it before it fails.

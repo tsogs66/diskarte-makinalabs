@@ -1,0 +1,10 @@
+{
+  "appId": "io.github.tsogs66.engineroom",
+  "appName": "Diskarte",
+  "webDir": "www",
+  "backgroundColor": "#08131a",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}

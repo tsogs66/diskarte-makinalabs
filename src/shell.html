@@ -1,0 +1,1188 @@
+<title>Plate FWG Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: engine-control-room console. Enamel panel face, process mimic in the middle,
+   procedure on the left, annunciator and salinometer on the right, operator controls below.
+   Single deliberate look: light enamel panel with dark instruments, in every viewer theme. */
+:root{
+  color-scheme:light;
+  --enamel:#d3d7d0;--enamel-2:#e3e6df;--enamel-3:#c2c7bf;--paper:#f2f3ee;
+  --ink:#1b2321;--ink-2:#4b5652;--ink-3:#6d7873;--line:#9aa49d;
+  --screen:#111a1b;--screen-2:#1e2a2b;--screen-ink:#dfe8e2;--screen-dim:#7f918b;
+  --sw:#1d8458;--jw:#c4502a;--dist:#1f6db5;--brine:#6b5b95;--air:#7c8791;
+  --good:#1c8446;--warn:#c98a00;--bad:#c4211f;--led:#54e08c;
+  --disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow","Segoe UI",Arial,sans-serif;
+  --mono:"Share Tech Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--enamel);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.4}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--screen)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--dist);outline-offset:2px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--screen);color:var(--screen-ink);
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.brand{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:12px;letter-spacing:0;text-transform:none;color:var(--screen-dim)}
+.mode{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.08em;padding:3px 10px;border-radius:2px;background:var(--screen-2);border:1px solid #3a4a4a;white-space:nowrap}
+.mode[data-s="ok"]{background:var(--good);color:#fff;border-color:var(--good)}
+.mode[data-s="warn"]{background:var(--warn);color:#14110a;border-color:var(--warn)}
+.mode[data-s="bad"]{background:var(--bad);color:#fff;border-color:var(--bad)}
+.clock{font-family:var(--mono);font-size:18px;color:var(--led)}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid #3a4a4a;border-radius:2px;overflow:hidden}
+.seg button{background:var(--screen-2);color:var(--screen-ink);border:0;padding:5px 10px;cursor:pointer;font-family:var(--mono)}
+.seg button+button{border-left:1px solid #3a4a4a}
+.seg button[aria-pressed="true"]{background:var(--led);color:#0c1612}
+.tbtn{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:5px 10px;cursor:pointer}
+.tbtn:hover{border-color:var(--screen-ink)}
+.tsel{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:5px 6px;max-width:250px}
+.wrap{padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px;max-width:1720px;margin:0 auto}
+.console{display:grid;grid-template-columns:290px minmax(0,1fr) 320px;gap:12px;align-items:start}
+.panel{background:var(--enamel-2);border:1px solid var(--line);border-radius:3px;min-width:0}
+.ph{font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.07em;text-transform:uppercase;padding:7px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ph .r{margin-left:auto}
+.pb{padding:10px 12px}
+.sbtn{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:4px 10px;cursor:pointer;font-weight:500}
+.sbtn:hover{border-color:var(--ink)}
+.sbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sbtn:disabled{opacity:.5;cursor:default}
+/* procedure */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.steps li{display:grid;grid-template-columns:24px 1fr;gap:6px;padding:5px 6px;border-radius:2px;font-size:13px;line-height:1.3;color:var(--ink-3)}
+.steps .n{font-family:var(--mono);width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;font-size:12px;background:var(--paper)}
+.steps li.done{color:var(--ink-2)}
+.steps li.done .n{background:var(--good);border-color:var(--good);color:#fff}
+.steps li.now{background:var(--paper);color:var(--ink);outline:2px solid var(--dist)}
+.steps li.now .n{background:var(--dist);border-color:var(--dist);color:#fff}
+.why{display:block;font-size:12px;color:var(--ink-2);margin-top:3px}
+.autoline{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+/* mimic */
+.mimic{overflow-x:auto;background:var(--paper)}
+.mimic svg{display:block;width:100%;min-width:760px;height:auto}
+.mimic text{font-family:var(--disp);font-size:13px;fill:var(--ink);font-weight:600}
+.mimic text.small{font-size:11px;fill:var(--ink-2);font-weight:500}
+.mimic text.tagv{font-family:var(--mono);font-size:13px;fill:var(--led);font-weight:400}
+.mimic text.tagl{font-size:10.5px;fill:var(--ink-2);font-weight:600;letter-spacing:.02em}
+.vlv{cursor:pointer}
+.vlv path{stroke:var(--ink);stroke-width:1.2}
+.vlv text{font-family:var(--mono);font-size:11px;font-weight:400}
+.gauges{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px;border-top:1px solid var(--line)}
+.gauge{text-align:center;min-width:0}
+.gauge svg{width:100%;max-width:128px;height:auto;display:block;margin:0 auto}
+.gauge .gl{font-family:var(--disp);font-weight:600;font-size:12.5px;line-height:1.1;text-transform:uppercase;letter-spacing:.04em}
+.gauge .gv{font-family:var(--mono);font-size:14px}
+/* annunciator */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:6px;background:var(--screen)}
+.tile{font-family:var(--disp);font-weight:600;font-size:11.5px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em;text-align:center;
+  min-height:36px;display:grid;place-items:center;padding:3px;background:#263233;color:#71817c;border-radius:1px}
+.tile[data-l="1"]{background:var(--warn);color:#17120a}
+.tile[data-l="2"]{background:var(--bad);color:#fff}
+.tile.flash{animation:fl 1s steps(2,jump-none) infinite}
+@keyframes fl{50%{filter:brightness(.55)}}
+.log{height:150px;overflow:auto;font-family:var(--mono);font-size:12px;background:var(--paper);border-top:1px solid var(--line);padding:5px 8px}
+.log div{padding:1px 0;display:grid;grid-template-columns:62px 1fr;gap:6px}
+.log .a{color:var(--bad)}.log .w{color:#8a5f00}.log .n{color:var(--dist)}.log .c{color:var(--ink-3)}
+/* salinometer */
+.salino{background:var(--screen);color:var(--screen-ink);padding:10px 12px;display:grid;gap:8px}
+.digits{font-family:var(--mono);font-size:46px;line-height:1;color:var(--led);text-align:right;background:#070c0c;padding:8px 10px;border-radius:2px}
+.digits small{font-size:16px;color:var(--screen-dim);margin-left:4px}
+.digits.hi{color:#ff5a4f}.digits.off{color:#253231}
+.salbar{position:relative;height:12px;background:#253231;border-radius:1px;overflow:visible}
+.salbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);display:block}
+.salbar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#ff5a4f}
+.salrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+.lamp{display:inline-flex;align-items:center;gap:5px;font-family:var(--disp);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.lamp::before{content:"";width:12px;height:12px;border-radius:50%;background:#2b3736;border:1px solid #000}
+.lamp.on-g::before{background:var(--led);box-shadow:0 0 6px var(--led)}
+.lamp.on-r::before{background:#ff5a4f;box-shadow:0 0 6px #ff5a4f}
+.dbtn{background:var(--screen-2);color:var(--screen-ink);border:1px solid #3a4a4a;border-radius:2px;padding:3px 9px;cursor:pointer}
+/* controls */
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ctl{display:grid;gap:2px;padding:6px 0;border-top:1px dotted var(--line)}
+.ctl:first-of-type{border-top:0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-weight:500;font-size:13px}
+.ctl output{font-family:var(--mono);white-space:nowrap}
+.ctl .live{font-size:12px;color:var(--ink-2);min-height:1.3em}
+input[type=range]{width:100%;accent-color:var(--ink);margin:2px 0;height:20px}
+.ctl.flashme{background:#fff3c9;outline:2px solid var(--warn)}
+.pumpbox{display:flex;gap:6px;align-items:center;padding:4px 0 8px}
+.pbtn{font-family:var(--disp);font-weight:700;letter-spacing:.06em;border:1px solid #000;border-radius:2px;padding:6px 14px;cursor:pointer;color:#fff}
+.pbtn.st{background:#23713f}.pbtn.sp{background:#a22320}
+.pumpbox .lamp{color:var(--ink)}
+.pumpbox .lamp::before{border-color:#333}
+.pumpbox .lamp.on-g::before{background:#2ccf6b;box-shadow:0 0 5px #2ccf6b}
+.check{display:flex;align-items:center;gap:8px;font-weight:500;padding:5px 0;font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--disp);font-weight:600;letter-spacing:.05em;text-transform:uppercase;text-align:left;font-size:12.5px;color:var(--ink-2);padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:3px 6px;border-bottom:1px dotted var(--enamel-3);vertical-align:top}
+td.v{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.b{color:var(--ink-2);white-space:nowrap}
+.grp td{font-family:var(--disp);font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--enamel-3);border:0}
+.pill{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.05em;padding:0 6px;border-radius:2px;display:inline-block;min-width:38px;text-align:center}
+.pill.ok{background:#cfe6d6;color:#145c32}.pill.lo,.pill.hi{background:#f6e0a8;color:#5c4000}.pill.xx{background:var(--bad);color:#fff}.pill.na{color:var(--ink-3)}
+.strips{display:grid;gap:8px}
+.strip{position:relative}
+.strip .st{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}
+.strip .st span:last-child{font-family:var(--mono);font-weight:400}
+.strip svg{display:block;width:100%;height:86px;background:var(--paper);border:1px solid var(--line)}
+.strip text{font-family:var(--mono);font-size:10px;fill:var(--ink-3)}
+.sweepgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.sweepgrid svg{width:100%;height:auto;display:block;background:var(--paper);border:1px solid var(--line)}
+.sweepgrid text{font-family:var(--mono);font-size:10px;fill:var(--ink-3)}
+.sweepgrid h4{margin:0 0 3px;font-size:12.5px;font-weight:600}
+.sweeprow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.sweeprow select{background:var(--paper);border:1px solid var(--line);padding:4px 6px;border-radius:2px;max-width:100%}
+.ex{background:var(--paper);border:1px solid var(--line);padding:8px 10px;margin-top:0;font-size:13.5px}
+details summary{cursor:pointer;font-weight:600;margin-top:4px}
+.prose{max-width:75ch}
+.prose p{margin:0 0 8px}.prose ul{margin:0 0 8px;padding-left:18px}
+.prose h3{font-family:var(--disp);letter-spacing:.04em;font-size:16px;margin:10px 0 4px;text-transform:uppercase}
+.note{font-size:12.5px;color:var(--ink-2)}
+.sec-h{font-family:var(--disp);font-weight:700;font-size:19px;letter-spacing:.06em;text-transform:uppercase;margin:6px 0 -4px}
+.numin{width:68px;font-family:var(--mono);text-align:right;background:#fff;border:1px solid var(--line);border-radius:2px;padding:1px 4px}
+.dosebox{cursor:pointer}.dosebox:focus-visible{outline:2px solid var(--ink)}
+.numin[aria-invalid="true"]{border-color:var(--bad);outline:1px solid var(--bad)}
+.sbtn:disabled{opacity:.5;cursor:default}
+.dx{border-left:4px solid var(--good);background:var(--paper);padding:6px 10px;margin:0 0 8px;font-size:13.5px}
+.dx[data-n="1"]{border-left-color:var(--warn)}.dx[data-n="2"]{border-left-color:var(--bad)}
+.dx p{margin:3px 0 0}.dxa{font-weight:700}
+.stabs{display:inline-flex;gap:2px}
+.stabs button{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.06em;background:var(--screen-2);color:var(--screen-dim);border:1px solid #3a4a4a;padding:5px 14px;cursor:pointer;border-radius:2px}
+.stabs button[aria-selected="true"]{background:var(--enamel-2);color:var(--ink);border-color:var(--enamel-2)}
+.minfo{font-size:13px;color:var(--ink-2)}
+.mimicwrap{position:relative}
+.vp{position:absolute;z-index:6;width:220px;max-width:calc(100% - 8px);background:var(--paper);border:1px solid var(--ink);border-radius:3px;padding:8px 10px;box-shadow:0 4px 14px rgba(20,30,28,.3);display:grid;gap:4px}
+.vph{display:flex;justify-content:space-between;align-items:center;font-family:var(--disp);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.vpx{background:none;border:0;font-size:18px;line-height:1;cursor:pointer;padding:0 4px}
+.vpv{display:flex;justify-content:space-between;font-size:13px}.vpv output{font-family:var(--mono)}
+.vpb{display:flex;gap:6px}.vpb .sbtn{flex:1}
+.vlv,.pmp{cursor:pointer}
+.pmp text{font-weight:600}
+.onoff{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dotted var(--line)}
+.onoff .nm{flex:1;font-weight:500;font-size:13px}
+.onoff .live{display:block;font-size:12px;color:var(--ink-2);font-weight:400}
+.swatch{width:24px;height:16px;flex:none}
+.tgl{min-width:66px;border:1px solid var(--ink);border-radius:2px;padding:4px 8px;cursor:pointer;font-family:var(--disp);font-weight:700;letter-spacing:.05em;background:#111;color:#fff}
+.tgl[aria-pressed="true"]{background:#fff;color:#111}
+@media(max-width:1380px){.console{grid-template-columns:minmax(0,1fr) 300px}.pcol{grid-column:1/-1;order:3}.steps{grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))}}
+@media(max-width:1000px){.console{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}.sweepgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.gauges{grid-template-columns:repeat(3,minmax(0,1fr))}.pcol{order:0}}
+@media(max-width:700px){.bar{position:static}}
+@media(max-width:560px){.controls{grid-template-columns:minmax(0,1fr)}.brand small{display:none}.tsel{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.tile.flash{animation:none;outline:2px solid #fff}}
+</style>
+
+<header class="bar">
+  <div class="brand">Plate FWG Simulator<small id="bsub"></small></div>
+  <span class="stabs" role="tablist" aria-label="Generator series"><button role="tab" id="stJwp" aria-selected="true">JWP-26-C80</button><button role="tab" id="stAqua" aria-selected="false">AQUA Blue E1 C</button><button role="tab" id="stIsf" aria-selected="false">ISF-80 tube</button></span>
+  <span class="mode" id="mode" role="status">STOPPED</span>
+  <span class="mode" id="ovFlag" data-s="warn" role="status" hidden></span>
+  <span class="clock" id="clock" title="Simulated time">00:00:00</span>
+  <span class="spacer"></span>
+  <span class="seg" id="speed" role="group" aria-label="Simulation speed"></span>
+  <button class="tbtn" id="pause">Pause</button>
+  <select class="tsel" id="scenario" aria-label="Scenario"></select>
+  <button class="tbtn" id="motion" aria-pressed="true">Motion on</button>
+  <button class="tbtn" id="horn" aria-pressed="false">Horn off</button>
+</header>
+
+<main class="wrap">
+  <p class="minfo" id="minfo" style="margin:0"></p>
+  <section class="console">
+    <div class="panel pcol">
+      <div class="ph">Procedure
+        <span class="r"><button class="sbtn" id="tabStart" aria-pressed="true">Start</button> <button class="sbtn" id="tabStop" aria-pressed="false">Stop</button></span></div>
+      <div class="pb">
+        <div class="autoline"><button class="sbtn" id="auto" aria-pressed="false">Auto-run these steps</button></div>
+        <ol class="steps" id="steps"></ol>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">Process mimic <span class="note r">Click a valve or pump, including the antiscalant pump, to operate it. Valves: black shut, white open.</span></div>
+      <div class="mimicwrap" id="mimicWrap"><div class="mimic" id="mimic"></div><div class="vp" id="vp" hidden></div></div>
+      <div class="gauges" id="gauges"></div>
+    </div>
+
+    <div style="display:grid;gap:12px;min-width:0">
+      <div class="panel">
+        <div class="ph">Salinometer</div>
+        <div class="salino">
+          <div class="digits off" id="salD">0.0<small>ppm</small></div>
+          <div class="salbar" aria-hidden="true"><i id="salBar" style="width:0"></i><b id="salMark" style="left:50%"></b></div>
+          <div class="salrow">
+            <button class="dbtn" id="salPow">Power</button>
+            <span>Alarm set</span>
+            <button class="dbtn" id="salDn" aria-label="Lower alarm set point">−</button>
+            <span id="salSet" style="font-family:var(--mono)">10 ppm</span>
+            <button class="dbtn" id="salUp" aria-label="Raise alarm set point">+</button>
+          </div>
+          <div class="salrow"><span class="lamp" id="lTank">To tank</span><span class="lamp" id="lDump">Dump</span>
+            <span id="salNote" style="color:var(--screen-dim)"></span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">Alarms <span class="r"><button class="sbtn" id="ack">Acknowledge</button></span></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="controls" id="controls"></section>
+
+  <section class="two">
+    <div class="panel">
+      <div class="ph">Operating window</div>
+      <div class="tablebox"><table id="readings"></table></div>
+    </div>
+    <div style="display:grid;gap:12px;min-width:0">
+      <div class="panel" id="exPanel" hidden>
+        <div class="ph">Exercise</div>
+        <div class="pb" id="exBody"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">Trends <span class="note r" id="trendSpan"></span></div>
+        <div class="pb strips" id="strips"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">Ship conditions</div>
+        <div class="pb" id="shipCtl"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">Inject faults <span class="r"><button class="sbtn" id="clean">Clean plates</button></span></div>
+        <div class="pb" id="faultCtl"></div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="sec-h">Actual plant versus simulator</h2>
+  <section class="panel">
+    <div class="ph">Your plant readings
+      <span class="r"><button class="sbtn" id="ovUse">Use all my values</button> <button class="sbtn" id="ovBack" disabled>Back to simulator values</button> <button class="sbtn" id="ovClear">Clear my values</button></span></div>
+    <div class="pb">
+      <p class="note" style="margin-top:0">Type a reading and the simulator uses it straight away. The Simulator column keeps showing what the simulator would do without your values, and they stay saved when you switch back. Run the unit to see them take effect.</p>
+      <div class="tablebox"><table id="actTbl"></table></div>
+    </div>
+  </section>
+  <section class="two">
+    <div class="panel"><div class="ph">Worked out from your readings</div><div class="pb" id="actCalc"></div></div>
+    <div class="panel"><div class="ph">Suggested problems and actions</div><div class="pb"><div id="actDx"></div><p class="note" id="actSrc"></p></div></div>
+  </section>
+
+  <h2 class="sec-h">Relationships</h2>
+  <section class="panel">
+    <div class="pb">
+      <div class="sweeprow">
+        <label for="sweepX">Change</label><select id="sweepX"></select>
+        <button class="sbtn" id="sweepGo">Plot settled results</button>
+        <span class="note" id="sweepNote">Each point lets a copy of the plant settle at that setting. The live plant keeps running. The dot marks your present setting.</span>
+      </div>
+      <div class="sweepgrid" id="sweepGrid"></div>
+    </div>
+  </section>
+
+  <h2 class="sec-h">Cause and effect</h2>
+  <section class="panel"><div class="tablebox"><table id="effects"></table></div></section>
+
+  <h2 class="sec-h">About this model</h2>
+  <section class="panel"><div class="pb prose">
+    <p>This is a training model built from heat and mass balances. Each tab follows the schematic layout of its unit and is calibrated to 20 t/day at 32 °C sea water and 80 °C jacket water. Flows, pressures and limits are calibrated values. They are not maker's data, because the C80, E1 C and ISF-80 technical data were not available. All tabs use the same start and stop sequence, based on general practice. Your own instruction manual and the ship's procedures take priority over anything here.</p>
+    <h3>Design point of each tab</h3>
+    <ul>
+      <li><b>JWP-26-C80:</b> about 46 °C boiling, 90 % vacuum, 80 m³/h sea water, 45 m³/h jacket water, feed 3 : 1.</li>
+      <li><b>AQUA Blue E1 C:</b> about 52 °C boiling, 87 % vacuum, 40 m³/h sea water, 60 m³/h jacket water, cold feed 3 : 1.</li>
+      <li><b>ISF-80 tube:</b> about 47 °C boiling, 90 % vacuum, 60 m³/h sea water through condenser then ejector, slow response, feed 3.5 : 1.</li>
+      <li>Il Seung's public listing shows ISF-80 as a plate unit and its tube series under other names. This tab follows the tube unit you specified.</li>
+    </ul>
+    <h3>What is calculated</h3>
+    <ul>
+      <li><b>Sea water:</b> pump curve against suction, strainer, condenser, ejector nozzle and overboard resistance.</li>
+      <li><b>Ejector:</b> its lowest reachable pressure and brine capacity fall with motive pressure, nozzle wear and back pressure.</li>
+      <li><b>Chamber:</b> vapour pressure comes from the evaporator and condenser heat balance. Air is a separate partial pressure.</li>
+      <li><b>Jacket water:</b> bypass and valve positions set the flow. Effectiveness-NTU sets the outlet temperature. Heat taken from the engine can pull its jacket temperature down at low load.</li>
+      <li><b>Vacuum limit:</b> a water-jet ejector cannot pull below the vapour pressure of its own water, so warm sea water gives less vacuum. Pull-down takes about 10 minutes on the JWP, less on the AQUA and more on the tube unit.</li>
+      <li><b>Start of evaporation:</b> boiling needs vacuum, wetted surfaces and liquid at saturation temperature for the chamber pressure, with the jacket water hot enough above that temperature. Until then all heat only warms the liquid.</li>
+      <li><b>Feed and heat:</b> brine strength comes from the mass balance. Heat transfer peaks near design feed, collapses with dry patches below it and declines slowly above it. Priming grows with heat flux, brine strength and high level, and past its liquid limit the mesh re-entrains droplets. The onset points and multipliers are fitted to show these published trends and are not measured values.</li>
+      <li><b>Data basis:</b> the JWP uses the instruction manual and order sheet of a 20 m³/24h JWP-26-C80B: sea water, jacket water, heat, pressures, pump duties, demister area and the ø10 mm feed orifice. The AQUA uses the manual of a 20 m³/24h AQUA-80-HW, including its ø8.6 mm orifice and 3.25 feed ratio, because no E1 C manual is public. Il Seung publishes only capacity and salinity for the ISF-80, so its flows and orifice are estimates. Your own order sheet takes priority.</li>
+      <li><b>Feed orifice:</b> flow uses a discharge coefficient of 0.62 and 2 bar across the spring loaded valve. The manuals give the diameter and the valve opening pressure, and the coefficient is the standard sharp-edged value.</li>
+      <li><b>Your plant readings:</b> a typed value replaces the calculated one while the unit runs. A typed vacuum or boiling temperature fixes chamber pressure and assumes the condenser passes all the vapour. The healthy unit is a fault-free copy at your sea water and jacket conditions. Cleanliness figures come from heat duty divided by mean temperature difference. Suggestions come from the JWP-26-C80B instruction manual fault table and general FWG practice, so treat them as a starting point and follow your own manual.</li>
+      <li><b>Demister:</b> droplet loading rises with the cube of vapour velocity. The mesh keeps catching over 99 % until about 80 % of its velocity limit, then floods and catch falls away. Caught droplets drain back to the brine, and the rest reach the condenser as ppm. The droplet count shown is exaggerated so it can be seen, but its rate and the pass-through share follow the calculation.</li>
+      <li><b>Output:</b> follows the temperature gap between jacket water and boiling, and boiling follows sea water temperature through the condenser. Warmer sea lowers output; colder sea raises it until boiling gets too low.</li>
+      <li><b>Salinity:</b> ppm is brine strength multiplied by the droplets carried over. Carry-over follows vapour velocity against the Souders-Brown limit, so low pressure (thin vapour) raises ppm. Brine level, demister condition, foaming, ingress and condenser leaks are added. Ingress and leaks are diluted by output, so ppm rises when output falls.</li>
+    </ul>
+    <h3>Simplified on purpose</h3>
+    <ul>
+      <li>Scale builds far faster than in service, so its effect shows within a session.</li>
+      <li>Salinity limits at high boiling temperature are empirical. The main real risk above 55 to 60 °C is scale.</li>
+      <li>Dumped distillate leaves the model. Real units may return it to the evaporator or drain it.</li>
+    </ul>
+  </div></section>
+</main>
+
+<script>
+/*__MODEL__*/
+
+/* ===== UI ===== */
+const $=id=>document.getElementById(id);
+const fx=(v,n=1)=>Number.isFinite(v)?v.toFixed(n):'--';
+let u=coldInputs(),f=noFaults(),s=coldState(u);
+let paused=false,speed=5,tab='start',auto=false,hist=[],lastHist=-99,sim={heat:false,feed:false,heatOffAt:null},exercise=null;
+
+/* --- procedure --- */
+const ramp=(k,t,r)=>{u[k]=u[k]<t?Math.min(t,u[k]+r):Math.max(t,u[k]-r);};
+const cfOf=()=>Math.min(u.jwIn,u.jwOut);
+const START=[
+ {t:'Check the ship is at sea, clear of the coast, with the main engine on load',why:'Coastal water can carry sewage and silt. Many makers and flag rules bar making drinking water within 20 NM of land. Heat comes from the engine, so it must be on steady load.',
+  ok:()=>!u.nearShore&&u.meLoad>=40&&s.Tj>=70},
+ {t:'Close the vacuum valve. Keep jacket water valves shut and the bypass fully open',why:'Any open air path stops the ejector pulling vacuum. The bypass stays open so no heat enters yet.',
+  ok:()=>u.vent===0&&cfOf()===0&&u.byp===0,act:dt=>{ramp('vent',0,40*dt);u.jwIn=0;u.jwOut=0;ramp('byp',0,40*dt);}},
+ {t:'Open sea suction, overboard and condenser sea water valves',why:'Always open the overboard first, then suction. Starting against a shut overboard over-pressurises the line.',
+  ok:()=>u.ov>=95&&u.sv>=95&&u.cv>=50,act:dt=>{ramp('ov',100,30*dt);if(u.ov>=95)u.sv=100;}},
+ {t:'Start the ejector pump. Confirm at least 3 bar at the ejector',why:'This one pump drives the ejector, cools the condenser and supplies the feed.',
+  ok:()=>s.rpm>0.9&&s.d.Pm>=3,act:()=>{setPump(true);}},
+ {t:'Wait for vacuum of 90 % or better',why:'Boiling temperature follows chamber pressure. Heating early makes the plates boil at high temperature and scale up.',
+  ok:()=>s.d.vac>=90},
+ {t:'Open the feed valve, start dosing, and wait for brine in the sump',get why(){return M.flooded?'The evaporator tubes must be covered before heat arrives. Wait until the level reaches about 25 %. Aim for about 3.5 times the distillate rate.':'Feed must wet the plates before any heat arrives. The orifice sets feed at about '+fx(M.Qf0/(M.rated/24),1)+' times the distillate rate. Wait until the sump shows at least 12 %.';},
+  ok:()=>u.fv>=40&&u.doseOn&&s.Lb>=(M.flooded?0.25:0.12),act:dt=>{u.doseOn=true;ramp('fv',50,10*dt);}},
+ {t:'Open the jacket water outlet, then the inlet valve',why:'With the bypass still open, only a small flow passes the plates. Bringing it on this way avoids thermal shock.',
+  ok:()=>cfOf()>=90,act:()=>{if(u.jwOut<100)u.jwOut=100;else u.jwIn=100;}},
+ {t:'Close the bypass slowly until boiling starts',why:'The liquid warms first. Boiling begins only when it reaches saturation temperature at chamber pressure. Vacuum then dips as vapour forms and recovers once the condenser takes the load.',
+  ok:()=>u.byp>=30&&s.d.mv>0.03,act:dt=>{ramp('byp',35,0.8*dt);}},
+ {t:'Set the distillate valve, open the tank valve and power the salinometer',why:'The solenoid dumps until the salinometer reads below its set point, so poor early water cannot reach the tank.',
+  ok:()=>u.dv>=30&&u.tankV>=90&&u.salinoOn,act:()=>{u.dv=50;u.tankV=100;u.salinoOn=true;}},
+ {t:'When the well shows about 30 %, start the distillate pump',why:'Started dry, the pump cavitates. Left too long, the well floods the condenser plates and vacuum falls.',
+  ok:()=>s.distOn&&s.d.Qd>0.2,act:()=>{if(s.Ld>=0.3)setDist(true);}},
+ {t:'Close the bypass further, to about 80 %',why:'Heat input sets the output. Trim until boiling sits near 45 °C and output reaches rating.',
+  ok:()=>u.byp>=(auto?79.9:75),act:dt=>{ramp('byp',80,0.5*dt);}},
+ {t:'Confirm salinity falls below set point and the dump closes',why:'The first distillate is usually above the limit. Expect a few minutes of dumping.',
+  ok:()=>s.d.toTank},
+ {get t(){return `Trim: vacuum ${M.vac[1]} to ${M.vac[2]} %, boiling ${M.tb[0]} to ${M.tb[1]} °C, level steady`;},why:'Then adjust the distillate valve to hold the well level. Production is steady when level and pressure stop moving.',
+  ok:()=>s.d.vac>=M.vac[1]&&s.d.vac<=M.vac[2]&&s.d.Tb>=M.tb[0]-2&&s.d.Tb<=M.tb[1]&&s.Ld>0.15&&s.Ld<0.7&&s.salRead<4}
+];
+const STOP=[
+ {t:'Open the jacket water bypass fully',why:'This takes the heat away first. Boiling dies down over a few minutes.',
+  ok:()=>u.byp===0,act:dt=>{ramp('byp',0,1.5*dt);}},
+ {t:'Close the jacket water inlet and outlet valves',why:'Stops all flow through the plates.',
+  ok:()=>cfOf()===0,act:()=>{if(u.jwIn>0)u.jwIn=0;else u.jwOut=0;if(u.jwIn===0&&u.jwOut===0)sim.heatOffAt=s.t;}},
+ {t:'When the well runs low, stop the distillate pump and shut its valves',why:'Do not run the pump dry.',
+  ok:()=>!s.distOn&&u.dv===0&&u.tankV===0,act:dt=>{if(s.d.md<0.05||s.Ld<0.15){setDist(false);ramp('dv',0,30*dt);u.tankV=0;}}},
+ {t:'Switch off the salinometer',why:'It needs flow past the cell to read correctly.',
+  ok:()=>!u.salinoOn,act:()=>{u.salinoOn=false;}},
+ {t:'Keep the ejector pump running about 5 minutes to cool the unit',why:'Continued feed and sea water carry the remaining heat away and flush the plates.',
+  ok:()=>sim.heatOffAt!==null&&s.t-sim.heatOffAt>=300},
+ {t:'Close the feed valve and stop dosing',why:'Feed must stop before the pump does, or vacuum will keep drawing sea water in.',
+  ok:()=>u.fv===0&&!u.doseOn,act:dt=>{u.doseOn=false;ramp('fv',0,20*dt);}},
+ {t:'Stop the ejector pump',why:'Vacuum then decays slowly.',
+  ok:()=>!s.pumpOn,act:()=>{setPump(false);}},
+ {t:'Open the vacuum valve',why:'Breaking vacuum protects the plate seals and stops sea water being drawn in through closed valves.',
+  ok:()=>u.vent>=90,act:dt=>{ramp('vent',100,30*dt);}},
+ {t:'Close sea suction and overboard valves',why:'Leave the unit secured.',
+  ok:()=>u.sv===0&&u.ov===0,act:dt=>{u.sv=0;ramp('ov',0,30*dt);}}
+];
+let done={start:START.map(()=>false),stop:STOP.map(()=>false)};
+const steps=()=>tab==='start'?START:STOP;
+function curStep(){return done[tab].findIndex(x=>!x);}
+function renderSteps(){
+  const c=curStep();
+  $('steps').innerHTML=steps().map((st,i)=>{
+    const cls=done[tab][i]?'done':(i===c?'now':'');
+    return `<li class="${cls}"><span class="n">${done[tab][i]?'✓':i+1}</span><span>${st.t}${i===c?`<span class="why">${st.why}</span>`:''}</span></li>`;}).join('');
+}
+function setTab(t){tab=t;$('tabStart').setAttribute('aria-pressed',t==='start');$('tabStop').setAttribute('aria-pressed',t==='stop');
+  if(t==='stop'&&!done.stop.some(Boolean))sim.heatOffAt=null;renderSteps();}
+function procTick(dt){
+  const list=steps(),c=curStep();
+  if(c<0){if(auto)setAuto(false);return;}
+  if(auto&&list[c].act)list[c].act(dt);
+  if(list[c].ok()){done[tab][c]=true;renderSteps();}
+}
+function setAuto(v){auto=v;$('auto').setAttribute('aria-pressed',v);$('auto').textContent=v?'Stop auto-run':'Auto-run these steps';}
+
+/* --- operator actions with sequence checks --- */
+const note=m=>addLog('n',m);
+function setPump(on){
+  if(on&&!s.pumpOn){
+    if(u.ov===0)note('Ejector pump started with the overboard valve shut.');
+    else if(u.sv===0)note('Ejector pump started with sea suction shut.');
+  }
+  if(!on&&s.pumpOn&&(s.d.qj>5))note('Ejector pump stopped with jacket water still heating the plates.');
+  s.pumpOn=on;
+}
+function setDist(on){
+  if(on&&!s.distOn&&s.Ld<0.05)note('Distillate pump started with an empty well. It will run dry.');
+  s.distOn=on;
+}
+function watch(){
+  const d=s.d;
+  if(d.qj>5&&!sim.heat){sim.heat=true;if(d.vac<85)note(`Heat applied at only ${fx(d.vac,0)} % vacuum. Build 90 % first.`);if(d.Qf<1)note('Heat applied with no feed. Plates are running dry.');}
+  if(d.qj<1)sim.heat=false;
+  if(u.fv>0&&!sim.feed){sim.feed=true;if(d.vac<80&&s.pumpOn)note('Feed opened before vacuum was established.');}
+  if(u.fv===0)sim.feed=false;
+  if(sim.heatOffAt===null&&tab==='stop'&&d.qj<1)sim.heatOffAt=s.t;
+}
+
+/* --- alarms --- */
+const heating=()=>s.d.mv>0.02;
+const ALARMS=[
+ ['vac','Chamber vacuum',()=>{const v=s.d.vac;if(!(s.d.qj>5||(s.pumpOn&&s.t-sim.pumpT>900)))return[0];return v<M.vac[0]?[2,`Vacuum low ${fx(v)} %`]:v<M.vac[1]?[1,`Vacuum falling ${fx(v)} %`]:v>M.vac[2]?[1,`Vacuum very high ${fx(v)} %`]:[0];}],
+ ['dml','Demister load',()=>{const v=(s.d.sb||0)*100;return s.d.mv<=0.02?[0]:v>100?[2,`Vapour ${fx(v,0)} % of demister limit, flooding`]:v>80?[1,`Vapour ${fx(v,0)} % of demister limit`]:[0];}],
+ ['tbh','Boiling temp high',()=>{const t=s.d.Tb;return !heating()?[0]:t>60?[2,`Boiling ${fx(t)} °C, scale risk`]:t>55?[1,`Boiling ${fx(t)} °C`]:[0];}],
+ ['tbl','Boiling temp low',()=>{const t=s.d.Tb;return heating()&&t<36?[1,`Boiling ${fx(t)} °C, high vapour velocity`]:[0];}],
+ ['ejp','Ejector press',()=>{const p=s.d.Pm;if(s.rpm<0.9)return[0];return p>5?[2,`Ejector line ${fx(p,2)} bar, discharge blocked`]:p<2.5?[2,`Ejector pressure low ${fx(p,2)} bar`]:p<3?[1,`Ejector pressure ${fx(p,2)} bar`]:[0];}],
+ ['bkp','Ejector back press',()=>{const p=s.d.Pb;if(s.rpm<0.9)return[0];return p>0.8?[2,`Back pressure ${fx(p,2)} bar`]:p>0.6?[1,`Back pressure ${fx(p,2)} bar`]:[0];}],
+ ['sea','Sea suction',()=>{const p=s.d.Ps;if(s.rpm<0.5)return[0];return p<-0.2?[2,`Suction ${fx(p,2)} bar, pump cavitating`]:p<0.1?[1,`Suction low ${fx(p,2)} bar`]:[0];}],
+ ['swf','SW flow low',()=>(s.rpm>0.9&&s.d.Q<0.3*M.qRef)?[2,`Sea water flow ${fx(s.d.Q,0)} m³/h`]:[0]],
+ ['swo','Condenser SW hot',()=>{const t=s.d.Tswo;return t>M.swo[1]?[2,`SW outlet ${fx(t)} °C`]:t>M.swo[0]?[1,`SW outlet ${fx(t)} °C`]:[0];}],
+ ['jwl','ME JW temp low',()=>{const t=s.Tj;if(u.meLoad<=10&&s.d.qj<5)return[0];return (s.d.qj>5&&t<70)?[2,`Jacket water ${fx(t)} °C`]:(s.d.qj>5&&t<u.jwSet-2)?[1,`FWG pulling jacket water down to ${fx(t)} °C`]:(s.d.qj>5&&t<74)?[1,`Jacket water ${fx(t)} °C, low output`]:[0];}],
+ ['jwh','ME JW temp high',()=>s.Tj>90?[2,`Jacket water ${fx(s.Tj)} °C`]:[0]],
+ ['fdl','Feed low',()=>{const r=s.d.ratio;if(!heating())return[0];return r<1.8?[2,`Feed ratio ${fx(r)} : 1`]:r<2.5?[1,`Feed ratio ${fx(r)} : 1`]:[0];}],
+ ['fdh','Feed high',()=>{const r=s.d.ratio;return heating()&&s.d.output>10&&r>4.5?[1,`Feed ratio ${fx(r)} : 1`]:[0];}],
+ ['dry','Evap dry patches',()=>{if(s.d.qj<=5)return[0];const x=s.d.dry||0;return s.Lb<0.06||x>0.5?[2,M.flooded?'Evaporator tubes uncovered':'Dry patches on the plates, heat transfer falling']:x>0.05?[1,M.flooded?'Level low on evaporator tubes':'Plates near dry-out']:[0];}],
+ ['prm','Priming',()=>{const p=s.d.prim||0;return !heating()?[0]:p>=1?[2,`Priming, ${fx(s.d.raw*100)} % droplets reaching demister`]:p>0.25?[1,`Boiling violently, ${fx(s.d.raw*100)} % droplets`]:[0];}],
+ ['blv','Brine level high',()=>{const l=s.Lb*100;return l>80?[2,`Brine level ${fx(l,0)} %, carry-over`]:l>60?[1,`Brine level ${fx(l,0)} %`]:[0];}],
+ ['bcn','Brine strong',()=>{const c=s.d.cfac;return heating()&&c>2.2?[2,`Brine ${fx(c)} × sea water`]:heating()&&c>1.8?[1,`Brine ${fx(c)} × sea water`]:[0];}],
+ ['dlh','Distillate lvl high',()=>{const l=s.Ld*100;return l>90?[2,`Well ${fx(l,0)} %, condenser flooding`]:l>70?[1,`Well ${fx(l,0)} %`]:[0];}],
+ ['dll','Dist pump cavitation',()=>{const l=s.Ld*100;return s.distOn&&l<5?[2,`Well ${fx(l,0)} %, pump dry`]:s.distOn&&l<10?[1,`Well ${fx(l,0)} %`]:[0];}],
+ ['dpp','Dist pump press',()=>{const p=s.d.Pd;if(s.drpm<0.9)return[0];return s.d.Qd<0.02&&s.Ld>0.15?[2,'Pump running against a closed path']:p>(M.dp?2.5:3.4)?[1,`Discharge ${fx(p,2)} bar`]:[0];}],
+ ['sal','Salinity high',()=>{const r=s.salRead;return !u.salinoOn?[0]:r>u.salSet?[2,`Salinity ${fx(r)} ppm`]:r>4?[1,`Salinity rising ${fx(r)} ppm`]:[0];}],
+ ['sof','Salinometer off',()=>(s.d.Qd>0.1&&!u.salinoOn)?[1,'Distillate flowing, salinometer off']:[0]],
+ ['dmp','Dump active',()=>(s.d.Qd>0.1&&u.salinoOn&&s.d.dump)?[1,'Distillate dumping']:[0]],
+ ['dos','Dosing',()=>{if(!heating())return[0];if(!u.doseOn||u.dose<2)return[1,'Antiscalant dosing off or too low'];return u.dose>8?[1,`Antiscalant ${fx(u.dose,0)} ppm, foaming risk`]:[0];}],
+ ['scl','Evap scale',()=>{const v=s.scale*100;return v>50?[2,`Scale ${fx(v,0)} %`]:v>25?[1,`Scale ${fx(v,0)} %`]:[0];}],
+ ['cap','Output low',()=>(s.tBoil>600&&s.d.qj>5&&s.d.output<M.rated*0.7)?[1,`Output ${fx(s.d.output)} t/day`]:[0]],
+ ['tnk','Tank salinity',()=>{const v=s.tankSal;return v>10?[2,`Tank ${fx(v)} ppm`]:v>5?[1,`Tank ${fx(v)} ppm`]:[0];}],
+ ['shr','Coastal water',()=>(u.nearShore&&s.pumpOn)?[1,'Running within 20 NM of land']:[0]],
+];
+const aState={};sim.pumpT=0;
+function buildTiles(){$('tiles').innerHTML=ALARMS.map(a=>`<div class="tile" id="t_${a[0]}">${a[1]}</div>`).join('');
+  ALARMS.forEach(a=>aState[a[0]]={l:0,ack:true,hold:0});}
+function addLog(c,m){const t=clockStr(),box=$('log'),el=document.createElement('div');
+  el.innerHTML=`<span>${t}</span><span class="${c}">${m}</span>`;box.prepend(el);while(box.children.length>80)box.lastChild.remove();}
+function evalAlarms(dt){
+  for(const a of ALARMS){
+    const[lvl,msg]=a[2](),st=aState[a[0]];
+    if(lvl>0)st.hold+=dt;else st.hold=0;
+    const eff=lvl>0&&st.hold>=2?lvl:0;
+    if(eff!==st.l){
+      if(eff>st.l){st.ack=false;addLog(eff===2?'a':'w',msg);}
+      else if(eff===0)addLog('c',`Cleared: ${a[1]}`);
+      st.l=eff;
+      const el=$('t_'+a[0]);el.dataset.l=eff;
+    }
+    $('t_'+a[0]).classList.toggle('flash',st.l>0&&!st.ack);
+  }
+}
+const worst=()=>Math.max(0,...ALARMS.map(a=>aState[a[0]].l));
+const unacked=()=>ALARMS.some(a=>aState[a[0]].l>0&&!aState[a[0]].ack);
+
+/* --- horn --- */
+let horn=false,ac=null,hornT=0;
+function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();
+  o.type='square';o.frequency.value=720;g.gain.value=0.03;o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+0.18);}catch(e){}}
+
+/* --- mimic --- */
+const COL={sw:'var(--sw)',jw:'var(--jw)',di:'var(--dist)',br:'var(--brine)',ai:'var(--air)'};
+const PIPES=[
+ ['suc','sw','M70 585 H200',()=>s.d.Q,105],
+ ['main','sw','M250 585 H600',()=>s.d.Qej,30],
+ ['rise','sw','M340 585 V445 a8 8 0 0 0 0 -16 V385 a8 8 0 0 0 0 -16 V299 a8 8 0 0 0 0 -16 V100 H430',()=>s.d.Qc,75],
+ ['cout','sw','M630 130 H770 V585',()=>s.d.Qc,75],
+ ['ejo','sw','M722 585 H900',()=>s.d.Q,105],
+ ['feed','sw','M725 130 V415 H680 a8 8 0 0 0 -16 0 H630',()=>s.d.Qf,3.75],
+ ['brine','br','M600 520 V548 H648 V570',()=>s.d.Qb,2.5],
+ ['air','ai','M630 205 H672 V570',()=>s.rpm*(u.vent>0?1.5:0.5),1],
+ ['jin','jw','M130 377 H430',()=>s.d.qj,83],
+ ['jout','jw','M430 437 H130',()=>s.d.qj,83],
+ ['byp','jw','M285 377 V437',()=>Math.max(0,s.d.qj>0||u.byp<100?(100-u.byp)*0.8:0),80],
+ ['dis','di','M430 291 H348 a8 8 0 0 0 -16 0 H100 V235',()=>s.d.Qd,1.3],
+ ['dmp','di','M150 291 V330 H118',()=>s.d.dump?s.d.Qd:0,1.3],
+];
+const VALVES=[['sv','Suction',112,585,'h'],['ov','Overboard',830,585,'h'],['cv','Condenser SW',340,195,'v'],['fv','Feed',725,265,'v'],
+ ['vent','Vacuum valve',530,26,'v'],['jwIn','JW in',200,377,'h'],['jwOut','JW out',200,437,'h'],['byp','Bypass',285,407,'v'],['dv','Dist valve',222,291,'h'],['tankV','Tank',100,262,'v']];
+function tag(id,x,y,l,w=74){return `<g transform="translate(${x} ${y})"><text class="tagl" x="0" y="-3">${l}</text><rect width="${w}" height="19" rx="1" fill="var(--screen)"/><text class="tagv" id="m_${id}" x="${w-5}" y="14" text-anchor="end">--</text></g>`;}
+function buildMimic(){
+  let plates=(x0,x1,y0,y1,c)=>{let o='';for(let x=x0;x<=x1;x+=8)o+=`<line x1="${x}" x2="${x}" y1="${y0}" y2="${y1}" stroke="${c}" stroke-width="1.6"/>`;return o;};
+  let p=PIPES.map(a=>`<path d="${a[2]}" fill="none" stroke="${COL[a[1]]}" stroke-width="6" stroke-linejoin="round"/><path id="fl_${a[0]}" d="${a[2]}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="2" stroke-dasharray="6 14"/>`).join('');
+  let v=VALVES.map(([k,l,x,y,o])=>{const r=o==='v'?`rotate(90 ${x} ${y})`:'';
+    return `<g class="vlv" data-k="${k}" role="button" tabindex="0" aria-label="${l} valve"><g transform="${r}"><path id="v_${k}" d="M${x-11} ${y-8} L${x+11} ${y+8} V${y-8} L${x-11} ${y+8}Z" fill="var(--ink)"/></g>
+    <text id="vt_${k}" x="${o==='v'?x+15:x}" y="${o==='v'?y+4:y-13}" text-anchor="${o==='v'?'start':'middle'}">0</text>
+    <text class="small" x="${o==='v'?x+15:x}" y="${o==='v'?y-8:y+21}" text-anchor="${o==='v'?'start':'middle'}">${l}</text></g>`;}).join('');
+  $('mimic').innerHTML=`<svg viewBox="0 0 960 625" role="img" aria-label="Process diagram of the fresh water generator with live values">
+  <defs><clipPath id="clipS"><rect x="432" y="456" width="196" height="63"/></clipPath><clipPath id="clipW"><rect x="442" y="246" width="60" height="88"/></clipPath></defs>
+  ${p}
+  <path d="M530 50 V36" stroke="var(--air)" stroke-width="4"/>
+  <!-- vessel -->
+  <rect x="430" y="50" width="200" height="470" rx="26" fill="#eef1ec" stroke="var(--ink)" stroke-width="2.5"/>
+  <rect x="444" y="68" width="172" height="104" fill="#dcecdf" stroke="var(--sw)"/>${plates(452,608,70,170,'var(--sw)')}
+  <text x="530" y="188" text-anchor="middle">Condenser plates</text>
+  <path d="M440 212 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8 l10 -8 l10 8" fill="none" stroke="var(--ink-2)" stroke-width="2"/>
+  <text x="530" y="229" text-anchor="middle" class="small">Demister</text>
+  <rect x="444" y="345" width="172" height="104" fill="#f5e1d7" stroke="var(--jw)"/>${plates(452,608,347,447,'var(--jw)')}
+  <text x="530" y="401" text-anchor="middle" style="paint-order:stroke;stroke:#f5e1d7;stroke-width:5px">Evaporator plates</text>
+  <rect x="442" y="245" width="60" height="90" fill="#fff" stroke="var(--ink-2)"/>
+  <rect id="wellLvl" x="443" y="334" width="58" height="0" fill="var(--dist)" fill-opacity=".65" clip-path="url(#clipW)"/>
+  <text x="472" y="242" text-anchor="middle" class="small">Well</text>
+  <text id="m_well" x="472" y="294" text-anchor="middle" style="paint-order:stroke;stroke:#fff;stroke-width:4px">0 %</text>
+  <text x="515" y="256" class="small">Chamber</text>
+  <text id="m_ptot" x="515" y="274" style="font-family:var(--mono);font-size:15px;font-weight:400">-- %</text>
+  <text id="m_tb" x="515" y="294" style="font-family:var(--mono);font-size:15px;font-weight:400">-- °C</text>
+  <text id="m_pabs" x="515" y="312" style="font-family:var(--mono);font-size:12px;font-weight:400">-- kPa abs</text>
+  <rect id="sumpLvl" x="432" y="519" width="196" height="0" fill="var(--brine)" fill-opacity=".55" clip-path="url(#clipS)"/>
+  <text x="530" y="490" text-anchor="middle">Brine sump</text>
+  <text id="m_sump" x="530" y="507" text-anchor="middle" style="font-family:var(--mono);font-weight:400;font-size:12px">0 %</text>
+  <g id="boil" opacity="0" fill="#fff" stroke="var(--jw)"><circle cx="480" cy="340" r="3"/><circle cx="545" cy="338" r="4"/><circle cx="590" cy="341" r="3"/><circle cx="515" cy="336" r="2.5"/></g>
+  <!-- sea side -->
+  <rect x="18" y="565" width="52" height="40" fill="#cfe5da" stroke="var(--sw)"/><text x="44" y="589" text-anchor="middle">Sea</text>
+  <rect x="145" y="572" width="30" height="26" fill="#fff" stroke="var(--ink)"/><path d="M149 576 l22 18 M149 594 l22 -18" stroke="var(--ink)"/><text class="small" x="160" y="612" text-anchor="middle">Strainer</text>
+  <g id="pump1"><circle cx="225" cy="585" r="25" fill="#fff" stroke="var(--ink)" stroke-width="2"/><g id="rot1"><path d="M225 564 V606 M204 585 H246" stroke="var(--ink)" stroke-width="3"/></g></g>
+  <text class="small" x="225" y="622" text-anchor="middle">Ejector pump</text>
+  <path d="M600 572 L648 578 L676 578 L722 572 V598 L676 592 L648 592 L600 598Z" fill="#fff" stroke="var(--ink)" stroke-width="2"/>
+  <text x="660" y="612" text-anchor="middle" class="small">Brine / air ejector</text>
+  <rect x="900" y="565" width="44" height="40" fill="#cfe5da" stroke="var(--sw)"/><text x="922" y="583" text-anchor="middle" class="small">Over-</text><text x="922" y="596" text-anchor="middle" class="small">board</text>
+  <!-- engine -->
+  <rect x="18" y="357" width="112" height="100" fill="#f5e1d7" stroke="var(--jw)" stroke-width="1.5"/><text x="74" y="388" text-anchor="middle">Main engine</text>
+  <text class="small" x="74" y="404" text-anchor="middle">jacket water</text><text id="m_load" class="small" x="74" y="420" text-anchor="middle">85 % load</text>
+  <!-- distillate -->
+  <rect x="30" y="130" width="140" height="105" fill="#fff" stroke="var(--dist)" stroke-width="1.5"/>
+  <rect id="tankLvl" x="31" y="234" width="138" height="0" fill="var(--dist)" fill-opacity=".3"/>
+  <text x="100" y="152" text-anchor="middle">Fresh water tank</text>
+  <text id="m_tank" x="100" y="172" text-anchor="middle" style="font-family:var(--mono);font-weight:400">120 t</text>
+  <text id="m_tanks" x="100" y="190" text-anchor="middle" class="small">1.5 ppm</text>
+  <g id="pump2"><circle cx="280" cy="291" r="17" fill="#fff" stroke="var(--ink)" stroke-width="2"/><g id="rot2"><path d="M280 277 V305 M266 291 H294" stroke="var(--ink)" stroke-width="2.5"/></g></g>
+  <text class="small" x="280" y="322" text-anchor="middle">Distillate pump</text>
+  <circle cx="172" cy="291" r="10" fill="#fff" stroke="var(--dist)" stroke-width="2"/><text x="172" y="295" text-anchor="middle" class="small" style="fill:var(--ink)">S</text>
+  <text class="small" x="172" y="315" text-anchor="middle"></text>
+  <rect id="dmpBox" x="72" y="320" width="46" height="20" fill="#fff" stroke="var(--dist)"/><text class="small" x="95" y="334" text-anchor="middle">Dump</text>
+  <!-- dosing -->
+  <rect x="790" y="285" width="62" height="48" fill="#fff" stroke="var(--ink-2)"/><text class="small" x="821" y="304" text-anchor="middle">Antiscalant</text><text id="m_dose" class="small" x="821" y="322" text-anchor="middle">off</text>
+  <path d="M790 309 H725" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="4 3"/>
+  ${v}
+  ${tag('Ps',80,540,'Sea inlet bar',70)}
+  ${tag('Q',255,540,'SW total m³/h',70)}
+  ${tag('Pm',470,545,'Ejector bar',70)}
+  ${tag('Pb',745,545,'',66).replace('<text class="tagl" x="0" y="-3"></text>','<text class="tagl" x="0" y="-3">Back press bar</text>')}
+  ${tag('Qc',350,132,'Cond SW m³/h',70)}
+  ${tag('Tsi',350,75,'SW in °C',60)}
+  ${tag('Tso',648,100,'SW out °C',60)}
+  ${tag('Qf',738,185,'Feed m³/h',66)}
+  ${tag('Tf',738,345,'Feed °C',66)}
+  ${tag('Qb',648,505,'Brine m³/h',60)}
+  ${tag('Sb',768,420,'Brine ppm',80)}
+  ${tag('Tji',140,357,'JW in °C',52)}
+  ${tag('Tjo',140,464,'JW out °C',52)}
+  ${tag('Qj',350,455,'JW FWG m³/h',70)}
+  ${tag('Qd',350,235,'Dist m³/h',60)}
+  ${tag('Pd',236,250,'Dist bar',48)}
+  ${tag('Td',350,308,'Dist °C',60)}
+  ${tag('Out',196,30,'Output t/day',84)}
+  </svg>`;
+  document.querySelectorAll('.vlv').forEach(g=>{const go=()=>focusCtl(g.dataset.k);g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});});
+}
+const mTxt=(id,t)=>{const e=$('m_'+id);if(e)e.textContent=t;};
+
+/* --- gauges --- */
+const GA=[];
+function makeGauge(o){
+  const pol=(v,r)=>{const a=(135+270*(v-o.min)/(o.max-o.min))*Math.PI/180;return[60+r*Math.cos(a),60+r*Math.sin(a)];};
+  const arc=(a,b,c)=>{const[p,q]=pol(a,46),[m,n]=pol(b,46),l=(b-a)/(o.max-o.min)*270>180?1:0;return `<path d="M${p} ${q} A46 46 0 ${l} 1 ${m} ${n}" fill="none" stroke="${c}" stroke-width="5"/>`;};
+  let t='';for(let i=0;i<=o.div;i++){const v=o.min+(o.max-o.min)*i/o.div,[a,b]=pol(v,44),[c,d]=pol(v,37),[e,g]=pol(v,29);
+    t+=`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#dfe8e2"/><text x="${e}" y="${g+3}" text-anchor="middle" font-size="8.5" fill="#dfe8e2" font-family="var(--mono)">${+v.toFixed(1)}</text>`;}
+  const el=document.createElement('div');el.className='gauge';
+  el.innerHTML=`<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="57" fill="var(--screen)" stroke="var(--ink)" stroke-width="2"/>
+  ${o.bands.map(b=>arc(b[0],b[1],b[2])).join('')}${t}
+  <line id="ndl${GA.length}" x1="60" y1="60" x2="60" y2="20" stroke="#ff7a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="60" cy="60" r="5" fill="#dfe8e2"/></svg>
+  <div class="gl">${o.l}</div><div class="gv" id="gv${GA.length}">--</div>`;
+  $('gauges').append(el);GA.push(o);
+}
+function buildGauges(){
+  const G='var(--good)',A='var(--warn)',R='var(--bad)',V=M.vac;
+  GA.length=0;$('gauges').innerHTML='';
+  makeGauge({l:'Chamber vacuum %',min:0,max:100,div:5,bands:[[0,V[0],R],[V[0],V[1],A],[V[1],V[2],G],[V[2],100,A]],v:()=>s.d.vac,n:1});
+  makeGauge({l:'Ejector inlet bar',min:0,max:6,div:6,bands:[[0,2.5,R],[2.5,3,A],[3,5,G],[5,6,R]],v:()=>s.d.Pm,n:2});
+  makeGauge({l:'Ejector back bar',min:0,max:2,div:4,bands:[[0,0.6,G],[0.6,0.8,A],[0.8,2,R]],v:()=>s.d.Pb,n:2});
+  makeGauge({l:'Dist pump bar',min:0,max:5,div:5,bands:[[0,1,A],[1,3.4,G],[3.4,5,A]],v:()=>s.d.Pd,n:2});
+  makeGauge({l:'Boiling °C',min:20,max:80,div:6,bands:[[20,36,A],[36,55,G],[55,60,A],[60,80,R]],v:()=>s.d.Tb,n:1});
+  makeGauge({l:'JW inlet °C',min:40,max:100,div:6,bands:[[40,70,R],[70,76,A],[76,90,G],[90,100,R]],v:()=>s.Tj,n:1});
+}
+
+/* --- controls --- */
+const CTL=[];
+function slider(host,o,src){
+  const w=document.createElement('div');w.className='ctl';
+  w.innerHTML=`<label for="c_${o.k}"><span>${o.l}</span><output id="o_${o.k}"></output></label>
+  <input type="range" id="c_${o.k}" min="${o.min}" max="${o.max}" step="${o.step||1}"><div class="live" id="l_${o.k}"></div>`;
+  host.append(w);o.src=src;CTL.push(o);
+  $('c_'+o.k).addEventListener('input',e=>{src()[o.k]=+e.target.value;});
+}
+const TG=[];
+function valveToggle(host,k,label,live){
+  const w=document.createElement('div');w.className='onoff';
+  w.innerHTML=`<svg class="swatch" viewBox="0 0 24 16" aria-hidden="true"><path id="sw_${k}" d="M1 1 L23 15 V1 L1 15Z" stroke="#111" stroke-width="1.2" fill="#111"/></svg>
+  <span class="nm">${label}<span class="live" id="l_${k}"></span></span><button class="tgl" id="c_${k}" aria-pressed="false">SHUT</button>`;
+  host.append(w);TG.push({k,live});
+  $('c_'+k).onclick=()=>{u[k]=u[k]>0?0:100;};
+}
+function checkbox(host,id,label,on){const l=document.createElement('label');l.className='check';l.innerHTML=`<input type="checkbox" id="${id}"> ${label}`;host.append(l);$(id).addEventListener('change',e=>on(e.target.checked));}
+function pumpBox(host,name,start,stop,lamp){
+  const d=document.createElement('div');d.className='pumpbox';
+  d.innerHTML=`<button class="pbtn st" id="${name}St">START</button><button class="pbtn sp" id="${name}Sp">STOP</button><span class="lamp" id="${lamp}">Running</span>`;host.append(d);
+  $(name+'St').onclick=start;$(name+'Sp').onclick=stop;
+}
+function group(title){const p=document.createElement('div');p.className='panel';p.innerHTML=`<div class="ph">${title}</div><div class="pb"></div>`;$('controls').append(p);return p.lastChild;}
+const U=()=>u,F=()=>f;
+function buildControls(){
+  let g=group('Sea water and ejector');
+  pumpBox(g,'pm',()=>setPump(true),()=>setPump(false),'lp1');
+  const t=document.createElement('div');t.className='ctl';
+  t.innerHTML=`<label for="c_TswN"><span>Sea water inlet temperature</span><span><input class="numin" type="number" id="c_TswN" min="0" max="38" step="0.5"> °C</span></label>
+  <input type="range" id="c_Tsw" min="0" max="38" step="0.5" aria-label="Sea water inlet temperature"><div class="live" id="l_Tsw"></div>`;g.append(t);
+  $('c_Tsw').addEventListener('input',e=>{u.Tsw=+e.target.value;});
+  $('c_TswN').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(Number.isFinite(v))u.Tsw=clamp(v,0,38);});
+  valveToggle(g,'sv','Sea suction valve',()=>`Sea inlet ${fx(s.d.Ps,2)} bar`);
+  slider(g,{k:'ov',l:'Overboard valve (back pressure)',min:0,max:100,unit:'%',live:()=>`Back pressure ${fx(s.d.Pb,2)} bar, ejector ${fx(s.d.Pm,2)} bar`},U);
+  slider(g,{k:'cv',l:'Condenser sea water valve',min:0,max:100,unit:'%',live:()=>`Condenser flow ${fx(s.d.Qc,0)} m³/h`},U);
+  g=group('Evaporator');
+  slider(g,{k:'vent',l:'Vacuum valve (air bleed)',min:0,max:100,unit:'%',live:()=>`Vacuum ${fx(s.d.vac)} %, boiling ${fx(s.d.Tb)} °C`},U);
+  slider(g,{k:'fv',l:'Feed water valve',min:0,max:100,unit:'%',live:()=>`Feed ${fx(s.d.Qf,2)} m³/h, ratio ${fx(s.d.ratio)} : 1`},U);
+  slider(g,{k:'orf',l:'Feed orifice diameter',min:3,max:20,step:0.1,unit:' mm',live:()=>`Design ø${M.orf} mm${M.est?' (estimated)':''}. Drop ${fx(s.d.orfDp,2)} bar at ${fx(s.d.orfV,1)} m/s`},U);
+  {const b=document.createElement('button');b.className='sbtn';b.textContent='Back to design orifice';b.onclick=()=>{u.orf=M.orf;};g.append(b);}
+  checkbox(g,'c_doseOn','Antiscalant dosing pump on',v=>{u.doseOn=v;});
+  slider(g,{k:'dose',l:'Antiscalant dose',min:0,max:14,step:0.5,unit:' ppm',live:()=>`Scale ${fx(s.scale*100,0)} %`},U);
+  g=group('Jacket water');
+  valveToggle(g,'jwIn','Inlet valve',()=>`JW in ${fx(s.Tj)} °C`);
+  valveToggle(g,'jwOut','Outlet valve',()=>`JW out ${fx(s.d.Tjo)} °C`);
+  slider(g,{k:'byp',l:'Bypass valve, % closed',min:0,max:100,unit:'%',live:()=>`FWG flow ${fx(s.d.qj,0)} m³/h, heat ${fx(s.d.Qe,0)} kW`},U);
+  g=group('Distillate');
+  pumpBox(g,'dp',()=>setDist(true),()=>setDist(false),'lp2');
+  slider(g,{k:'dv',l:'Distillate pump outlet valve',min:0,max:100,unit:'%',live:()=>`Pump ${fx(s.d.Pd,2)} bar, flow ${fx(s.d.Qd,2)} m³/h`},U);
+  valveToggle(g,'tankV','Valve to fresh water tank',()=>`Well ${fx(s.Ld*100,0)} %`);
+  const h=$('shipCtl');
+  slider(h,{k:'Ssw',l:'Sea water salinity',min:5000,max:42000,step:500,unit:' ppm',live:()=>`Brine ${fx(s.Sb,0)} ppm`},U);
+  slider(h,{k:'Psea',l:'Sea inlet head (draft)',min:0,max:1.5,step:0.05,unit:' bar',live:()=>`At pump suction ${fx(s.d.Ps,2)} bar`},U);
+  slider(h,{k:'meLoad',l:'Main engine load',min:0,max:100,unit:' %',live:()=>`Jacket heat available ${fx(s.d.Qeng,0)} kW`},U);
+  slider(h,{k:'jwSet',l:'Jacket water temperature set point',min:65,max:92,unit:' °C',live:()=>`At FWG inlet ${fx(s.Tj)} °C`},U);
+  checkbox(h,'c_nearShore','Within 20 NM of land',v=>{u.nearShore=v;});
+  const k=$('faultCtl');
+  slider(k,{k:'strainer',l:'Strainer blocked',min:0,max:100,unit:'%'},F);
+  slider(k,{k:'airLeak',l:'Air leak into chamber',min:0,max:100,unit:'%'},F);
+  slider(k,{k:'condLeak',l:'Condenser plate leak',min:0,max:100,unit:'%'},F);
+  slider(k,{k:'demister',l:'Demister damaged',min:0,max:100,unit:'%'},F);
+  slider(k,{k:'nozzle',l:'Ejector nozzle worn',min:0,max:100,unit:'%'},F);
+  slider(k,{k:'condFoul',l:'Condenser plates fouled',min:0,max:100,unit:'%'},F);
+}
+function syncControls(){
+  for(const o of CTL){const e=$('c_'+o.k),v=o.src()[o.k];
+    if(document.activeElement!==e)e.value=v;
+    $('o_'+o.k).textContent=fx(v,o.step&&o.step<1?(o.step<0.5?2:1):0)+(o.unit||'');
+    if(o.live)$('l_'+o.k).textContent=o.live();}
+  for(const o of TG){const on=u[o.k]>0,b=$('c_'+o.k);b.setAttribute('aria-pressed',on);b.textContent=on?'OPEN':'SHUT';
+    $('sw_'+o.k).setAttribute('fill',on?'#fff':'#111');$('l_'+o.k).textContent=o.live();}
+  if(document.activeElement!==$('c_Tsw'))$('c_Tsw').value=u.Tsw;
+  if(document.activeElement!==$('c_TswN'))$('c_TswN').value=u.Tsw;
+  $('l_Tsw').textContent=`Condenser outlet ${fx(s.d.Tswo)} °C, ejector limit ${fx(s.d.Pblock)} kPa abs`;
+  mTxt('seaT',fx(u.Tsw)+' °C');
+  $('c_doseOn').checked=u.doseOn;$('c_nearShore').checked=u.nearShore;
+  $('lp1').classList.toggle('on-g',s.pumpOn);$('lp2').classList.toggle('on-g',s.distOn);
+}
+
+/* --- readings --- */
+const RD=[
+ ['Pressure'],
+ ['Sea inlet at pump',()=>s.d.Ps,'bar',0.1,1.5,2],
+ ['Pump discharge',()=>s.d.Pdis,'bar',null,null,2],
+ ['Ejector inlet',()=>s.d.Pm,'bar',3,5,2],
+ ['Ejector back pressure',()=>s.d.Pb,'bar',0,0.6,2],
+ ['Feed take-off',()=>s.d.Ptake,'bar',null,null,2],
+ ['Distillate pump outlet',()=>s.d.Pd,'bar',1,3.4,2],
+ ['Chamber vacuum',()=>s.d.vac,'%',88,95,1],
+ ['Chamber absolute',()=>s.d.Ptot,'kPa',null,null,1],
+ ['Air partial pressure',()=>s.pa,'kPa',null,1.2,2],
+ ['Temperature'],
+ ['Sea water in',()=>u.Tsw,'°C',null,null,1],
+ ['Sea water out of condenser',()=>s.d.Tswo,'°C',null,46,1],
+ ['Feed',()=>s.d.Tf,'°C',null,null,1],
+ ['Boiling',()=>s.d.Tb,'°C',36,55,1],
+ ['Liquid in evaporator',()=>s.Tl,'°C',null,null,1],
+ ['Saturation at chamber pressure',()=>s.d.Tsat,'°C',null,null,1],
+ ['Vapour',()=>s.d.Tv,'°C',null,null,1],
+ ['Distillate',()=>s.d.Td,'°C',null,null,1],
+ ['Jacket water in',()=>s.Tj,'°C',76,90,1],
+ ['Jacket water out',()=>s.d.Tjo,'°C',null,null,1],
+ ['Flow'],
+ ['Sea water total',()=>s.d.Q,'m³/h',80,130,0],
+ ['Condenser sea water',()=>s.d.Qc,'m³/h',null,null,0],
+ ['Ejector motive water',()=>s.d.Qej,'m³/h',null,null,0],
+ ['Feed',()=>s.d.Qf,'m³/h',null,null,2],
+ ['Feed orifice diameter',()=>u.orf,'mm',null,null,1],
+ ['Feed orifice pressure drop',()=>s.d.orfDp,'bar',null,null,2],
+ ['Feed orifice velocity',()=>s.d.orfV,'m/s',null,null,1],
+ ['Brine',()=>s.d.Qb,'m³/h',null,null,2],
+ ['Jacket water through FWG',()=>s.d.qj,'m³/h',null,null,0],
+ ['Distillate',()=>s.d.Qd,'m³/h',null,null,2],
+ ['Output',()=>s.d.output,'t/day',18,22.6,1],
+ ['Feed ratio',()=>s.d.ratio,': 1',2.5,4.5,1],
+ ['Feed evaporated',()=>s.d.evp,'%',20,45,0],
+ ['Droplets reaching demister',()=>(s.d.raw||0)*100,'%',null,1,2],
+ ['Vapour volume rising',()=>s.d.vol,'m³/s',null,null,2],
+ ['Vapour velocity',()=>s.d.vs,'m/s',null,null,1],
+ ['Demister catch',()=>s.d.demEff,'%',null,null,1],
+ ['Brine falling back from demister',()=>s.d.demBack,'kg/h',null,null,1],
+ ['Vapour velocity against demister limit',()=>s.d.sb*100,'%',null,100,0],
+ ['Salinity and level'],
+ ['Sea water',()=>u.Ssw,'ppm',null,null,0],
+ ['Brine',()=>s.Sb,'ppm',null,63000,0],
+ ['Concentration factor',()=>s.d.cfac,'×',null,1.8,2],
+ ['Distillate (live)',()=>s.salRead,'ppm',null,4,1],
+ ['Fresh water tank',()=>s.tankSal,'ppm',null,5,1],
+ ['Brine level',()=>s.Lb*100,'%',10,60,0],
+ ['Distillate well level',()=>s.Ld*100,'%',10,70,0],
+];
+const bandTxt=r=>{const[a,b]=[r[3],r[4]];if(a==null&&b==null)return '';if(a==null)return `below ${b}`;if(b==null||b===0)return `above ${a}`;return a===0?`below ${b}`:`${a} to ${b}`;};
+function buildReadings(){$('readings').innerHTML='<thead><tr><th>Reading</th><th style="text-align:right">Now</th><th>Unit</th><th>Normal</th><th>State</th></tr></thead><tbody>'+
+  RD.map((r,i)=>r.length===1?`<tr class="grp"><td colspan="5">${r[0]}</td></tr>`:`<tr><td>${r[0]}</td><td class="v" id="rv${i}">--</td><td>${r[2]}</td><td class="b">${bandTxt(r)}</td><td id="rs${i}"></td></tr>`).join('')+'</tbody>';}
+function syncReadings(){
+  const on=s.rpm>0.5;
+  RD.forEach((r,i)=>{if(r.length===1)return;const v=r[1]();$('rv'+i).textContent=fx(v,r[5]);
+    let c='na',t='—';
+    if(r[3]!=null||r[4]!=null){if(!on){}else if(r[3]!=null&&v<r[3]){c='lo';t='LOW';}else if(r[4]!=null&&v>r[4]){c='hi';t='HIGH';}else{c='ok';t='OK';}}
+    $('rs'+i).innerHTML=`<span class="pill ${c}">${t}</span>`;});
+}
+
+/* --- trends --- */
+const TR=[
+ {k:'vac',l:'Chamber vacuum',u:'%',min:70,max:100,band:[88,95],n:1},
+ {k:'Tb',l:'Boiling temperature',u:'°C',min:20,max:80,band:[40,50],n:1},
+ {k:'out',l:'Distillate output',u:'t/day',min:0,max:27,band:[18,22.6],n:1},
+ {k:'sal',l:'Distillate salinity',u:'ppm',min:0,max:20,band:[0,4],n:1},
+];
+function buildStrips(){
+  $('strips').innerHTML=TR.map((t,i)=>`<div class="strip"><div class="st"><span>${t.l}</span><span id="trv${i}">--</span></div><svg id="tr${i}" role="img" aria-label="${t.l} trend"></svg></div>`).join('');
+  TR.forEach((t,i)=>{const e=$('tr'+i);e.addEventListener('mousemove',ev=>{const r=e.getBoundingClientRect();hoverX=(ev.clientX-r.left)/r.width;drawStrips();});e.addEventListener('mouseleave',()=>{hoverX=null;drawStrips();});});
+}
+let hoverX=null;
+function drawStrips(){
+  const n=hist.length,span=Math.max(600,n?hist[n-1].t-hist[0].t:0),t1=n?hist[n-1].t:s.t,t0=t1-span;
+  $('trendSpan').textContent=`Last ${Math.round(span/60)} simulated minutes`;
+  TR.forEach((t,i)=>{
+    const e=$('tr'+i),W=Math.max(200,e.clientWidth||400),H=86,L=30,R=6,T=4,B=4;e.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    const x=v=>L+(W-L-R)*(v-t0)/span,y=v=>H-B-(H-T-B)*(clamp(v,t.min,t.max)-t.min)/(t.max-t.min);
+    let o=`<rect x="${L}" y="${y(t.band[1])}" width="${W-L-R}" height="${y(t.band[0])-y(t.band[1])}" fill="var(--good)" fill-opacity=".13"/>`;
+    [t.min,(t.min+t.max)/2,t.max].forEach(v=>{o+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--enamel-3)"/><text x="${L-4}" y="${clamp(y(v)+3,10,H-2)}" text-anchor="end">${v}</text>`;});
+    if(n>1){const pts=hist.map(h=>`${x(h.t).toFixed(1)},${y(h[t.k]).toFixed(1)}`).join(' ');
+      o+=`<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+      const l=hist[n-1];o+=`<circle cx="${x(l.t)}" cy="${y(l[t.k])}" r="3.5" fill="var(--dist)" stroke="var(--paper)" stroke-width="1.5"/>`;}
+    let val=n?hist[n-1][t.k]:null,pre='';
+    if(hoverX!==null&&n){const tt=t0+span*clamp((hoverX*W-L)/(W-L-R));let b=hist[0];for(const h of hist)if(Math.abs(h.t-tt)<Math.abs(b.t-tt))b=h;
+      o+=`<line x1="${x(b.t)}" x2="${x(b.t)}" y1="${T}" y2="${H-B}" stroke="var(--ink-3)"/>`;val=b[t.k];pre=clockStr(b.t)+'  ';}
+    e.innerHTML=o;$('trv'+i).textContent=val===null?'--':`${pre}${fx(val,t.n)} ${t.u}`;
+  });
+}
+
+/* --- relationships --- */
+const SW=[
+ {k:'byp',l:'Bypass valve, % closed',src:'u',min:20,max:100},
+ {k:'jwSet',l:'Jacket water temperature, °C',src:'u',min:68,max:92},
+ {k:'orf',l:'Feed orifice diameter, mm',src:'u',min:4,max:20},
+ {k:'fv',l:'Feed valve, % open',src:'u',min:20,max:100},
+ {k:'vent',l:'Vacuum valve bleed, % open',src:'u',min:0,max:25},
+ {k:'Tsw',l:'Sea water temperature, °C',src:'u',min:4,max:36},
+ {k:'cv',l:'Condenser sea water valve, % open',src:'u',min:30,max:100},
+ {k:'ov',l:'Overboard valve, % open (back pressure)',src:'u',min:25,max:100},
+ {k:'Psea',l:'Sea inlet head, bar',src:'u',min:0,max:1.5},
+ {k:'dv',l:'Distillate pump outlet valve, % open',src:'u',min:30,max:100},
+ {k:'strainer',l:'Strainer blocked, %',src:'f',min:0,max:95},
+ {k:'airLeak',l:'Air leak, %',src:'f',min:0,max:100},
+];
+const SY=[{l:'Output, t/day',g:(x,d)=>d.output},{l:'Boiling temperature, °C',g:(x,d)=>d.Tb},{l:'Vacuum, %',g:(x,d)=>d.vac},{l:'Distillate salinity, ppm',g:(x,d)=>x.sal}];
+function clonePlant(){const b=(s.d.output>5)?{u:{...u},f:{...f},s:JSON.parse(JSON.stringify(s)),base:'present'}:null;
+  if(b)return b;const c=steadyPlant(runInputs(),noFaults());return{u:c.u,f:c.f,s:c.s,base:'design'};}
+function steadyPlant(iu,fu){const a=coldState(iu);Object.assign(a,{pumpOn:true,distOn:true,rpm:1,drpm:1,pa:0.6,pv:9,Lb:0.3,Ld:0.4,Tl:70,Ef:1,Sb:52000,tBoil:1e4,sal:1.5,salRead:1.5});
+  for(let i=0;i<3000;i++)step(a,iu,fu,1,true);return{u:iu,f:fu,s:a};}
+function runSweep(){
+  const o=SW[+$('sweepX').value],c=clonePlant();c.u.act=null;const N=13,res=[],cur=(o.src==='u'?c.u:c.f)[o.k];
+  const go=$('sweepGo');go.disabled=true;$('sweepNote').textContent='Working…';
+  const tgt=o.src==='u'?c.u:c.f;let i=0;
+  (function next(){
+    if(i>=N){const pt=steadyAt(cur);finish(pt);return;}
+    const x=o.min+(o.max-o.min)*i/(N-1);tgt[o.k]=x;
+    for(let t=0;t<(M.flooded?1100:700);t++)step(c.s,c.u,c.f,1,true);
+    res.push({x,d:{...c.s.d},sal:c.s.sal});i++;setTimeout(next,0);
+  })();
+  function steadyAt(v){tgt[o.k]=v;for(let t=0;t<(M.flooded?1100:700);t++)step(c.s,c.u,c.f,1,true);return{x:v,d:{...c.s.d},sal:c.s.sal};}
+  function finish(pt){drawSweep(o,res,pt);go.disabled=false;
+    $('sweepNote').textContent=c.base==='design'?'Plant is not producing, so this used the design condition as the starting point.':'Started from your present settings and faults. The dot marks where you are.';}
+}
+function drawSweep(o,res,pt){
+  const W=300,H=170,L=38,R=10,T=8,B=26;
+  $('sweepGrid').innerHTML=SY.map(y=>{
+    const ys=res.map(r=>y.g(r,r.d));let a=Math.min(...ys),b=Math.max(...ys);if(b-a<1){const m=(a+b)/2;a=m-0.5;b=m+0.5;}const p=(b-a)*.1;a-=p;b+=p;if(a<0&&Math.min(...ys)>=0)a=0;
+    const X=v=>L+(W-L-R)*(v-o.min)/(o.max-o.min),Y=v=>H-B-(H-T-B)*(v-a)/(b-a);
+    let g='';for(let i=0;i<=3;i++){const v=a+(b-a)*i/3;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--enamel-3)"/><text x="${L-4}" y="${Y(v)+3}" text-anchor="end">${v>=100?v.toFixed(0):v.toFixed(1)}</text>`;}
+    [o.min,(o.min+o.max)/2,o.max].forEach(v=>{g+=`<text x="${X(v)}" y="${H-10}" text-anchor="middle">${+v.toFixed(2)}</text>`;});
+    const pts=res.map(r=>`${X(r.x).toFixed(1)},${Y(y.g(r,r.d)).toFixed(1)}`).join(' ');
+    const hit=res.map(r=>`<circle cx="${X(r.x)}" cy="${Y(y.g(r,r.d))}" r="9" fill="transparent"><title>${o.l} ${fx(r.x,2)}: ${y.l} ${fx(y.g(r,r.d),2)}</title></circle>`).join('');
+    const pv=y.g(pt,pt.d);
+    return `<div><h4>${y.l}</h4><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${y.l} against ${o.l}">${g}<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${X(pt.x)}" cy="${Y(clamp(pv,a,b))}" r="5" fill="var(--dist)" stroke="var(--paper)" stroke-width="2"/>${hit}</svg></div>`;
+  }).join('');
+}
+
+/* --- cause and effect --- */
+const FX=[
+ ['Chamber vacuum rises','Boiling and distillate temperature fall, because water boils at lower temperature at lower pressure. A bigger gap to the jacket water raises output.','Past about 95 % vapour gets very bulky, velocity through the demister climbs and salinity rises.'],
+ ['Tube unit: vacuum too strong with hot brine','Sump brine is hotter than saturation at chamber pressure, so it flashes to vapour. A sudden pressure drop does this too, until the sump cools to the new boiling point.','Flashing starts near 93 % vacuum here. Cold brine does not flash, however strong the vacuum. Trim the vacuum back with the condenser sea water valve.'],
+ ['Vacuum falls (air bleed, air leak, weak ejector)','Boiling temperature rises, the gap to the jacket water shrinks and output falls. Air also blankets the condenser.','Boiling above 55 to 60 °C scales the plates fast.'],
+ ['Boiling temperature changes','Too low (under about 36 °C): high vapour velocity carries droplets over, so salinity rises. Normal (40 to 50 °C): best salinity and output.','Too high: salinity may read fine at first, but scale builds and output falls.'],
+ ['Close the jacket water bypass further','More hot water passes the plates, heat input and output rise, jacket outlet temperature rises, and boiling temperature climbs slightly.','The gain flattens above about 85 % closed. Well level rises, so re-trim the distillate valve.'],
+ ['Raise jacket water temperature','Heat input and output rise. Lowering it does the reverse.','Do not chase output by running the engine outside its own limits.'],
+ ['Low main engine load','If the engine rejects less heat than the FWG takes, jacket temperature falls and output with it.','Watch the ME jacket temperature alarm. Open the bypass to protect the engine.'],
+ ['Increase feed','Brine gets weaker and plates stay wet. Past the best point heat transfer declines slowly, and more heat leaves with the brine, so output and economy fall. More dissolved air arrives, so vacuum eases.','Too much feed exceeds the ejector brine capacity. The sump floods and salinity jumps.'],
+ ['Reduce feed','Less water carries the same heat, so a larger share boils off and brine concentration follows 1 ÷ (1 − fraction evaporated). Above about 55 % evaporated, dry patches form, heat transfer collapses and output falls.','Salinity climbs slowly, then sharply: strong brine foams and thin film spits droplets at the demister. Scale builds fast too.'],
+ ['Too much heat (hotter jacket water, bypass fully shut)','Boiling turns violent. Vapour velocity rises and bubbles throw far more droplets up, and feed share boiled off rises as well.','This is priming. Salinity surges and swings. Once droplets exceed what the mesh can drain, it re-entrains them and ppm jumps.'],
+ ['Raise ejector back pressure (overboard throttled, line fouled)','Little changes at first. Past about 0.6 bar the ejector weakens quickly: brine level rises, vacuum collapses, salinity jumps.','Behaviour is a cliff, not a slope. Try it on the Relationships chart.'],
+ ['Low ejector inlet pressure (low sea inlet head, blocked strainer, worn pump)','Pump delivery falls with suction. Below about 3 bar vacuum starts to weaken and brine removal falls.','A blocked strainer shows as low suction together with low ejector pressure. Clean it first.'],
+ ['Throttle condenser sea water','Less cooling, higher vapour temperature, lower vacuum, higher boiling temperature. Pump pressure rises because flow falls.','Useful in cold sea water to bring boiling back up. Not useful in warm water.'],
+ ['Warmer sea water','Vapour condenses at higher temperature, so vacuum and output both fall.','In hot seas a clean condenser matters most.'],
+ ['Colder sea water','Vacuum and output rise, but boiling can fall too low and salinity creeps up.','Throttle the condenser sea water valve.'],
+ ['Throttle the distillate pump outlet','Pressure rises, flow falls and the well fills. Above about 60 % the condenser plates flood, so vacuum drops and boiling temperature rises.','Opening too far lowers pressure and empties the well until the pump cavitates. Set the valve to hold a steady mid-level.'],
+ ['Vapour volume rises (higher vacuum, more output, colder sea)','At low pressure each kilogram of vapour takes up more space, so it rises faster and lifts more droplets. The demister catches most of them, and they fall back to the brine.','Above its velocity limit the demister floods: caught brine is torn off again, the band turns red and ppm climbs fast.'],
+ ['Damaged demister or condenser plate leak','Salinity rises with no change in vacuum or temperature. That is the clue that points away from the heat balance.','A condenser leak gets worse at low output, since the same salt enters less water.'],
+ ['Tube unit: low level in the shell','The evaporator tubes uncover, so heat transfer falls and output drops even with good vacuum and hot jacket water.','Plate units have no flooded bundle. Feed low there raises brine strength first.'],
+ ['Tube unit: condenser water also drives the ejector','Throttling sea water cuts ejector pressure as well as cooling. Warmer ejector water also raises the lowest pressure it can reach.','Keep condenser fouling low, because vacuum depends on it twice.'],
+ ['Feed orifice diameter','Feed follows Q = Cd × area × √(2 × pressure drop ÷ density), so flow rises with the diameter squared. The orifice takes most of the pressure once the spring loaded valve has opened.','A blocked or undersized orifice starves feed and strengthens brine. An oversized one wastes heat and can flood the sump. The manuals warn not to adjust the feed system.'],
+ ['Overdose antiscalant','Foaming carries brine over and salinity rises.','Underdosing shows up later as scale.'],
+];
+function buildEffects(){$('effects').innerHTML='<thead><tr><th>When this changes</th><th>What happens</th><th>Watch for</th></tr></thead><tbody>'+FX.map(r=>`<tr><td><b style="font-weight:600">${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')+'</tbody>';}
+
+/* --- scenarios --- */
+const SC=[
+ {n:'Cold start: unit secured',cold:true},
+ {n:'Steady production',run:true},
+ {n:'Exercise: salinity climbing',run:true,fx:()=>{f.demister=45;},brief:'Salinity is climbing, but vacuum and temperatures look normal.',ans:'Droplets are getting past the demister or separator section. Heat balance readings are unchanged, so this is carry-over or a leak. Reducing output lowers vapour velocity and salinity, which points to carry-over. A condenser leak behaves the other way. Set Demister damaged to 0 to repair it.'},
+ {n:'Exercise: losing vacuum',run:true,fx:()=>{f.airLeak=45;},brief:'Vacuum is drifting down and boiling temperature is rising. Ejector pressures look normal.',ans:'Air leak. With good ejector and back pressure readings, and sea water temperature unchanged, air is entering. Air partial pressure in the operating window confirms it. Set Air leak to 0 to repair it.'},
+ {n:'Exercise: overboard partly shut',run:true,fx:()=>{u.ov=33;},brief:'Brine level is climbing and vacuum is falling after someone worked on the overboard line.',ans:'High back pressure. The overboard valve is partly shut. Open it fully and watch the ejector recover.'},
+ {n:'Exercise: blocked sea strainer',run:true,fx:()=>{f.strainer=70;},brief:'Ejector pressure has fallen and sea inlet pressure reads very low.',ans:'Blocked strainer. Change over and clean it. Set Strainer blocked to 0.'},
+ {n:'Exercise: cold sea water',run:true,fx:()=>{u.Tsw=8;},brief:'The ship has entered cold water. Boiling temperature dropped and salinity crept up. The well is filling.',get ans(){return M.series?'Sea water here passes through the condenser and then drives the ejector, so throttling it would also weaken vacuum. Bleed a little air with the vacuum breaker, around 4 to 6 % open, to bring boiling back up, then re-trim the distillate valve.':'Throttle the condenser sea water valve to about half open to bring boiling back up, then re-trim the distillate valve.';}},
+ {n:'Exercise: arrival, engine slowing',run:true,fx:()=>{u.meLoad=15;},brief:'The engine has come down to low load. Jacket temperature is falling.',ans:'The FWG now takes more heat than the engine rejects. Open the bypass to protect the engine, and stop the unit before going within 20 NM of land.'},
+ {n:'Exercise: condenser plate leak',run:true,fx:()=>{f.condLeak=30;},brief:'Salinity has risen and the dump valve is cycling. Vacuum and heat balance are normal.',ans:'Sea water is leaking across a condenser plate. Salinity does not improve when output is reduced. The fix is a pressure test and plate replacement. Set Condenser plate leak to 0.'},
+ {n:'Exercise: weak ejector',run:true,fx:()=>{f.nozzle=85;},brief:'Vacuum is poor and brine level is high, yet pump pressure and back pressure are both normal.',ans:'Worn ejector nozzle. Normal pressures with weak suction point to the ejector itself. Set Ejector nozzle worn to 0.'},
+ {n:'Exercise: feed starved',run:true,fx:()=>{u.orf=M.orf*0.45;},brief:'Output is falling and salinity is climbing fast. Vacuum looks better than normal and the brine density is rising.',ans:'Feed is too low, as with a partly blocked feed orifice. Too large a share of it boils off, brine concentrates and the heating surface starts to dry out. Clean the orifice, confirm its size against the specification and check the plates for scale.'},
+ {n:'Exercise: too much heat',run:true,fx:()=>{u.jwSet=90;u.byp=100;u.dv=75;},brief:'Output is above rating, but salinity is surging up and down and the dump valve is cycling.',ans:'This is priming from excess heat. Boiling is violent and droplets overload the demister. Open the bypass and bring jacket water back to its normal temperature. More output is not better once the unit passes its rating.'},
+ {n:'Exercise: too much feed',run:true,fx:()=>{u.orf=M.orf*1.7;},brief:'Output has dropped, brine is very weak and the brine level is climbing.',ans:'Feed is too high, as with an oversized feed orifice. Heat transfer falls off past the best feed rate, more heat leaves with the brine, and the ejector struggles to remove the extra water. Fit the orifice size in the specification.'},
+ {n:'Exercise: scaled evaporator',run:true,fx:()=>{s.scale=0.6;},brief:'Output is below rating and jacket outlet temperature has risen, even with the bypass nearly shut.',ans:'Evaporator scale. Less heat passes through the plates. Stop the unit and clean the plates, then review dosing and boiling temperature.'},
+];
+function loadScenario(i){
+  const c=SC[i];setAuto(false);sh=null;hist=[];lastHist=-99;sim={heat:false,feed:false,heatOffAt:null,pumpT:0};$('log').innerHTML='';
+  ALARMS.forEach(a=>{aState[a[0]]={l:0,ack:true,hold:0};const t=$('t_'+a[0]);t.dataset.l=0;t.classList.remove('flash');});
+  if(c.cold){u=coldInputs();f=noFaults();s=coldState(u);done={start:START.map(()=>false),stop:STOP.map(()=>false)};setTab('start');}
+  else{const p=steadyPlant(runInputs(),noFaults());u=p.u;f=p.f;s=p.s;s.t=0;sim.pumpT=-9999;done={start:START.map(()=>true),stop:STOP.map(()=>false)};setTab('stop');}
+  if(c.fx)c.fx();
+  applyOv();
+  $('exPanel').hidden=!c.brief;
+  if(c.brief)$('exBody').innerHTML=`<p class="ex" style="margin:0">${c.brief}</p><details><summary>Show cause and fix</summary><p>${c.ans.replace('Demister damaged',M.sepName)}</p></details>`;
+  step(s,u,f,0.01,true);render();drawStrips();
+}
+
+/* --- series tabs: each keeps its own plant while the other is shown --- */
+const INFO={
+ jwp:{sub:'Alfa Laval JWP-26-C80, 20 t/day, from a JWP-26-C80B manual and order sheet',info:'Separate titanium evaporator and condenser plate packs in a generator shell, with a separator vessel, demister and combined brine/air ejector. All sea water, 49 m³/h, goes through the condenser and then drives the ejector, and feed is taken from that same line through a ø10 mm orifice.'},
+ aqua:{sub:'Alfa Laval AQUA Blue E1 C, 20 t/day, using AQUA-80-HW manual data',info:'One plate pair does everything: evaporation at the bottom, separation in the middle, condensation at the top, with the distillate channel on the same plate. No outer shell. It needs about half the sea water, 26.6 m³/h, which then drives the ejector, so it runs warmer at lower vacuum. Feed comes from the sea water line through a ø8.6 mm orifice.'},
+ isf:{sub:'Il Seung ISF-80 as a tube-type unit, 20 t/day, flows and orifice estimated',info:'Jacket water runs through a U-tube evaporator flooded in sea water, under a separator mesh. Sea water passes through the condenser tubes and then drives the ejector, so ejector water is warm and vacuum depends on condenser flow. The large water volume responds slowly, and low level uncovers the tubes. Feed fills the evaporator side and overflows the centre wall into the brine sump. With very high vacuum, hot sump brine flashes to vapour.'}};
+const ctxs={};let cur=null;
+function saveCtx(){if(!cur)return;ctxs[cur]={u,f,s,sh,hist,lastHist,sim,done,tab,auto,sc:$('scenario').value,al:JSON.parse(JSON.stringify(aState)),log:$('log').innerHTML,ex:$('exBody').innerHTML,exH:$('exPanel').hidden};}
+function setBands(){
+  const set=(n,a,b)=>{const r=RD.find(x=>x[0]===n&&x.length>1);r[3]=a;r[4]=b;};
+  set('Chamber vacuum',M.vac[1],M.vac[2]);set('Sea water out of condenser',null,M.swo[0]);set('Sea water total',Math.round(M.qRef*0.75),Math.round(M.qRef*1.25));
+  set('Output',M.rated*0.9,M.rated*1.13);set('Boiling',M.tb[0]-4,M.tb[1]+(M.id==='aqua'?1:5));
+  TR[0].band=[M.vac[1],M.vac[2]];TR[1].band=M.tb;TR[2].max=Math.round(M.rated*1.35);TR[2].band=[M.rated*0.9,M.rated*1.13];
+}
+function switchModel(id){
+  if(id===cur)return;
+  saveCtx();closeVP();setAuto(false);cur=id;M=MODELS[id];
+  [['stJwp','jwp'],['stAqua','aqua'],['stIsf','isf']].forEach(([e,k])=>$(e).setAttribute('aria-selected',id===k));
+  $('bsub').textContent=INFO[id].sub;$('minfo').textContent=INFO[id].info;
+  document.querySelector('label[for=c_demister] span').textContent=M.sepName;
+  setBands();buildMimic();buildGauges();buildReadings();EXP=null;buildAct();
+  const c=ctxs[id];
+  if(!c){$('scenario').value=0;loadScenario(0);runAct();return;}
+  ({u,f,s,sh,hist,lastHist,sim,done}=c);$('scenario').value=c.sc;$('log').innerHTML=c.log;$('exBody').innerHTML=c.ex;$('exPanel').hidden=c.exH;
+  ALARMS.forEach(a=>{const k=a[0],t=$('t_'+k);Object.assign(aState[k],c.al[k]);t.dataset.l=aState[k].l;t.classList.toggle('flash',aState[k].l>0&&!aState[k].ack);});
+  setTab(c.tab);setAuto(c.auto);applyOv();render();drawStrips();runAct();
+}
+
+/* --- actual plant readings: typed values override the simulator, which keeps running untouched in the shadow plant --- */
+const LIM={
+ jwp:{src:'JWP-26-C80B instruction manual and order sheet',Pm:[3,4],Pb:0.6,Pd:[1.2,1.6],sal:2,Tsw:32,Tji:[55,95],qj:[39,50],vacMin:88,dose45:true,condIn:4},
+ aqua:{src:'AQUA-80-HW instruction manual, used for the E1 C',Pm:[3,4],Pb:0.6,Pd:[1,2.5],sal:2,Tsw:32,Tji:[50,95],qj:[45,64],vacMin:85,dose45:true,condIn:4},
+ isf:{src:'Il Seung catalogue for 20 t/day and 10 ppm, otherwise general practice',Pm:[3,5],Pb:0.6,Pd:[1,3.4],sal:10,Tsw:36,Tji:[60,95],qj:[38,54],vacMin:88,dose45:false}};
+const AR=[
+ ['Temperatures'],
+ {k:'Tsw',l:'Sea water in',un:'°C',min:0,max:40,n:1,tol:1,g:(d,a,b)=>b.Tsw},
+ {k:'Tso',l:'Sea water out of condenser',un:'°C',min:0,max:70,n:1,tol:3,g:d=>d.Tswo},
+ {k:'Tf',l:'Feed water',un:'°C',min:0,max:70,n:1,tol:4,g:d=>d.Tf},
+ {k:'Tji',l:'Jacket water in',un:'°C',min:40,max:100,n:1,tol:2,g:(d,a)=>a.Tj},
+ {k:'Tjo',l:'Jacket water out',un:'°C',min:30,max:100,n:1,tol:3,g:d=>d.Tjo},
+ {k:'Tb',l:'Boiling temperature',un:'°C',min:20,max:90,n:1,tol:3,g:d=>d.Tb},
+ ['Pressures'],
+ {k:'vac',l:'Chamber vacuum',un:'%',min:50,max:99,n:1,tol:1.5,g:d=>d.vac},
+ {k:'Pm',l:'Ejector inlet',un:'bar',min:0,max:8,n:2,tol:0.4,g:d=>d.Pm},
+ {k:'Pb',l:'Ejector back pressure',un:'bar',min:-1,max:4,n:2,tol:0.2,g:d=>d.Pb},
+ {k:'Pd',l:'Distillate pump outlet',un:'bar',min:0,max:8,n:2,tol:0.8,g:d=>d.Pd},
+ {k:'Psea',l:'Sea inlet head',un:'bar',min:0,max:3,n:2,tol:0.3,g:(d,a,b)=>b.Psea},
+ ['Flows and orifice, if you have them'],
+ {k:'orf',l:'Feed orifice diameter',un:'mm',min:2,max:30,n:1,tol:0.3,g:(d,a,b)=>b.orf},
+ {k:'qj',l:'Jacket water through FWG',un:'m³/h',min:1,max:120,n:1,tol:6,g:d=>d.qj},
+ {k:'Qc',l:'Sea water through condenser',un:'m³/h',min:1,max:200,n:1,tol:8,g:d=>d.Qc},
+ {k:'Qf',l:'Feed water',un:'m³/h',min:0.1,max:12,n:2,tol:0.5,g:d=>d.Qf},
+ ['Results, compared only'],
+ {k:'out',cmp:1,l:'Fresh water output',un:'t/day',min:0,max:60,n:1,tol:2,g:d=>d.output},
+ {k:'sal',cmp:1,l:'Distillate salinity',un:'ppm',min:0,max:999,n:1,tol:1,g:(d,a)=>a.sal}];
+const ARK=AR.filter(r=>r.k);
+const ACT={};let sh=null,EXP=null,actT=0;
+function actOf(){if(ACT[M.id])return ACT[M.id];let a={v:{},use:{}};try{const j=JSON.parse(localStorage.getItem('fwg-actual-'+M.id));if(j&&j.v)a={v:j.v,use:j.use||{}};}catch(e){}return ACT[M.id]=a;}
+function actKeep(){try{localStorage.setItem('fwg-actual-'+M.id,JSON.stringify(ACT[M.id]));}catch(e){}}
+const okV=(r,v)=>Number.isFinite(v)&&v>=r.min&&v<=r.max;
+const typed=()=>{const a=actOf(),A={};ARK.forEach(r=>{if(okV(r,a.v[r.k]))A[r.k]=a.v[r.k];});return A;};
+/* the shadow plant is what the simulator would be doing with no typed values */
+function refPlant(){return sh?{a:sh.s,d:sh.s.d}:{a:s,d:s.d};}
+function shStep(dt){if(!sh)return;Object.assign(sh.s,{pumpOn:s.pumpOn,distOn:s.distOn,scale:s.scale});step(sh.s,{...u,act:null},f,dt,true);}
+function applyOv(){
+  const a=actOf(),A=typed(),o={};ARK.forEach(r=>{if(!r.cmp&&a.use[r.k]&&A[r.k]!==undefined)o[r.k]=A[r.k];});
+  const on=Object.keys(o).length>0;
+  if(on&&!sh)sh={s:JSON.parse(JSON.stringify(s))};
+  if(!on&&sh){const k={t:s.t,tank:s.tank,tankSal:s.tankSal,made:s.made,scale:s.scale};s=Object.assign(sh.s,k);sh=null;}
+  u.act=on?o:null;
+  $('ovFlag').hidden=!on;$('ovFlag').textContent=`ACTUAL VALUES IN USE: ${Object.keys(o).length}`;
+  $('ovBack').disabled=!on;
+}
+function buildAct(){
+  const a=actOf();
+  $('actTbl').innerHTML=`<thead><tr><th>Parameter</th><th>Simulator</th><th>Your actual</th><th>Used by simulator</th><th>Healthy unit</th><th>Gap</th></tr></thead><tbody>`+
+   AR.map(r=>r.k?`<tr><td>${r.l}</td><td class="v" id="as_${r.k}">--</td>
+    <td class="v"><input class="numin" type="number" id="ai_${r.k}" min="${r.min}" max="${r.max}" step="any" aria-label="${r.l}, actual, ${r.un}" value="${a.v[r.k]??''}"> <span class="b">${r.un}</span></td>
+    <td>${r.cmp?'<span class="note">Compare only</span>':`<button class="sbtn" id="au_${r.k}" aria-pressed="false">Simulator</button>`}</td>
+    <td class="v" id="ae_${r.k}">--</td><td class="v" id="ag_${r.k}"></td></tr>`:`<tr class="grp"><td colspan="6">${r[0]}</td></tr>`).join('')+'</tbody>';
+  ARK.forEach(r=>{
+    $('ai_'+r.k).addEventListener('input',e=>{const v=parseFloat(e.target.value),c=ACT[M.id];
+      if(e.target.value===''){delete c.v[r.k];delete c.use[r.k];e.target.removeAttribute('aria-invalid');}
+      else{c.v[r.k]=v;const ok=okV(r,v);if(ok)e.target.removeAttribute('aria-invalid');else e.target.setAttribute('aria-invalid','true');if(!r.cmp)c.use[r.k]=ok;}
+      actKeep();applyOv();syncAct();queueAct();});
+    if(!r.cmp)$('au_'+r.k).onclick=()=>{const c=ACT[M.id];c.use[r.k]=!c.use[r.k];actKeep();applyOv();syncAct();render();};});
+  syncAct();
+}
+function syncAct(){
+  const a=actOf(),A=typed(),R=refPlant();
+  ARK.forEach(r=>{
+    $('as_'+r.k).textContent=fx(r.g(R.d,R.a,u),r.n);
+    if(!r.cmp){const b=$('au_'+r.k),has=A[r.k]!==undefined,on=has&&!!a.use[r.k];b.disabled=!has;b.setAttribute('aria-pressed',on);b.textContent=on?'Actual':'Simulator';}
+    const g=$('ag_'+r.k);
+    if(EXP&&A[r.k]!==undefined){const x=r.g(EXP.d,EXP.a,EXP.u),dv=A[r.k]-x,bad=Math.abs(dv)>r.tol;
+      g.innerHTML=`<span class="pill ${bad?(dv>0?'hi':'lo'):'ok'}">${dv>=0?'+':''}${fx(dv,r.n)}</span>`;}
+    else g.textContent='';
+    $('ae_'+r.k).textContent=EXP?fx(r.g(EXP.d,EXP.a,EXP.u),r.n):'--';});
+}
+function queueAct(){clearTimeout(actT);actT=setTimeout(runAct,250);}
+/* a fault-free copy at the sea, jacket and flow conditions you entered */
+function expected(A){
+  const hot=s.d.qj>1,b=Object.assign(runInputs(),{dv:70,Ssw:u.Ssw,doseOn:u.doseOn,dose:u.dose,meLoad:u.meLoad,byp:hot?u.byp:80,Tsw:A.Tsw??u.Tsw,Psea:A.Psea??u.Psea,jwSet:clamp(A.Tji??u.jwSet,65,95)}),o={};
+  if(A.Tji!==undefined)o.Tji=A.Tji;if(A.qj!==undefined)o.qj=A.qj;if(A.Qf!==undefined)o.Qf=A.Qf;
+  b.act=Object.keys(o).length?o:null;
+  const p=steadyPlant(b,noFaults());return{d:p.s.d,a:p.s,u:b};
+}
+const lmtd=(a,b)=>{if(a<=0||b<=0)return null;return Math.abs(a-b)<0.01?a:(a-b)/Math.log(a/b);};
+function calcAct(A,E){
+  const C={},qUsed=A.qj??E.d.qj,sUsed=A.Qc??E.d.Qc;
+  C.qGuess=A.qj===undefined;C.sGuess=A.Qc===undefined;
+  if(A.vac!==undefined){C.P=ATM*(1-A.vac/100);C.TsatV=tsat(C.P);}
+  C.Tb=A.Tb??(C.TsatV!==undefined?C.TsatV+bpeOf(C.TsatV,E.a.Sb):undefined);
+  C.Tv=C.TsatV??(A.Tb!==undefined?A.Tb-bpeOf(A.Tb,E.a.Sb):undefined);
+  if(A.Tji!==undefined&&A.Tjo!==undefined&&A.Tji>A.Tjo){
+    C.Qe=(M.chj||1.14)*qUsed*(A.Tji-A.Tjo);
+    if(C.Tb!==undefined){const m=lmtd(A.Tji-C.Tb,A.Tjo-C.Tb),m0=lmtd(E.a.Tj-E.d.Tb,E.d.Tjo-E.d.Tb);if(m&&m0){C.UAe=C.Qe/m;C.UAe0=E.d.Qe/m0;C.evClean=C.UAe/C.UAe0*100;}}}
+  if(A.Tsw!==undefined&&A.Tso!==undefined&&A.Tso>A.Tsw){
+    C.Qcd=1.119*sUsed*(A.Tso-A.Tsw);
+    if(C.Tv!==undefined){const m=lmtd(C.Tv-A.Tsw,C.Tv-A.Tso),m0=lmtd(E.d.Tv-E.u.Tsw,E.d.Tv-E.d.Tswo);if(m&&m0){C.UAc=C.Qcd/m;C.UAc0=E.d.Qc2/m0;C.cdClean=C.UAc/C.UAc0*100;}}}
+  if(C.Qe!==undefined&&C.Tb!==undefined){const Tf=A.Tf??E.d.Tf,mf=(A.Qf??E.d.Qf)/3.6*1.025;C.outHeat=Math.max(0,C.Qe*(1-(M.hl||0))-mf*3.93*Math.max(0,C.Tb-Tf))/hfg(C.Tb)*86.4;}
+  if(A.Qf!==undefined&&A.out>0){C.ratio=A.Qf/(A.out/24);if(C.ratio>1)C.cf=C.ratio/(C.ratio-1);}
+  const Tm=M.series?(A.Tso??E.d.Tswo):(A.Tsw??E.u.Tsw);C.vacLim=(ATM-psat(Tm)-0.5)/ATM*100;C.Tm=Tm;
+  return C;
+}
+function diagnose(A,E,C){
+  const L=LIM[M.id],R=[],add=(n,t,w,x)=>R.push({n,t,w,x}),ev=E.d,sep=M.sepName.replace(/ (damaged|fouled)$/,'');
+  const leakTest=M.id==='jwp'?'Pressure test the vessel at no more than 1.5 bar.':'Pressure test the vessel to the limit in your manual.';
+  const condTest=M.id==='jwp'?'Open the unit and pressure test the condenser at no more than 6 bar.':'Open the unit and pressure test the condenser to the limit in your manual.';
+  if(A.Pm!==undefined&&A.Pm<L.Pm[0])add(2,'Ejector pressure below minimum',`${fx(A.Pm,2)} bar against a minimum of ${fx(L.Pm[0],1)} bar. The ejector cannot hold vacuum or lift brine properly.`,'Check the gauge first. Then clean the suction strainer, examine suction and discharge valves, look for suction pipe leaks, check impeller and seal ring clearance and pump rotation'+(M.type==='plate'?', and check for a clogged condenser stack.':'.'));
+  if(A.Pm!==undefined&&A.Pm>L.Pm[1])add(1,'Ejector pressure above range',`${fx(A.Pm,2)} bar, range ${L.Pm[0]} to ${L.Pm[1]} bar.`,'Check the gauge and the pump delivery valve'+(L.condIn?'. Condenser inlet must not exceed 4 bar.':'.'));
+  if(A.Pb!==undefined&&A.Pb>L.Pb)add(2,'Ejector back pressure too high',`${fx(A.Pb,2)} bar against a maximum of ${L.Pb} bar. The ejector is working against too much head.`,'Check the overboard pipe and valves for blockage or a partly shut valve.');
+  if(A.Pb!==undefined&&A.Pb<0)add(1,'Ejector outlet pressure negative',`${fx(A.Pb,2)} bar. The ejector outlet is under suction.`,'Throttle the overboard valve a little until the outlet reads slightly positive.');
+  if(A.vac!==undefined){
+    const gap=ev.vac-A.vac,low=gap>1.5||A.vac<L.vacMin;
+    if(low){
+      const pmLow=A.Pm!==undefined&&A.Pm<L.Pm[0],pbHi=A.Pb!==undefined&&A.Pb>L.Pb,cd=C.cdClean,warm=(A.Tsw??E.u.Tsw)>L.Tsw;
+      add(2,'Vacuum lower than a healthy unit',`${fx(A.vac)} % against ${fx(ev.vac)} % expected. Boiling rises, the gap to the jacket water shrinks and output falls.`,
+       pmLow||pbHi?'Fix the ejector pressure problem above first, then recheck vacuum.':
+       cd!==undefined&&cd<75?'Condenser performance is poor, see below. Clean the condenser, then look for air leaks if vacuum stays low.':
+       warm?'Sea water is above the design temperature, so some loss is expected. Check for air leaks too.':
+       `Look for air leaks: ${leakTest} Check the vacuum valve and front cover gasket, then the ejector nozzles for foreign bodies and wear, and the non-return valve in the air line.`);}
+    else if(A.vac>Math.max(ev.vac+3,M.vac[2]))add(1,'Vacuum higher than normal',`${fx(A.vac)} %. Vapour gets bulkier, velocity through the ${sep.toLowerCase()} rises and salinity can follow.`,'Normal in cold sea water. Reduce condenser sea water or use the vacuum valve to hold vacuum in range.');}
+  if(A.Tb!==undefined&&C.TsatV!==undefined){const e=A.Tb-(C.TsatV+bpeOf(C.TsatV,E.a.Sb));if(Math.abs(e)>3)add(1,'Boiling temperature and vacuum disagree',`At ${fx(A.vac)} % vacuum water boils at about ${fx(C.TsatV+bpeOf(C.TsatV,E.a.Sb))} °C, but you read ${fx(A.Tb)} °C.`,'Pure physics says one reading is off. Compare the vacuum gauge and thermometer with a calibrated instrument before trusting either.');}
+  if(C.evClean!==undefined&&C.evClean<80)add(C.evClean<60?2:1,'Evaporator heat transfer low',`Only ${fx(C.evClean,0)} % of a clean unit, from your jacket temperatures${C.qGuess?' and the simulator jacket flow':''}.`,M.type==='plate'?'Likely scale or sludge. Clean the evaporator plates in an inhibited acid bath at no more than 50 °C, and check the feed orifice and inlet channels.':'Likely scale on the tubes or low level over the bundle. Check brine level, then descale the bundle to the maker\'s procedure.');
+  if(C.cdClean!==undefined&&C.cdClean<75)add(C.cdClean<55?2:1,'Condenser heat transfer low',`Only ${fx(C.cdClean,0)} % of a clean unit${C.sGuess?', using the simulator sea water flow':''}. Air blanketing lowers this as well as fouling.`,'Clean the sea water side, and rule out air in the chamber if the condenser is found clean.');
+  if(A.out!==undefined){
+    if(A.out<ev.output*0.9){
+      const why=[];if(C.evClean!==undefined&&C.evClean<80)why.push('evaporator fouling');if(A.vac!==undefined&&ev.vac-A.vac>1.5)why.push('poor vacuum');if(A.Tji!==undefined&&A.Tji<L.Tji[0]+10)why.push('low jacket water temperature');if(A.qj!==undefined&&A.qj<L.qj[0])why.push('low jacket water flow');
+      add(2,'Output below a healthy unit',`${fx(A.out)} t/day against ${fx(ev.output)} t/day expected at your conditions.`,(why.length?`Pointing to ${why.join(', ')}. `:'')+'Check the water clock with a timed 10 litre pail test, confirm jacket water flow and temperature, then check the feed orifice and plate or tube cleanliness.');}
+    else if(A.out>M.rated*1.13)add(1,'Output above rating',`${fx(A.out)} t/day against a ${M.rated} t/day rating. The feed ratio falls and droplets rise.`,'Reduce the jacket water flow or temperature back to rating.');
+    if(C.outHeat!==undefined&&Math.abs(C.outHeat-A.out)>Math.max(3,A.out*0.2))add(1,'Heat balance does not match output',`Your jacket heat would make about ${fx(C.outHeat)} t/day, but you read ${fx(A.out)} t/day.`,'Conservation of energy says a reading is off. Check the water clock, thermometers and jacket flow'+(C.qGuess?', and enter the real jacket flow.':'.'));}
+  if(A.sal!==undefined&&A.sal>L.sal){
+    const hints=[];if(A.out!==undefined&&A.out>M.rated*1.1)hints.push('Output is above rating, so reduce the heat first.');if(C.cf!==undefined&&C.cf>1.9)hints.push('Brine is strong, so check feed.');
+    add(2,'Salinity above limit',`${fx(A.sal)} ppm against ${L.sal} ppm. ${hints.join(' ')}`,`Check the salinometer first: test switch, clean electrode. Then the ${sep.toLowerCase()} fit and condition, front cover gasket and brine extraction (ejector pressure, nozzles, back pressure, non-return valve). If those are good, suspect a condenser leak. ${condTest}`);}
+  if(C.ratio!==undefined){
+    if(C.ratio<2.5)add(2,'Feed ratio too low',`${fx(C.ratio)} : 1 means brine at about ${fx(C.cf)} times sea water. Scale risk rises and carry-over follows.`,'Clean the feed orifice, check feed pressure is 3 to 4 bar, and do not run above rated output.');
+    else if(C.ratio>5)add(1,'Feed ratio too high',`${fx(C.ratio)} : 1. Extra feed takes heat away and lowers output.`,'Check the orifice size against the specification, and check the ejector can remove the brine.');}
+  if(A.orf!==undefined&&Math.abs(A.orf-M.orf)>0.3)add(M.est?0:1,'Feed orifice differs from '+(M.est?'the estimate':'the specification'),`ø${fx(A.orf)} mm against ø${M.orf} mm. Feed changes with the diameter squared, so expect about ${fx(Math.pow(A.orf/M.orf,2)*100,0)} % of design feed.`,M.est?'Keep your value if it is what your order sheet shows.':'Check the orifice dimension against the technical specification, and look for blockage.');
+  if(L.dose45&&!u.doseOn&&(C.Tb??ev.Tb)>45)add(1,'Boiling above 45 °C with dosing off',`Boiling at ${fx(C.Tb??ev.Tb)} °C. The manual warns this means frequent evaporator cleaning.`,'Start the antiscalant dosing pump.');
+  if(A.Tsw!==undefined&&A.Tsw>L.Tsw)add(1,'Sea water above design temperature',`${fx(A.Tsw)} °C against ${L.Tsw} °C.`,'Vacuum and output will be below rating. This is a condition, not a fault.');
+  if(A.Tji!==undefined&&(A.Tji<L.Tji[0]||A.Tji>L.Tji[1]))add(1,'Jacket water outside its range',`${fx(A.Tji)} °C, range ${L.Tji[0]} to ${L.Tji[1]} °C.`,A.Tji>L.Tji[1]?'Reduce to the specified temperature.':'Raise to the specified temperature, or expect low output.');
+  if(A.qj!==undefined&&(A.qj<L.qj[0]||A.qj>L.qj[1]))add(1,'Jacket water flow outside its range',`${fx(A.qj)} m³/h, range ${L.qj[0]} to ${L.qj[1]} m³/h.`,'Adjust the bypass valve to the specified flow.');
+  if(A.Pd!==undefined&&(A.Pd<L.Pd[0]||A.Pd>L.Pd[1]))add(1,'Distillate pump pressure outside its range',`${fx(A.Pd,2)} bar, normal ${L.Pd[0]} to ${L.Pd[1]} bar.`,A.Pd<L.Pd[0]?'Check for suction pipe leaks, pump mechanical seal, impeller clearance and rotation.':'Check valves to the fresh water tank and the water clock inlet filter.');
+  return R.sort((a,b)=>b.n-a.n);
+}
+function runAct(){
+  const A=typed(),n=Object.keys(A).length;
+  EXP=expected(A);syncAct();
+  const C=calcAct(A,EXP),R=diagnose(A,EXP,C),L=LIM[M.id];
+  const rows=[
+   ['Evaporator heat',C.Qe,'kW',EXP.d.Qe,0,C.qGuess],
+   ['Condenser heat',C.Qcd,'kW',EXP.d.Qc2,0,C.sGuess],
+   ['Evaporator UA',C.UAe,'kW/K',C.UAe0,1],['Evaporator cleanliness',C.evClean,'%',100,0],
+   ['Condenser UA',C.UAc,'kW/K',C.UAc0,1],['Condenser cleanliness',C.cdClean,'%',100,0],
+   ['Output from heat balance',C.outHeat,'t/day',EXP.d.output,1],
+   ['Feed ratio',C.ratio,': 1',EXP.d.ratio,1],['Brine strength',C.cf,'× sea',EXP.d.cfac,2],
+   ['Saturation at your vacuum',C.TsatV,'°C',EXP.d.Tsat,1],
+   ['Ejector vacuum limit',C.vacLim,'%',null,1]].filter(r=>r[1]!==undefined&&Number.isFinite(r[1]));
+  $('actCalc').innerHTML=rows.length?`<div class="tablebox"><table><thead><tr><th>Worked out from your readings</th><th>Yours</th><th>Healthy</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}${r[5]?' *':''}</td><td class="v">${fx(r[1],r[4])} ${r[2]}</td><td class="v">${r[3]==null?'':fx(r[3],r[4])}</td></tr>`).join('')}</tbody></table></div>${rows.some(r=>r[5])?'<p class="note">* Uses the simulator flow because you did not enter one.</p>':''}`:'<p class="note">Enter readings to see heat, cleanliness and feed ratio worked out from them.</p>';
+  $('actDx').innerHTML=!n?'<p class="note">Enter your plant readings above. The healthy unit column is worked out at your sea water and jacket water conditions.</p>':
+   R.length?R.map(r=>`<div class="dx" data-n="${r.n}"><b>${r.t}</b><p>${r.w}</p><p><span class="dxa">Action:</span> ${r.x}</p></div>`).join(''):'<div class="dx" data-n="0"><b>No problem found</b><p>Your readings match a healthy unit within tolerance.</p></div>';
+  $('actSrc').textContent=`Limits: ${L.src}.`;
+}
+
+/* --- main loop --- */
+function clockStr(t=s.t){const a=Math.floor(t),h=Math.floor(a/3600),m=Math.floor(a/60)%60,e=a%60;return [h,m,e].map(v=>String(v).padStart(2,'0')).join(':');}
+function modeOf(){
+  const d=s.d,w=worst();
+  if(!s.pumpOn&&d.qj<1)return w>1?['STOPPED, ALARM','bad']:['STOPPED',''];
+  let m;
+  if(d.toTank)m='PRODUCING';else if(d.mv>0.02&&d.Qd>0.1)m='DUMPING';else if(d.mv>0.02)m='BOILING';else if(d.qj>1)m='HEATING';else if(s.pumpOn&&d.vac<90)m='PULLING VACUUM';else m='VACUUM HELD';
+  return [m,w>1?'bad':w>0?'warn':(m==='PRODUCING'?'ok':'')];
+}
+function render(){
+  if(s.d.vac===undefined)step(s,u,f,0.01,true);
+  const d=s.d;
+  $('clock').textContent=clockStr();
+  const[m,c]=modeOf();$('mode').textContent=m;$('mode').dataset.s=c;
+  /* mimic values */
+  mTxt('Ps',fx(d.Ps,2));mTxt('Q',fx(d.Q,0));mTxt('Pm',fx(d.Pm,2));mTxt('Pb',fx(d.Pb,2));mTxt('Qc',fx(d.Qc,0));mTxt('Tsi',fx(u.Tsw));mTxt('Tso',fx(d.Tswo));
+  mTxt('Qf',fx(d.Qf,2));mTxt('Tf',fx(d.Tf));mTxt('Qb',fx(d.Qb,2));mTxt('Sb',fx(s.Sb,0));mTxt('Tji',fx(s.Tj));mTxt('Tjo',fx(d.Tjo));mTxt('Qj',fx(d.qj,0));
+  mTxt('Qd',fx(d.Qd,2));mTxt('Pd',fx(d.Pd,2));mTxt('Td',fx(d.Td));mTxt('Out',fx(d.output));
+  mTxt('well',fx(s.Ld*100,0)+' %');mTxt('sump',fx(s.Lb*100,0)+' %'+((d.flash||0)>0.05?', flashing':''));
+  mTxt('ptot',fx(d.vac)+' % vac');mTxt('tb',`Liquid ${fx(s.Tl)} °C, boils at ${fx(d.Tb)}`);
+  const vap=d.mv>0.015;mTxt('vap',vap?`Vapour ${fx(d.vol)} m³/s at ${fx(d.vs)} m/s`:'');
+  mTxt('dem',vap?((d.prim||0)>0.25?'PRIMING: ':'')+`Catching ${fx(d.demEff)} %, ${fx(d.demBack)} kg/h back`:'');
+  {const b=$('demBand'),ld=d.sb||0;b.setAttribute('fill',ld>1?'var(--bad)':ld>0.8?'var(--warn)':'#8fd0a4');b.setAttribute('fill-opacity',vap?0.15+0.4*clamp(ld):0);}mTxt('pabs',fx(d.Ptot)+' kPa abs');
+  mTxt('load',fx(u.meLoad,0)+' % load');mTxt('tank',fx(s.tank,1)+' t');mTxt('tanks',fx(s.tankSal)+' ppm');mTxt('dose',u.doseOn?fx(u.dose,1)+' ppm':'off');mTxt('orf','ø'+fx(u.orf,1));
+  {const on=u.doseOn;$('doseBox').setAttribute('aria-pressed',on);$('doseRect').setAttribute('fill',on?'#e4f6ea':'#fff');$('doseRect').setAttribute('stroke',on?'#16a34f':'var(--ink)');$('doseLamp').setAttribute('fill',on?'#2ccf6b':'#9aa49d');$('doseDash').setAttribute('stroke',on?'#16a34f':'var(--ink-2)');}
+  const lvl=(id,b,h)=>{$(id).setAttribute('y',b-h);$(id).setAttribute('height',h);};
+  lvl('wellLvl',G.well.b,G.well.h*s.Ld);lvl('sumpLvl',G.sump.b,G.sump.h*sumpFill());
+  if(G.heat){const ov=overflow(),e=$('ovfl');lvl('heatLvl',G.heat.b,G.heat.h*clamp(s.Lb/G.weir)+2*ov);e.setAttribute('opacity',ov*0.75);e.setAttribute('stroke-width',(1.5+2.5*clamp(d.Qf/M.Qf0)).toFixed(1));}
+  lvl('tankLvl',G.tank[1]+104,103*clamp(s.tank/300));
+  const evap=d.mv>0.015,cond=d.md>0.01;
+  mTxt('state',evap?`Evaporating ${fx(d.mv*3600,0)} kg/h`:'No vapour');mTxt('state2',cond?`Condensing ${fx(d.md*3600,0)} kg/h`:'');
+  const lamp=(id,on)=>$(id).setAttribute('fill',on?'#2ccf6b':'#9aa49d');
+  lamp('lampV',d.vac>=M.vac[0]);lamp('lampF',s.Ef>0.3);lamp('lampH',s.Tl>=d.Tb-0.3&&d.qj>5);
+  if(G.evap){const wet=G.evap.h*s.Ef,liq=wet*(1-d.evp/100);lvl('evapLvl',G.evap.b,liq);lvl('evapFroth',G.evap.b-liq,wet-liq);mTxt('evp',fx(d.evp,0)+' % evaporated'+((d.dry||0)>0.05?', dry patches':''));}
+  ['tsC','tsH'].forEach((id,i)=>{const e=$(id);if(e)e.setAttribute('opacity',0.4+0.6*clamp(i?d.qj/M.qj0:d.Qc/M.Qc0));});
+  G.valves.forEach(([k,,,,,kind])=>{const v=u[k],open=k==='byp'?v<100:v>0;$('v_'+k).setAttribute('fill',open?'#fff':'#111');$('vt_'+k).textContent=kind==='onoff'?(open?'OPEN':'SHUT'):k==='byp'?fx(v,0)+'% closed':fx(v,0)+'%';});
+  [[1,s.pumpOn,s.rpm],[2,s.distOn,s.drpm]].forEach(([n,on,r])=>{$('ring'+n).setAttribute('stroke',r>0.05?'#16a34f':'var(--ink)');$('ring'+n).setAttribute('fill',r>0.05?'#e4f6ea':'#fff');
+    $('run'+n).textContent=r>0.9?'RUN':on?'START':r>0.05?'STOP':'OFF';});
+  syncVP();
+  /* gauges */
+  GA.forEach((o,i)=>{const v=clamp(o.v(),o.min,o.max),a=-135+270*(v-o.min)/(o.max-o.min);$('ndl'+i).setAttribute('transform',`rotate(${a} 60 60)`);$('gv'+i).textContent=fx(o.v(),o.n);});
+  /* salinometer */
+  const on=u.salinoOn,hi=on&&s.salRead>u.salSet,D=$('salD');
+  D.className='digits'+(on?(hi?' hi':''):' off');D.innerHTML=`${on?(s.salRead>=99.9?'OVER':fx(s.salRead)):'0.0'}<small>ppm</small>`;
+  $('salBar').style.width=(on?clamp(s.salRead/20)*100:0)+'%';$('salMark').style.left=clamp(u.salSet/20)*100+'%';$('salSet').textContent=u.salSet+' ppm';
+  $('lTank').classList.toggle('on-g',d.toTank);$('lDump').classList.toggle('on-r',!!d.dump&&d.Qd>0.02);
+  $('salNote').textContent=!on?'Powered off: solenoid fails to dump':(d.Qd<0.05?'No flow past the cell':'');
+  $('salPow').textContent=on?'Power off':'Power on';
+  syncControls();syncReadings();syncAct();
+}
+const dashes={};let motion=true,rot=[0,0];
+function animate(rdt){
+  for(const a of G.pipes){const fl=FLOW[a[0]](),e=$('fl_'+a[0]),b=$('pb_'+a[0]);if(!e)continue;
+    const on=fl>0.01;b.setAttribute('stroke-opacity',on?1:0.4);
+    if(!on||!motion){e.style.visibility='hidden';continue;}
+    e.style.visibility='visible';dashes[a[0]]=(dashes[a[0]]||0)-rdt*(26+84*clamp(fl,0,1.6));e.setAttribute('stroke-dashoffset',dashes[a[0]].toFixed(1));}
+  if(!motion){PX.forEach(p=>{p.on=false;p.c.style.display='none';});return;}
+  if(u.doseOn&&s.d.Qf>0.05){dashes.dose=(dashes.dose||0)-rdt*22;$('doseDash').setAttribute('stroke-dashoffset',dashes.dose.toFixed(1));}
+  rot[0]=(rot[0]+rdt*900*s.rpm)%360;rot[1]=(rot[1]+rdt*1100*s.drpm)%360;
+  $('rot1').setAttribute('transform',`rotate(${rot[0].toFixed(1)} ${G.p1[0]} ${G.p1[1]})`);
+  $('rot2').setAttribute('transform',`rotate(${rot[1].toFixed(1)} ${G.p2[0]} ${G.p2[1]})`);
+  stepPx(rdt);
+}
+let last=0,acc=0,alarmAcc=0,uiAcc=0;
+function frame(now){
+  const rdt=Math.min(0.1,(now-last)/1000||0);last=now;
+  if(!paused){
+    acc+=rdt*speed;let n=0;
+    while(acc>=0.25&&n<60){step(s,u,f,0.25,false);shStep(0.25);acc-=0.25;n++;watch();procTick(0.25);alarmAcc+=0.25;
+      if(alarmAcc>=1){evalAlarms(1);alarmAcc=0;}
+      if(s.t-lastHist>=5){lastHist=s.t;hist.push({t:s.t,vac:s.d.vac,Tb:s.d.Tb,out:s.d.output,sal:s.salRead});if(hist.length>1440)hist.shift();}
+    }
+    if(acc>2)acc=0;
+    if(s.pumpOn&&sim.pumpT===0)sim.pumpT=s.t;if(!s.pumpOn&&sim.pumpT>0)sim.pumpT=0;
+  }
+  animate(paused?0:rdt);
+  uiAcc+=rdt;
+  if(uiAcc>=0.2){uiAcc=0;render();if(Math.floor(now/1000)!==Math.floor((now-200)/1000))drawStrips();
+    hornT+=0.2;if(horn&&unacked()&&hornT>=1.5){hornT=0;beep();}}
+  requestAnimationFrame(frame);
+}
+
+/* --- wiring --- */
+function init(){
+  [1,5,20,60].forEach(v=>{const b=document.createElement('button');b.textContent='×'+v;b.setAttribute('aria-pressed',v===speed);b.title=`Run at ${v} times real time`;
+    b.onclick=()=>{speed=v;[...$('speed').children].forEach(c=>c.setAttribute('aria-pressed',c===b));};$('speed').append(b);});
+  $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause';};
+  $('horn').onclick=()=>{horn=!horn;$('horn').setAttribute('aria-pressed',horn);$('horn').textContent=horn?'Horn on':'Horn off';if(horn)beep();};
+  SC.forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent=c.n;$('scenario').append(o);});
+  $('scenario').onchange=e=>loadScenario(+e.target.value);
+  $('tabStart').onclick=()=>setTab('start');$('tabStop').onclick=()=>setTab('stop');
+  $('auto').onclick=()=>setAuto(!auto);
+  $('ack').onclick=()=>{ALARMS.forEach(a=>{aState[a[0]].ack=true;$('t_'+a[0]).classList.remove('flash');});};
+  $('salPow').onclick=()=>{u.salinoOn=!u.salinoOn;};
+  $('salUp').onclick=()=>{u.salSet=Math.min(20,u.salSet+1);};$('salDn').onclick=()=>{u.salSet=Math.max(2,u.salSet-1);};
+  $('clean').onclick=()=>{if(s.d.qj>1||s.pumpOn){note('Stop the unit before cleaning the plates.');return;}s.scale=0;f.condFoul=0;note('Plates cleaned.');};
+  SW.forEach((o,i)=>{const e=document.createElement('option');e.value=i;e.textContent=o.l;$('sweepX').append(e);});
+  $('sweepGo').onclick=runSweep;
+  $('ovBack').onclick=()=>{const c=actOf();c.use={};actKeep();applyOv();syncAct();render();};
+  $('ovUse').onclick=()=>{const c=actOf();ARK.forEach(r=>{if(!r.cmp&&okV(r,c.v[r.k]))c.use[r.k]=true;});actKeep();applyOv();syncAct();render();};
+  $('ovClear').onclick=()=>{ACT[M.id]={v:{},use:{}};actKeep();applyOv();buildAct();runAct();render();};
+  $('stJwp').onclick=()=>switchModel('jwp');$('stAqua').onclick=()=>switchModel('aqua');$('stIsf').onclick=()=>switchModel('isf');
+  $('motion').onclick=()=>{motion=!motion;$('motion').setAttribute('aria-pressed',motion);$('motion').textContent=motion?'Motion on':'Motion off';};
+  document.addEventListener('click',e=>{if(vpK&&!e.target.closest('#vp'))closeVP();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVP();});
+  buildTiles();buildControls();buildStrips();buildEffects();
+  switchModel(MODELS[location.hash.slice(1)]?location.hash.slice(1):'jwp');
+  window.addEventListener('resize',drawStrips);
+  requestAnimationFrame(frame);
+}
+init();
+</script>

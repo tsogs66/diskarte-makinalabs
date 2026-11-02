@@ -1,0 +1,49 @@
+/* --- Android: the plant fills the screen, everything else pops up over it --- */
+html{-webkit-text-size-adjust:100%}
+:root{--rail:64px;--barh:44px;--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+.bar{gap:6px;padding:0 max(6px,var(--sr)) 0 max(6px,var(--sl));backdrop-filter:none;-webkit-backdrop-filter:none}
+.bar .progn,.bar .spacer{display:none}.bar .logo{width:28px;height:28px}.bar .brand{font-size:15px;line-height:1}.bar .brand small{display:block!important;font-size:9px}
+.bar .stabs{flex:1 1 0;min-width:0;display:flex;overflow-x:auto;gap:3px;scrollbar-width:none}.bar .stabs::-webkit-scrollbar{display:none}.bar .stabs button{flex:0 0 auto;min-height:34px;padding:0 8px;font-size:13px;white-space:nowrap}
+.homeb,#mRunBtn{min-height:34px;padding:0 9px}.bar .mode{font-size:12px;padding:2px 6px}.bar .clock{font-size:13px}
+#ws{flex:1}
+#wsRail{width:calc(var(--rail) + var(--sl));padding:4px 4px 4px calc(4px + var(--sl));box-sizing:border-box}
+#wsRail button{font-size:11.5px;max-height:none}#wsRail svg{width:20px;height:20px}
+#wsMain{position:fixed;inset:0;margin:0;z-index:1}
+.bar{position:fixed;top:0;left:0;right:0;z-index:40;transform:translateY(-110%);transition:transform .16s}.wsUi .bar{transform:none}
+#wsRail{position:fixed;left:0;top:var(--barh);bottom:0;z-index:40;transform:translateX(-110%);transition:transform .16s;background:rgba(6,15,20,.94)}.wsUi #wsRail{transform:none}
+#wsStamp{right:calc(6px + var(--sr));bottom:5px;padding:2px 5px}#wsStamp svg{height:15px}
+#mMenu{position:fixed;top:8px;left:calc(8px + var(--sl));z-index:45;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;border:1px solid rgba(160,220,225,.55);background:rgba(8,24,30,.8);color:#e8f6f4}#mMenu svg{width:22px;height:22px}.wsUi #mMenu{top:auto;bottom:8px;left:calc(72px + var(--sl))}#mMenu b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#ff4a3f;color:#fff;font:700 11px/18px system-ui}#mMenu b[hidden]{display:none}
+#wsMain .view[data-v=plant]{padding:0}#wsMain .b_mimic{border:0;border-radius:0;box-shadow:none}#wsMain .mimicwrap,.b_mimic .mimicwrap{padding:0}.mimic{border-radius:0}#mwarn[data-l="0"]{display:none}#mwarn{flex:none;margin:0;padding-left:calc(60px + var(--sl));padding-right:calc(10px + var(--sr));border-radius:0}.b_mimic .mimicwrap .mimic{flex:1;min-height:0}
+.view{padding:4px;gap:6px;transition:none}.view[data-v=plant]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.panel{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.b_mimic .mimicwrap{padding:3px}
+#wsMain .view[data-v=plant]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:none}#wsMain .b_mimic{grid-area:1/1;min-width:0;width:100%}.mimicwrap{min-width:0}
+.mimic{min-width:0;display:flex;overflow:auto!important;touch-action:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:none}
+.mimic svg{display:block;flex:none;width:calc(var(--mz,1)*var(--fit,600px))!important;height:auto!important;margin:auto}
+/* phones repaint a whole drawing for any change inside it, so anything costly over the bowl goes */
+.bowlfx,.dgj .bowlfx{mix-blend-mode:normal!important;opacity:.72}#bSpin{display:none!important}.flowl,.flowb,.gauge svg,.pkdoor,.tile,.tile[data-l="1"],.tile[data-l="2"]{filter:none!important;box-shadow:none}.bslide{transition:none}
+.mwarn[data-l="0"]{display:none}.mwarn{min-height:30px;font-size:13px;margin-bottom:3px}
+.vp{position:fixed!important;width:280px!important;max-height:calc(100dvh - 12px);overflow:auto;z-index:60}
+.vp input[type=range]{width:100%;height:32px}
+#wsPop{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:8px calc(8px + var(--sr)) 8px calc(8px + var(--sl));background:rgba(3,10,14,.66);animation:pF .14s ease-out}
+#wsPop[hidden]{display:none}@keyframes pF{from{opacity:0}}
+.popBox{width:min(900px,100%);height:100%;display:flex;flex-direction:column;background:linear-gradient(155deg,#18323e,#0b1b24);border:1px solid rgba(190,240,240,.34);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.7);overflow:hidden;animation:pB .17s cubic-bezier(.2,.8,.3,1.1)}@keyframes pB{from{transform:translateY(12px) scale(.97)}}
+.popHd{flex:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 4px 0 12px;background:rgba(0,0,0,.28);border-bottom:1px solid rgba(170,230,235,.18)}.popHd b{flex:none;font:700 16px var(--disp);letter-spacing:.05em;text-transform:uppercase}
+#popTabs{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}#popTabs::-webkit-scrollbar{display:none}
+#popTabs button{flex:none;min-height:34px;padding:0 11px;border:1px solid rgba(170,230,235,.3);border-radius:99px;background:rgba(255,255,255,.06);color:var(--ink-2);font:600 13.5px var(--disp)}#popTabs button[aria-selected="true"]{background:var(--teal);color:#04272a;border-color:var(--teal)}
+#popZ{flex:none;margin-left:auto;min-height:32px;padding:0 10px;border:1px solid rgba(120,230,225,.5);border-radius:99px;background:rgba(63,224,207,.14);color:var(--teal);font:600 13px var(--disp)}#popZ[hidden]{display:none}#popZ:not([hidden])+#popX{margin-left:0}
+#popX{flex:none;margin-left:auto;width:44px;height:44px;border:0;background:none;color:#fff;font-size:20px}
+#popBody{position:relative;flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+#popBody .view{zoom:var(--pz,1);width:var(--pw,100%);max-width:none;margin:0 auto;box-sizing:border-box;position:static;display:none;visibility:visible;opacity:1;transform:none;grid-template-columns:minmax(0,1fr);padding:8px}#popBody .view.on{display:grid;flex:none;margin:auto}
+#popBody .view:has(.panel:nth-of-type(2)){grid-template-columns:repeat(2,minmax(0,1fr))}
+#popBody .wsb{overflow:visible;flex:none}#popBody .panel{overflow:visible;align-self:start}
+#popBody .b_gauges .gauges{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:auto}#popBody .gauge svg{flex:none;width:100%;height:auto;aspect-ratio:1}#popBody .gauge .gl{white-space:normal;font-size:11.5px}
+#popBody #door{display:block}#popBody .wsp{grid-area:auto;width:100%;min-width:0}#popBody .cpface .face{max-height:none}#popBody .cpface.two .face{max-height:calc(100dvh - 135px)}#popBody #door .pkdoor{height:auto;max-height:none;width:100%;max-width:680px;margin:0 auto}
+
+#popBody .controls.wsp{grid-template-columns:repeat(2,minmax(0,1fr))}#popBody .controls>.panel>.pb{overflow:visible}
+#popBody .bowlwrap svg{height:auto;max-height:calc(100dvh - 130px)}#popBody .procw{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);grid-template-rows:auto auto 1fr;height:calc(100dvh - 150px)}#popBody .b_proc .ph .note{display:none}#popBody .procw .pch{grid-area:1/1}#popBody .procw .pcbar{grid-area:2/1}#popBody .procw .pcf{grid-area:3/1;align-content:start;align-items:flex-start;padding-top:10px}#popBody .procw .pcf em{flex-basis:100%;height:0}#popBody .procw svg{grid-area:1/2/4/3;width:100%;height:calc(100dvh - 150px)}
+#popBody .tiles{grid-template-columns:repeat(4,minmax(0,1fr))}#popBody .log{height:140px;flex:none}
+#popBody .prose{columns:auto}#popBody th{position:static}
+.runv{grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start}.runv .seg{grid-column:1/-1;display:flex}.runv .seg button{flex:1;min-height:42px}.runv select{grid-column:1/-1;width:100%;max-width:100%;min-height:42px}.runv .tbtn{min-height:42px}
+.sbtn,.tbtn,.dbtn{min-height:38px}.stw{grid-template-columns:44px minmax(0,1fr) 44px}.stp{height:40px;font-size:24px}
+@media(orientation:portrait){body::before{content:"Turn your phone sideways";position:fixed;inset:0;height:auto;z-index:99;display:flex;align-items:center;justify-content:center;background:#0a161d;color:#fff;font:600 22px var(--disp,system-ui)}}

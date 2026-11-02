@@ -1,0 +1,104 @@
+/* --- workspace: sorts a program's panels into groups. Windows shows them as tabs with nothing to scroll. Android keeps the plant on screen and pops the rest up. The simulator itself is not touched: panels are moved, ids stay. --- */
+(function(){
+ /* sizes live in the app's own storage on Android, which survives closing it; the browser's storage is the fallback. Native writes wait for the gesture to settle. */
+ const APP=document.getElementById('bowl')?'pur':'fwg',NS=window.DiskarteStore,zDue={};let zT=0;const zFlush=()=>{zT=0;if(NS)for(const k in zDue){try{NS.set(k,String(zDue[k]));}catch(e){}delete zDue[k];}};addEventListener('pagehide',zFlush);document.addEventListener('visibilitychange',zFlush);
+ const zGet=(k,d)=>{const K='wsz.'+APP+'.'+k;let r=null;try{r=NS?NS.get(K):null;if(r==null)r=localStorage.getItem(K);}catch(e){}const v=parseFloat(r);return isFinite(v)&&v>=0?v:d;},zSet=(k,v)=>{const K='wsz.'+APP+'.'+k;try{localStorage.setItem(K,v);}catch(e){}if(NS){zDue[K]=v;clearTimeout(zT);zT=setTimeout(zFlush,250);}},PHONE=!!window.WS_PHONE,q=(s,r)=>(r||document).querySelector(s),qa=(s,r)=>[...(r||document).querySelectorAll(s)],PUR=!!document.getElementById('bowl');
+ const I=p=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+ const IC={plant:'<path d="M3 20V9l5 3V9l5 3V5h5l3 15z"/>',ctrl:'<circle cx="12" cy="12" r="8"/><path d="M12 12l4-4M12 4v2M4 12h2M18 12h2"/>',steps:'<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',bowl:'<path d="M6 5h12l-3 12H9zM12 2v3M8 21h8M9 9h6M9.5 13h5"/>',data:'<path d="M4 20V4M4 20h16M8 16l4-6 3 3 5-7"/>',alarm:'<path d="M12 3a6 6 0 0 1 6 6c0 6 2 7 2 8H4c0-1 2-2 2-8a6 6 0 0 1 6-6zM10 20a2 2 0 0 0 4 0"/>',fuel:'<path d="M9 3h6M10 3v6l-5 10a1.5 1.5 0 0 0 1.4 2h11.2a1.5 1.5 0 0 0 1.4-2L14 9V3M7.5 15h9"/>',act:'<path d="M4 7h16M4 12h16M4 17h10M17 15l2 2 3-4"/>',drill:'<path d="M12 3l9 16H3zM12 10v4M12 17v.5"/>',trb:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/>',rel:'<path d="M4 18c4 0 4-12 8-12s4 12 8 12"/>',basis:'<path d="M5 4h11l3 3v13H5zM9 10h6M9 14h6"/>',more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',oper:'<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M9 16h.01M15 16h.01"/>',run:'<path d="M7 5l12 7-12 7z"/>'};
+ const BL=PUR?{mimic:'#mimic',cp:'#cp',starter:'#starter',vblock:'#vblock',settings:'#settings',steps:'#steps',seq:'#seqT',bowl:'#bowl',proc:'#procAnim',read:'#readings',trend:'#strips',tiles:'#tiles',alist:'#almT',fuelIn:'#fuelIn',iso:'#isoT',adv:'#adv',whatif:'#whatif',lib:'#fuelLib',act:'#actTbl',dx:'#actDx',drills:'#drills',ex:'#exBody',faults:'#faults',trb:'#trb',basisT:'#basisT',basisP:'#basisP',startP:'ph:Starter panels'}
+  :{mimic:'#mimic',door:'#door',controls:'#controls',ship:'#shipCtl',steps:'#steps',ex:'#exBody',read:'#readings',trend:'#strips',tiles:'#tiles',alist:'#almT',drills:'#drills',ex2:'#drillBody',faults:'#faults',fctl:'#faultCtl',trb:'#trb',act:'#actTbl',calc:'#actCalc',dx:'#actDx',sweep:'#sweepGrid',eff:'#effects',about:'.prose'};
+ const TITLE={basisP:'How it is modelled',sweep:'Relationships',eff:'Cause and effect',about:'About this model',ex:'Exercise'};
+ const DESK=PUR?[['plant','Plant',['mimic','cp','gauges'],'plant'],['oper','Starters',['starter','vblock','settings'],'oper'],['steps','Procedure',['steps','seq'],'c2'],['bowl','Bowl',['bowl','proc'],'c2'],['data','Readings',['read','trend'],'c2'],['alarm','Alarms',['tiles','alist'],'c2'],['drill','Drills',['drills','ex','faults'],'c3'],['trb','Troubleshoot',['trb'],'c1'],['fuel','Fuel lab',['fuelIn','iso','adv','whatif','lib'],'fuel'],['act','Actual',['act','dx'],'c2w'],['basis','Basis',['basisT','basisP','startP'],'c3']]
+  :[['plant','Plant',['mimic','door','gauges'],'plant'],['oper','Controls',['controls','ship'],'ctl'],['steps','Procedure',['steps','ex'],'c2w'],['data','Readings',['read','trend'],'c2'],['alarm','Alarms',['tiles','alist'],'c2'],['drill','Drills',['drills','ex2','faults','fctl'],'c4'],['trb','Troubleshoot',['trb'],'c1'],['act','Actual',['act','calc','dx'],'c3w'],['rel','Relations',['sweep','eff'],'c2'],['basis','Basis',['about'],'c1']];
+ const PH=PUR?[['ctrl','Control',[['Control unit',['cp']],['Starters',['starter']],['Valves',['vblock','settings']]]],['steps','Steps',[['Procedure',['steps']],['Sequence',['seq']]]],['bowl','Bowl',[['Inside the bowl',['bowl']],['Process',['proc']]]],['data','Data',[['Gauges',['gauges']],['Readings',['read']],['Trends',['trend']]]],['alarm','Alarms',[['Alarms',['tiles']],['Alarm list',['alist']]]],['drill','Drills',[['Drills',['drills','ex']],['Faults',['faults']]]],['more','More',[['Fuel lab',['fuelIn','iso','adv','whatif','lib']],['Actual',['act','dx']],['Troubleshoot',['trb']],['Basis',['basisT','basisP','startP']]]]]
+  :[['ctrl','Control',[['Control panel',['door']],['Controls',['controls']],['Ship',['ship']]]],['steps','Steps',[['Procedure',['steps','ex']]]],['data','Data',[['Gauges',['gauges']],['Readings',['read']],['Trends',['trend']]]],['alarm','Alarms',[['Alarms',['tiles']],['Alarm list',['alist']]]],['drill','Drills',[['Drills',['drills','ex2']],['Faults',['faults','fctl']]]],['more','More',[['Troubleshoot',['trb']],['Actual',['act','calc','dx']],['Relations',['sweep','eff']],['Basis',['about']]]]];
+ /* the gauges leave the mimic panel for a panel of their own */
+ const gp=document.createElement('div');gp.className='panel';gp.innerHTML='<div class="ph">Gauges</div>';gp.append(q('#gauges'));
+ const find=k=>{if(k==='gauges')return gp;const s=BL[k];if(s.startsWith('ph:')){const h=qa('.ph').find(e=>e.textContent.trim()===s.slice(3));return h&&h.closest('.panel');}const t=q(s);if(!t)return null;return k==='controls'?t:t.closest('.panel')||t;};
+ const take=(k,host)=>{const p=find(k);if(!p)return;p.classList.add('wsp','b_'+k);p.style.gridArea='';if(!q(':scope>.wsb',p)&&k!=='mimic'&&k!=='controls'){if(TITLE[k]&&!q(':scope>.ph',p)){const h=document.createElement('div');h.className='ph';h.textContent=TITLE[k];p.prepend(h);}const b=document.createElement('div');b.className='wsb';for(const c of [...p.childNodes])if(!(c.classList&&c.classList.contains('ph')))b.append(c);p.append(b);}host.append(p);};
+ /* two fingers scale a pop-up from half size to three times, around their midpoint */
+ function pinch(box,get,set,lo,hi){let s=null,raf=0,nx=null;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  box.style.touchAction='none';
+  const paint=()=>{raf=0;if(!nx)return;const n=nx;nx=null;set(n.z);box.scrollLeft=n.fx*box.scrollWidth-n.x;box.scrollTop=n.fy*box.scrollHeight-n.y;};
+  box.addEventListener('touchstart',e=>{if(e.touches.length===2){e.preventDefault();const r=box.getBoundingClientRect(),x=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,y=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;s={d:Math.max(1,dist(e.touches)),z:get(),fx:(box.scrollLeft+x)/Math.max(box.scrollWidth,1),fy:(box.scrollTop+y)/Math.max(box.scrollHeight,1)};}},{passive:false});
+  box.addEventListener('touchmove',e=>{if(e.touches.length<2||!s)return;e.preventDefault();const r=box.getBoundingClientRect(),x=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,y=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top;nx={z:Math.min(hi,Math.max(lo,s.z*dist(e.touches)/s.d)),fx:s.fx,fy:s.fy,x,y};if(!raf)raf=requestAnimationFrame(paint);},{passive:false});
+  const end=e=>{if(e.touches.length<2)s=null;};box.addEventListener('touchend',end,{passive:true});box.addEventListener('touchcancel',end,{passive:true});}
+ const root=document.createElement('div');root.id='ws';const main=document.createElement('main');main.id='wsMain';q('.bar').after(root);
+ const info=q('.minfo');
+ const view=(id,lay)=>{const v=document.createElement('section');v.className='view';v.dataset.v=id;v.dataset.l=lay||'';v.setAttribute('role','tabpanel');return v;};
+ const views={};let go;
+ if(!PHONE){
+  const rail=document.createElement('nav');rail.id='wsRail';rail.setAttribute('role','tablist');rail.setAttribute('aria-label','Sections');
+  for(const[id,lab,items,lay]of DESK){const v=view(id,lay);views[id]=v;items.forEach(k=>take(k,v));main.append(v);
+   rail.insertAdjacentHTML('beforeend',`<button role="tab" data-v="${id}" aria-selected="false" title="${lab}">${I(IC[id]||IC.more)}<span>${lab}</span>${id==='alarm'?'<b id="wsBadge" hidden></b>':''}</button>`);}
+  root.append(rail,main);
+  /* Windows: the plant fills the window until the control panel and gauges are asked for */
+  {const tg=document.createElement('button');tg.id='wsCG';tg.type='button';tg.className='tbtn';let hid=true;const setCG=()=>{views.plant.classList.toggle('hideCG',hid);tg.textContent=(hid?'Show':'Hide')+' Control & Gauge';tg.setAttribute('aria-expanded',!hid);dispatchEvent(new Event('resize'));};tg.addEventListener('click',()=>{hid=!hid;setCG();});q('.b_mimic').append(tg);setCG();}
+  go=id=>{if(!views[id])return;for(const k in views)views[k].classList.toggle('on',k===id);for(const b of qa('button',rail))b.setAttribute('aria-selected',b.dataset.v===id);try{sessionStorage.setItem('wsv',id);}catch(e){}dispatchEvent(new Event('resize'));pagers();};
+  rail.addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.v);});
+  rail.addEventListener('keydown',e=>{if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;e.preventDefault();const B=qa('button',rail),i=B.indexOf(document.activeElement),n=B[(i+(e.key==='ArrowDown'?1:B.length-1))%B.length];n.focus();n.click();});
+  q('.b_basisP,.b_about')?.querySelector('.wsb')?.prepend(info);
+ }else{
+  document.documentElement.classList.add('wsm');
+  const pv=view('plant');views.plant=pv;take('mimic',pv);pv.classList.add('on');main.append(pv);
+  const rail=document.createElement('nav');rail.id='wsRail';rail.setAttribute('aria-label','Sections');
+  const pop=document.createElement('div');pop.id='wsPop';pop.hidden=true;pop.setAttribute('role','dialog');pop.setAttribute('aria-modal','true');pop.innerHTML='<div class="popBox"><div class="popHd"><b id="popT"></b><div id="popTabs" role="tablist"></div><button id="popZ" hidden aria-label="Reset zoom"></button><button id="popX" aria-label="Close">✕</button></div><div id="popBody"></div></div>';
+  const body=q('#popBody',pop),tabs=q('#popTabs',pop),where={};
+  for(const[id,lab,groups]of PH){rail.insertAdjacentHTML('beforeend',`<button data-p="${id}">${I(IC[id])}<span>${lab}</span>${id==='alarm'?'<b id="wsBadge" hidden></b>':''}</button>`);groups.forEach(([gl,items],i)=>{const v=view(id+i);views[id+i]=v;items.forEach(k=>take(k,v));body.append(v);});}
+  for(const[t,p]of [['fuel','more0'],['act','more1'],['trb','more2'],['basis','more3'],['drill','drill0']])where[t]=p;
+  /* speed, pause, scenario and sound sit behind Run */
+  const rv=view('run');rv.classList.add('runv');views.run=rv;for(const s of ['#speed','#pause','#fuelSel','#scenario','#motion','#horn','#info']){const el=q(s);if(el)rv.append(el);}body.append(rv);
+  const pzc=q('#popZ',pop);let pz=1,pk='';const setPop=(z,save)=>{pz=z;body.style.setProperty('--pz',z);body.style.setProperty('--pw',body.clientWidth+'px');pzc.hidden=Math.abs(z-1)<.02;pzc.textContent=Math.round(z*100)+' %';if(save&&pk)zSet(pk,z);};
+  let placing=false;const place=()=>{const x=zGet(pk+'.x',-1),y=zGet(pk+'.y',-1);if(x<0||y<0)return centre();body.scrollLeft=x*body.scrollWidth-body.clientWidth/2;body.scrollTop=y*body.scrollHeight-body.clientHeight/2;};body.addEventListener('scroll',()=>{if(placing||pop.hidden||!pk)return;zSet(pk+'.x',(body.scrollLeft+body.clientWidth/2)/Math.max(body.scrollWidth,1));zSet(pk+'.y',(body.scrollTop+body.clientHeight/2)/Math.max(body.scrollHeight,1));},{passive:true});
+  const centre=()=>{const v=views[pk];body.scrollLeft=Math.max(0,(body.scrollWidth-body.clientWidth)/2);body.scrollTop=v&&q('.pkdoor,.face,.bowlwrap,.procw,.gauges',v)?Math.max(0,(body.scrollHeight-body.clientHeight)/2):0;};
+  pinch(body,()=>pz,z=>setPop(z,true),.5,3);pzc.addEventListener('click',()=>{setPop(1,true);centre();});addEventListener('resize',()=>setPop(pz));
+  const closePop=()=>{pop.hidden=true;for(const b of qa('button',rail))b.removeAttribute('aria-current');};
+  const open=(id,sub)=>{const g=PH.find(x=>x[0]===id);q('#popT',pop).textContent=g?g[1]:'Run settings';const list=g?g[2]:[];tabs.innerHTML=list.length>1?list.map(([l],i)=>`<button data-i="${i}" role="tab" aria-selected="${i===sub}">${l}</button>`).join(''):'';tabs.dataset.g=id;for(const k in views)if(k!=='plant')views[k].classList.toggle('on',k===(g?id+sub:'run'));placing=true;pop.hidden=false;pk=g?id+sub:'run';setPop(zGet(pk,1));place();requestAnimationFrame(()=>{place();requestAnimationFrame(()=>{placing=false;});});for(const b of qa('button',rail)){if(b.dataset.p===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}dispatchEvent(new Event('resize'));};
+  rail.addEventListener('click',e=>{const b=e.target.closest('button');if(b)open(b.dataset.p,0);});
+  tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(b)open(tabs.dataset.g,+b.dataset.i);});
+  pop.addEventListener('click',e=>{if(e.target===pop)closePop();});q('#popX',pop).addEventListener('click',closePop);
+  const rb=document.createElement('button');rb.id='mRunBtn';rb.type='button';rb.className='tbtn';rb.textContent='Run';rb.addEventListener('click',()=>open('run',0));q('.bar').insertBefore(rb,q('.bar .stabs'));
+  q('.b_basisP,.b_about')?.querySelector('.wsb')?.prepend(info);
+  go=t=>{const p=where[t];if(p)open(p.replace(/\d$/,''),+p.slice(-1));};
+  root.append(rail,main);document.body.append(pop);
+  /* the plant keeps the whole screen: Home, models and sections sit behind this button */
+  const mb=document.createElement('button');mb.id='mMenu';mb.type='button';mb.setAttribute('aria-label','Menu');mb.innerHTML=I('<path d="M4 7h16M4 12h16M4 17h16"/>')+'<b hidden></b>';document.body.append(mb);const ui=v=>document.documentElement.classList.toggle('wsUi',v);mb.addEventListener('click',()=>ui());rail.addEventListener('click',()=>ui(false));rb.addEventListener('click',()=>ui(false));q('#mimic').addEventListener('pointerdown',()=>ui(false));
+  const ic=q('#infoClose');if(ic){ic.textContent='✕';ic.setAttribute('aria-label','Close');}
+  /* a valve's control closes the same way: tap anywhere else on the plant */
+  document.addEventListener('pointerdown',e=>{const vp=q('#vp');if(vp&&!vp.hidden&&!vp.contains(e.target)&&!e.target.closest('.vlv,.pmp'))vp.hidden=true;});
+  /* the plant fits the screen; one finger pans, two pinch from half size to 5× around their midpoint */
+  const mi=q('#mimic');mi.style.touchAction='none';const fitW=()=>{const v=q('svg',mi)?.viewBox.baseVal,r=v&&v.width?v.width/v.height:1.3;return Math.min(mi.clientWidth,mi.clientHeight*r);},ZLO=.5,ZHI=5;
+  let zoom=Math.min(ZHI,Math.max(ZLO,zGet('plant',1)||1)),px=zGet('plant.x',.5),py=zGet('plant.y',.5),pinching=false;const savePos=()=>{if(!mi.clientWidth)return;px=(mi.scrollLeft+mi.clientWidth/2)/Math.max(mi.scrollWidth,1);py=(mi.scrollTop+mi.clientHeight/2)/Math.max(mi.scrollHeight,1);zSet('plant.x',px);zSet('plant.y',py);};function setZ(z,keep){if(!mi.clientWidth)return;const fx=keep?(mi.scrollLeft+mi.clientWidth/2)/Math.max(mi.scrollWidth,1):px,fy=keep?(mi.scrollTop+mi.clientHeight/2)/Math.max(mi.scrollHeight,1):py;zoom=Math.min(ZHI,Math.max(ZLO,z==null||z===0?1:+z));mi.style.setProperty('--fit',fitW()+'px');mi.style.setProperty('--mz',zoom);mi.scrollLeft=fx*mi.scrollWidth-mi.clientWidth/2;mi.scrollTop=fy*mi.scrollHeight-mi.clientHeight/2;}
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY),mid=t=>{const r=mi.getBoundingClientRect();return{x:(t[0].clientX+t[1].clientX)/2-r.left,y:(t[0].clientY+t[1].clientY)/2-r.top};};
+  let pan=null,pin=null,moved=false,next=null,raf=0;const startPan=t=>{pan={x:t.clientX,y:t.clientY,l:mi.scrollLeft,t:mi.scrollTop};};
+  const paint=()=>{raf=0;if(!next)return;const n=next;next=null;if('z' in n){setZ(n.z);zSet('plant',zoom);mi.scrollLeft=n.fx*mi.scrollWidth-n.x;mi.scrollTop=n.fy*mi.scrollHeight-n.y;}else{mi.scrollLeft=n.l;mi.scrollTop=n.t;}savePos();};
+  const queue=n=>{next=n;if(!raf)raf=requestAnimationFrame(paint);};
+  mi.addEventListener('touchstart',e=>{if(e.touches.length===1){moved=false;pin=null;pinching=false;startPan(e.touches[0]);}else if(e.touches.length===2){e.preventDefault();const m=mid(e.touches);moved=true;pan=null;pinching=true;pin={d:Math.max(1,dist(e.touches)),z:zoom,fx:(mi.scrollLeft+m.x)/Math.max(mi.scrollWidth,1),fy:(mi.scrollTop+m.y)/Math.max(mi.scrollHeight,1)};}},{passive:false});
+  mi.addEventListener('touchmove',e=>{const t=e.touches;if(t.length>=2&&pin){e.preventDefault();const m=mid(t);queue({z:Math.min(ZHI,Math.max(ZLO,pin.z*dist(t)/pin.d)),fx:pin.fx,fy:pin.fy,x:m.x,y:m.y});}else if(t.length===1&&pan){const dx=t[0].clientX-pan.x,dy=t[0].clientY-pan.y;if(Math.hypot(dx,dy)>8)moved=true;if(moved)queue({l:pan.l-dx,t:pan.t-dy});}},{passive:false});
+  const lift=e=>{if(e.touches.length===1){pin=null;pinching=false;startPan(e.touches[0]);}else if(!e.touches.length){pin=null;pan=null;pinching=false;}};
+  mi.addEventListener('touchend',lift,{passive:true});mi.addEventListener('touchcancel',lift,{passive:true});
+  mi.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+  for(const b of qa('.stabs button'))b.addEventListener('click',()=>setTimeout(()=>setZ(zoom),60));
+  new ResizeObserver(()=>{if(!pinching)setZ(zoom,true);}).observe(mi);setZ(zoom);requestAnimationFrame(()=>setZ(zoom));addEventListener('load',()=>setZ(zoom));
+ }
+ /* MakinaLabs stays on screen on every tab, pop-up and page */
+ {const st=document.createElement('div');st.id='wsStamp';st.setAttribute('role','img');st.setAttribute('aria-label','MakinaLabs');st.innerHTML="__STAMP__";document.body.append(st);}
+ q('.wrap').style.display='none';document.documentElement.classList.add('wsOn');
+ /* a long list turns pages by button; nothing needs a scroll bar */
+ function pagers(){if(PHONE)return;for(const b of qa('.view.on .wsb')){let f=b.nextElementSibling;const over=b.scrollHeight>b.clientHeight+3;if(!over){if(f&&f.classList.contains('pg'))f.hidden=true;continue;}
+  if(!f||!f.classList.contains('pg')){f=document.createElement('div');f.className='pg';f.innerHTML='<button aria-label="Previous page">‹</button><span></span><button aria-label="Next page">›</button>';b.after(f);const[pv,nx]=qa('button',f),step=d=>{b.scrollBy({top:d*(b.clientHeight-28),behavior:'smooth'});setTimeout(pagers,340);};pv.onclick=()=>step(-1);nx.onclick=()=>step(1);b.addEventListener('scroll',()=>label(b,f),{passive:true});}
+  f.hidden=false;label(b,f);}}
+ const label=(b,f)=>{const h=Math.max(1,b.clientHeight-28),n=Math.ceil((b.scrollHeight-28)/h),p=Math.min(n,Math.round(b.scrollTop/h)+1);f.children[1].textContent=`Page ${p} of ${n}`;f.children[0].disabled=b.scrollTop<4;f.children[2].disabled=b.scrollTop+b.clientHeight>=b.scrollHeight-4;};
+ setInterval(pagers,800);addEventListener('resize',pagers);
+ /* alarms show on the section button */
+ const badge=q('#wsBadge');let last=-1;setInterval(()=>{const n=qa('.tile').filter(t=>t.dataset.l==='1'||t.dataset.l==='2').length;if(n!==last){last=n;badge.hidden=!n;badge.textContent=n;const mbb=q('#mMenu b');if(mbb){mbb.hidden=!n;mbb.textContent=n;}}},500);
+ /* Info and the valve pop-up pinch as well */
+ {const b=q('.infoBody');if(b){const i=document.createElement('div');i.style.margin='0 auto';while(b.firstChild)i.append(b.firstChild);b.append(i);let z=zGet('info',1);const ap=v=>{z=v;i.style.zoom=v;i.style.width=b.clientWidth+'px';};pinch(b,()=>z,v=>{ap(v);zSet('info',v);},.6,3);q('#info').addEventListener('click',()=>requestAnimationFrame(()=>{ap(z);b.scrollLeft=(b.scrollWidth-b.clientWidth)/2;b.scrollTop=0;}));}
+  const v=q('#vp');if(v){let z=zGet('vp',1);v.style.zoom=z;pinch(v,()=>z,n=>{z=n;v.style.zoom=n;zSet('vp',n);},.7,2.2);
+   /* the pop-up opens beside the valve that was tapped, wherever the plant is panned or zoomed to */
+   if(PHONE){let px=0,py=0;document.addEventListener('pointerdown',e=>{if(!v.contains(e.target)){px=e.clientX;py=e.clientY;}},true);
+   new MutationObserver(()=>{if(v.hidden)return;const b=v.getBoundingClientRect(),m=6,g=14,W=innerWidth,H=innerHeight;let x=px+g;if(x+b.width>W-m)x=px-g-b.width;x=Math.max(m,Math.min(W-b.width-m,x));const y=Math.max(m,Math.min(H-b.height-m,py-b.height/2));v.style.left=x/z+'px';v.style.top=y/z+'px';}).observe(v,{attributes:true,attributeFilter:['hidden'],childList:true});}}}
+ if(PUR)window.tab=go;
+ window.__ws={go,views};
+ if(!PHONE){let s=null;try{s=sessionStorage.getItem('wsv');}catch(e){}go(views[s]?s:'plant');}
+})();
