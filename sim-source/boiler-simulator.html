@@ -286,16 +286,17 @@ const MODELS={
 let M=MODELS.mission;
 
 function pidCreate(g){return {kp:g.kp,ti:g.ti,td:g.td,i:0,prev:null,man:false,out:0};}
+function pidBumpless(c,mv){c.out=mv;c.i=mv;c.prev=null;} /* transfer Manual→Auto without jump */
 function pidStep(c,pv,sp,dt,lo,hi){
   const e=sp-pv;
-  if(c.man){c.prev=e;return clamp(c.out,lo,hi);}
+  if(c.man){c.prev=e;c.out=clamp(c.out,lo,hi);return c.out;}
   const p=c.kp*e;
   let d=0;if(c.prev!=null&&c.td>0)d=c.kp*c.td*(e-c.prev)/Math.max(dt,1e-3);
   c.prev=e;
-  let out=p+c.i+d;
-  if(out>hi){out=hi;if(e<0)c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;}
-  else if(out<lo){out=lo;if(e>0)c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;}
-  else c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;
+  let out=clamp(p+c.i+d,lo,hi);
+  /* anti-windup: integrate only when not saturating against the error */
+  const unsaturated=(out>lo&&out<hi)||(out>=hi&&e<0)||(out<=lo&&e>0);
+  if(unsaturated)c.i+= (c.kp/Math.max(c.ti,1e-3))*e*dt;
   c.out=out;return out;
 }
 
@@ -308,7 +309,8 @@ function coldState(){
     FO_T:35,FO_P:0,smoke:0,egT:180,egDP:0.8,meLoad:0.75,exhAvail:true,
     fuel:'HFO',demand:0.4,
     chem:{pAlk:8,pH:10.2,Cl:40,cond:180,scav:0.4,condPH:8.7},
-    airBound:false,bleedOpen:false,
+    airBound:false,bleedOpen:false,levelGauge:0.45,swell:0,
+    statusWhy:'Secured',egDry:false,
     lockout:false,trips:{},acks:{}
   };
 }
@@ -325,7 +327,9 @@ u={feed:false,dist:false,dose:false,fo:false,fd:false,egCirc:false,
    foHeat:false,ack:false,estop:false,lampTest:false};
 
 f={flameEye:false,foFilter:false,dumpStuck:false,fdFail:false,foPump:false,doseEmpty:false,
-   suctionShut:false,cascLeak:false,egSoot:false,llwlTest:false,lwlTest:false,flameTest:false};
+   suctionShut:false,cascLeak:false,egSoot:false,llwlTest:false,lwlTest:false,flameTest:false,egCircFail:false};
+let uiDirty=true,inspLog=[]; /* checklist rows: {id,lab,result,t} */
+const markDirty=()=>{uiDirty=true;};
 
 const ALARMS=[
   {id:'LWL',lab:'Low water',sev:1},
@@ -406,62 +410,74 @@ function step(dt){
   }else if(s.flame&&u.mode==='man'){pidP.man=true;pidP.out=u.loadMan;s.load=u.loadMan;}
   else if(!s.flame)s.load=0;
 
-  /* Heat release */
-  const eta=0.82*(fdOk?1:0.2);
-  const mFuel=s.flame?(s.load/100)*(M.steamOil*1000/3600)/(fuel.LHV*eta/hfg(s.T)+1e-9)*0.35:0; /* rough */
-  const Qoil=s.flame?eta*mFuel*fuel.LHV:0; /* kW */
+  /* Heat release — oil from burner load × LHV; EG from ME load × rating (circ required on SAACKE). */
+  const eta=0.82*(fdOk?clamp(0.55+s.load/200,0.55,1):0.15);
+  const QoilMax=(M.steamOil*1000/3600)*hfg(s.T); /* kW at rated oil steam */
+  const Qoil=s.flame?eta*(s.load/100)*QoilMax*(fuel.LHV/40500):0;
   const egFrac=s.exhAvail?clamp(u.meLoad,0,1):0;
-  const Qeg=(u.egCirc||!M.egCirc?1:(u.egCirc?1:0))*(egFrac*M.steamEgMax*1000/3600)*hfg(s.T)*(f.egSoot?0.7:1);
-  /* SAACKE needs circ for EG */
-  const egOk=!M.egCirc||u.egCirc;
-  const QegUse=egOk?Qeg:0;
+  const egOk=!M.egCirc||(u.egCirc&&!f.egCircFail);
+  s.egDry=M.egCirc&&u.egCirc===false&&egFrac>0.2;
+  const QegMax=(M.steamEgMax*1000/3600)*hfg(s.T)*(f.egSoot?0.7:1);
+  const QegUse=egOk?egFrac*QegMax:0;
   s.egT=120+egFrac*200+(f.egSoot?40:0);
   s.egDP=0.6+egFrac*0.5+(f.egSoot?1.2:0);
 
-  const Qnet=Qoil+QegUse; /* kW */
-  const mSteamOil=(Qoil/Math.max(hfg(s.T),100))/1000*3600; /* t/h */
-  const mSteamEg=(QegUse/Math.max(hfg(s.T),100))/1000*3600;
-  s.oilSteam=mSteamOil;s.egSteam=mSteamEg;s.totalSteam=mSteamOil+mSteamEg;
+  const Qnet=Qoil+QegUse;
+  s.oilSteam=(Qoil/Math.max(hfg(s.T),100))/1000*3600;
+  s.egSteam=(QegUse/Math.max(hfg(s.T),100))/1000*3600;
+  s.totalSteam=s.oilSteam+s.egSteam;
 
-  /* Steam take-off + dump */
-  const demandTh=u.demand*M.steamOil; /* t/h hotel/cargo relative */
+  /* Steam take-off + dump (separate PID from burner). */
+  const demandTh=u.demand*M.steamOil*(u.steamStop?1:0.05);
   let dumpCmd;
-  if(u.dumpAuto){pidDump.man=false;dumpCmd=pidStep(pidDump,s.P,u.dumpSp,dt,0,100);}
+  if(u.dumpAuto){if(pidDump.man){pidBumpless(pidDump,s.dump);pidDump.man=false;}dumpCmd=pidStep(pidDump,s.P,u.dumpSp,dt,0,100);}
   else{pidDump.man=true;pidDump.out=u.dumpMan;dumpCmd=u.dumpMan;}
   if(f.dumpStuck)dumpCmd=0;
   s.dump=dumpCmd;
-  const mOut=(demandTh+(dumpCmd/100)*Math.max(0,s.totalSteam-demandTh*0.3))/3600*1000; /* kg/s */
-  const mGen=s.totalSteam/3600*1000;
-  s.mw+= (feedKg - mGen)*dt;
-  /* pressure from energy surplus */
-  const dQ=(Qnet - mOut*hfg(s.T)*1)*dt; /* kJ */
-  const C=s.mw*cpW+80;
-  s.T+=dQ/C;
-  s.P=clamp(psat(s.T),ATM,M.Prated+2);
-  s.T=tsat(s.P);
-  const mTot=Math.max(s.mw,1);s.level=clamp(s.mw/M.drumKg,0.05,0.98);
+  const mOutKg=((demandTh+(dumpCmd/100)*Math.max(0.2,s.totalSteam*0.5))/3600)*1000;
+  const mGenKg=(s.totalSteam/3600)*1000;
+  const mwBefore=s.mw;
+  s.mw=clamp(s.mw+feedKg*dt-mGenKg*dt,40,M.drumKg*0.98);
+  /* energy → saturation pressure; mass change drives level; firing adds shrink/swell cue */
+  const dQ=(Qnet-mOutKg*hfg(s.T))*dt;
+  const C=Math.max(s.mw,80)*cpW+120;
+  let Ttry=s.T+dQ/C;s.P=clamp(psat(Ttry),ATM,M.Prated+2.5);s.T=tsat(s.P);
+  s.level=clamp(s.mw/M.drumKg,0.05,0.98);
+  const fireBump=(s.flame?0.04:0)*(s.load/100)-(s.load<1&&mwBefore>s.mw?0.02:0);
+  s.swell+=(fireBump-s.swell)*0.15;s.levelGauge=clamp(s.level+s.swell,0.05,0.98);
 
   /* Chemistry drift */
   s.chem.Cl+= (0.002+ (f.cascLeak?0.05:0))*dt;
   s.chem.cond=80+s.chem.Cl*2.2+s.chem.pAlk*3;
   s.chem.condPH+=(8.8-s.chem.condPH)*0.01*dt;
+  if(u.blowdown>20)s.chem.pAlk=Math.max(4,s.chem.pAlk-0.002*u.blowdown/100*dt);
+
+  /* Status line for trainee */
+  if(s.egDry)s.statusWhy='EG path blocked — start EG circulating pump (dry-run protection)';
+  else if(s.flame&&s.egSteam>0.15&&s.oilSteam<s.egSteam)s.statusWhy='Oil backed down — EG covering most of the load';
+  else if(!s.flame&&s.egSteam>0.05)s.statusWhy='EG only — ME at '+(u.meLoad*100).toFixed(0)+'% load · oil secured';
+  else if(s.flame&&u.fuel==='MGO')s.statusWhy='MGO — lower viscosity; watch firing rate / smoke';
+  else if(s.airbound&&u.dist)s.statusWhy='Distillate air-bound — bleed casing, do not only restart';
+  else if(s.flame)s.statusWhy='Oil firing · total '+s.totalSteam.toFixed(2)+' t/h';
+  else s.statusWhy=u.mode==='off'?'Secured':'Standby';
 
   /* Trips */
-  const L=f.lwlTest?M.Lwl-0.01:s.level, LL=f.llwlTest?M.Llwl-0.01:s.level;
+  const L=f.lwlTest?M.Lwl-0.01:s.levelGauge, LL=f.llwlTest?M.Llwl-0.01:s.levelGauge;
   if(LL<=M.Llwl){s.trips.LLWL=true;s.lockout=true;s.flame=false;s.seq='trip';}
   else if(L<=M.Lwl)s.trips.LWL=true; else {delete s.trips.LWL;}
-  if(s.level>=M.Lhi)s.trips.HWL=true; else delete s.trips.HWL;
+  if(s.levelGauge>=M.Lhi)s.trips.HWL=true; else delete s.trips.HWL;
   if(s.P>=M.Prated){s.trips.HP=true;s.flame=false;s.load=0;} else delete s.trips.HP;
   if(!viscOk&&u.fo)s.trips.FO_T=true; else delete s.trips.FO_T;
-  if(u.fo&&s.FO_P<2&&s.seq!=='off')s.trips.FO_P=true; else delete s.trips.FO_P;
+  if(u.fo&&s.FO_P<2&&s.seq!=='off'&&s.seq!=='purge')s.trips.FO_P=true; else delete s.trips.FO_P;
   if(f.fdFail&&u.fd)s.trips.FD=true; else delete s.trips.FD;
   if(cascFrac<0.1)s.trips.CASC=true; else delete s.trips.CASC;
-  if(s.airBound&&u.dist)s.trips.AIR=true; else delete s.trips.AIR;
+  if(s.airbound&&u.dist)s.trips.AIR=true; else delete s.trips.AIR;
   if(s.egDP>1.8)s.trips.EGDP=true; else delete s.trips.EGDP;
+  if(s.egDry||f.egCircFail)s.trips.EGDP=true;
   if(s.lockout)s.trips.LOCK=true; else delete s.trips.LOCK;
   if(u.estop)s.trips.ESTOP=true; else delete s.trips.ESTOP;
 
-  s.smoke=s.flame?(s.load>90&&!fdOk?0.8:0.15):0;
+  s.smoke=s.flame?(s.load>85&&(!fdOk||u.fuel==='MGO')?0.7:0.12):0;
   s.t+=dt;
 }
 
@@ -482,20 +498,41 @@ const SC=[
 const PROC={
   mission:[
     {t:'Check cascade level; make up with distillate if low',ok:()=>s.casc/M.cascKg>0.35},
-    {t:'If distillate air-bound, open casing bleed until water',ok:()=>!s.airBound||!u.dist},
+    {t:'If distillate air-bound, open casing bleed until water',ok:()=>!s.airbound||!u.dist},
     {t:'Start feed pump; fill drum to normal',ok:()=>u.feed&&s.level>M.Lnml-0.05},
-    {t:'Run boiler-water test; apply Water lab recommendation',ok:()=>true},
+    {t:'Run boiler-water test; apply Water lab recommendation',ok:()=>s.chem.pAlk>=6&&s.chem.Cl<=80},
     {t:'Start FD fan, then FO pump; heat FO to viscosity',ok:()=>u.fd&&u.fo&&s.FO_T>=(FUELS[u.fuel]||M.FO).Tmin-5},
-    {t:'HMI Auto — start burner; watch purge→pilot→main',ok:()=>s.flame},
+    {t:'Mission Touch Auto — burner start; purge→pilot→main',ok:()=>s.flame},
     {t:'Open steam stop; raise pressure to working',ok:()=>u.steamStop&&s.P>=u.Psp-0.3},
-    {t:'Put EG in service; confirm oil vs EG t/h',ok:()=>s.egSteam>0.05||u.meLoad>0.3},
+    {t:'Put EG in service; confirm oil vs EG t/h on Home',ok:()=>s.egSteam>0.05||u.meLoad>0.3},
     {t:'Prove dump Auto, then Manual bypass, return Auto',ok:()=>true},
     {t:'Secure: stop burner, post-purge, stop motors, steam stop',ok:()=>!s.flame&&u.mode==='off'}
+  ],
+  saacke:[
+    {t:'Check cascade; distillate make-up / bleed if air-bound',ok:()=>s.casc/M.cascKg>0.35&&(!s.airbound||!u.dist)},
+    {t:'Start feed; fill drum to normal',ok:()=>u.feed&&s.level>M.Lnml-0.05},
+    {t:'Start EG circulating pump before EG heat (forced circ)',ok:()=>u.egCirc||u.meLoad<0.15},
+    {t:'FD + FO; heat FO; BMS Auto light-up',ok:()=>u.fd&&u.fo&&s.flame},
+    {t:'Open steam stop; balance oil vs EG on BMS Home',ok:()=>u.steamStop&&s.P>=u.Psp-0.4},
+    {t:'Dump Auto under excess EG; Manual bypass practice',ok:()=>true},
+    {t:'Secure BMS + circ + motors',ok:()=>!s.flame&&u.mode==='off'}
+  ],
+  kangrim:[
+    {t:'Cascade / distillate / bleed as needed',ok:()=>s.casc/M.cascKg>0.35},
+    {t:'Feed on; drum to normal water level',ok:()=>u.feed&&s.level>M.Lnml-0.05},
+    {t:'Water test → dose per recommendation',ok:()=>s.chem.pAlk>=6},
+    {t:'FD, FO, heat; panel Auto start (provisional labels)',ok:()=>s.flame},
+    {t:'Steam stop; EG assist; dump Auto/Manual',ok:()=>u.steamStop},
+    {t:'Secure panel and starters',ok:()=>!s.flame&&u.mode==='off'}
+  ],
+  miura:[
+    {t:'Cascade level OK; bleed distillate if air-bound',ok:()=>s.casc/M.cascKg>0.35},
+    {t:'Feed; fill; water treatment per lab',ok:()=>u.feed&&s.level>M.Lnml-0.05},
+    {t:'Sequencer Auto — watch step lamps purge→pilot→main',ok:()=>s.flame},
+    {t:'Steam stop; EG side in service; dump Auto',ok:()=>u.steamStop},
+    {t:'Secure sequencer / emergency manual as SOM',ok:()=>!s.flame&&u.mode==='off'}
   ]
 };
-PROC.saacke=PROC.mission.map(x=>({...x}));
-PROC.kangrim=PROC.mission.map(x=>({...x}));
-PROC.miura=PROC.mission.map(x=>({...x}));
 
 function loadScenario(i){
   const c=SC[i]||SC[0];
@@ -523,7 +560,7 @@ function loadScenario(i){
     s.level=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.flame=true;s.seq='main';
     u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;
   }
-  stepIdx=0;note('Scenario: '+c.name);paintAll();
+  stepIdx=0;inspLog=[];markDirty();note('Scenario: '+c.name);paintAll();
 }
 
 function waterRec(){
@@ -568,26 +605,39 @@ function paintMimic(){
   set('vDist',(s.dist/M.distKg*100).toFixed(0)+'%'+ (s.airBound?' AIR':''));
   set('vCasc',(s.casc/M.cascKg*100).toFixed(0)+'%');
   set('vP',s.P.toFixed(2)+' bar');
-  set('vL',(s.level*100).toFixed(0)+'%');
+  set('vL',(s.levelGauge*100).toFixed(0)+'%');
   set('vOil',s.oilSteam.toFixed(2)+' t/h');
-  set('vEg',s.egSteam.toFixed(2)+' t/h');
+  set('vEg',s.egSteam.toFixed(2)+' t/h'+(s.egDry?' DRY':''));
   set('vDump',s.dump.toFixed(0)+'% '+(u.dumpAuto?'A':'M'));
-  set('vTot','Total '+s.totalSteam.toFixed(2)+' t/h · demand '+(u.demand*M.steamOil).toFixed(2));
+  set('vTot',s.statusWhy);
 }
 
+function hmiPages(){
+  /* provisional labels per MANUAL-MAPS — not inventing full maker trees */
+  if(M.id==='mission')return [['home','Home'],['burner','Burner'],['dump','Dump'],['alarms','Alarms'],['water','Water'],['pid','Tuning'],['service','Service']];
+  if(M.id==='saacke')return [['home','Overview'],['burner','BMS'],['dump','Dump'],['alarms','Alarms'],['water','Water'],['pid','PID'],['service','Service']];
+  if(M.id==='kangrim')return [['home','Main'],['burner','Combustion'],['dump','Dump'],['alarms','Alarm'],['water','Water'],['pid','Control'],['service','Test']];
+  return [['home','Status'],['burner','Sequence'],['dump','Dump'],['alarms','Alarm'],['water','Water'],['pid','PID'],['service','Test']];
+}
+function seqLamps(){
+  const steps=['off','purge','pilot','main','post','trip'];
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0">${steps.map(x=>`<span class="lamp ${s.seq===x?'on-g':''}">${x}</span>`).join('')}</div>`;
+}
 function paintHmi(){
-  const pages=['home','burner','dump','alarms','water','pid','service'];
-  const hd=pages.map(p=>`<button class="hmibtn${hmiPage===p?' on':''}" data-p="${p}">${p}</button>`).join('');
+  const pages=hmiPages();
+  if(!pages.some(p=>p[0]===hmiPage))hmiPage='home';
+  const hd=pages.map(([p,lab])=>`<button class="hmibtn${hmiPage===p?' on':''}" data-p="${p}">${lab}</button>`).join('');
   let body='';
   if(hmiPage==='home')body=`
     <div class="row"><span>Steam pressure</span><span class="v">${s.P.toFixed(2)} bar</span></div>
-    <div class="row"><span>Drum level</span><span class="v">${(s.level*100).toFixed(1)} %</span></div>
+    <div class="row"><span>Drum level (gauge)</span><span class="v">${(s.levelGauge*100).toFixed(1)} %${Math.abs(s.swell)>0.01?' · swell':''}</span></div>
     <div class="row"><span>Burner / seq</span><span class="v">${s.flame?'FLAME':'—'} ${s.seq}</span></div>
     <div class="row"><span>Oil / EG / Total</span><span class="v">${s.oilSteam.toFixed(2)} / ${s.egSteam.toFixed(2)} / ${s.totalSteam.toFixed(2)} t/h</span></div>
     <div class="row"><span>Dump</span><span class="v">${u.dumpAuto?'Auto':'Manual'} ${s.dump.toFixed(0)} %</span></div>
     <div class="row"><span>Mode</span><span class="v">${u.mode.toUpperCase()}${s.lockout?' LOCKOUT':''}</span></div>
-    <p class="note" style="color:#9aa">${s.flame?'': (s.exhAvail&&s.egSteam>0.05?'EG only — ME '+(u.meLoad*100).toFixed(0)+'% load':'Standby')}</p>`;
+    <p class="note" style="color:#9aa;margin:8px 0 0">${s.statusWhy}</p>${M.id==='miura'?seqLamps():''}`;
   else if(hmiPage==='burner')body=`
+    ${M.id==='miura'?seqLamps():''}
     <div class="row"><span>Sequence</span><span class="v">${s.seq}</span></div>
     <div class="row"><span>Load (MV)</span><span class="v">${s.load.toFixed(0)} %</span></div>
     <div class="row"><span>Pressure SP</span><span class="v">${u.Psp.toFixed(2)} bar</span></div>
@@ -602,38 +652,38 @@ function paintHmi(){
     <div class="row"><span>Dump SP</span><span class="v">${u.dumpSp.toFixed(2)} bar</span></div>
     <div class="row"><span>Valve</span><span class="v">${s.dump.toFixed(0)} %</span></div>
     <div class="ctl"><label>Manual position <output id="dumpManO">${u.dumpMan}%</output></label><input type="range" id="dumpMan" min="0" max="100" value="${u.dumpMan}"></div>
-    <button class="sbtn" id="dumpToggle">${u.dumpAuto?'Switch to Manual':'Switch to Auto'}</button>`;
+    <button class="sbtn" id="dumpToggle">${u.dumpAuto?'Switch to Manual':'Switch to Auto (bumpless)'}</button>`;
   else if(hmiPage==='alarms')body=ALARMS.map(a=>{const on=!!s.trips[a.id];return `<div class="row"><span>${a.lab}</span><span class="v">${on?(s.acks[a.id]?'ACK':'ACTIVE'):'—'}</span></div>`;}).join('')+`<button class="sbtn" id="hmiAck" style="margin-top:8px">Accept / Acknowledge</button>`;
   else if(hmiPage==='water')body=`<div class="row"><span>P-alk</span><span class="v">${s.chem.pAlk.toFixed(1)}</span></div>
     <div class="row"><span>pH / Cl / Cond</span><span class="v">${s.chem.pH.toFixed(1)} / ${s.chem.Cl.toFixed(0)} / ${s.chem.cond.toFixed(0)}</span></div>
-    <div class="row"><span>Condensate pH</span><span class="v">${s.chem.condPH.toFixed(1)}</span></div>`;
+    <div class="row"><span>Condensate pH</span><span class="v">${s.chem.condPH.toFixed(1)}</span></div>
+    <p class="note" style="color:#9aa">Apply changes in Water lab — chloride is never dosed away.</p>`;
   else if(hmiPage==='pid')body=`
-    <p class="note" style="color:#9aa;margin:0 0 8px">Pressure→burner and dump PIDs. Wrong tuning is a real risk — Reset restores maker defaults (estimated).</p>
+    <p class="note" style="color:#9aa;margin:0 0 8px">Pressure→burner and dump PIDs (anti-windup). Wrong tuning is a real risk — defaults are estimated until the maker PDF.</p>
     <div class="row"><span>P loop Kp/Ti/Td</span><span class="v">${pidP.kp}/${pidP.ti}/${pidP.td}</span></div>
     <div class="row"><span>P err / MV</span><span class="v">${(u.Psp-s.P).toFixed(2)} / ${s.load.toFixed(0)}%</span></div>
-    <div class="row"><span>Dump Kp/Ti</span><span class="v">${pidDump.kp}/${pidDump.ti}</span></div>
+    <div class="row"><span>Dump Kp/Ti / MV</span><span class="v">${pidDump.kp}/${pidDump.ti} / ${s.dump.toFixed(0)}%</span></div>
     <div class="ctl"><label>Kp pressure <output>${pidP.kp}</output></label><input type="range" id="kpP" min="2" max="40" value="${pidP.kp}"></div>
     <div class="ctl"><label>Ti pressure <output>${pidP.ti}</output></label><input type="range" id="tiP" min="5" max="120" value="${pidP.ti}"></div>
+    <p class="note" id="pidHint" style="color:#9aa">Higher Kp — burner reacts harder; watch hunting. Shorter Ti — faster offset kill, more overshoot.</p>
     <button class="sbtn" id="pidDef">Load maker defaults</button>`;
-  else body=`<p class="note" style="color:#9aa">Service / test paths only as in maker manual. Inspection drills drive real trips.</p>
+  else body=`<p class="note" style="color:#9aa">Service / test — provisional until maker manual. Prefer Inspection checklist for survey drills.</p>
     <button class="sbtn" data-insp="lwl">Test LWL</button> <button class="sbtn" data-insp="llwl">Test LLWL</button> <button class="sbtn" data-insp="ff">Test flame fail</button>`;
   $('hmi').innerHTML=`<div class="hmihd">${hd}</div><div class="hmibody">${body}</div><div class="hmift"><span class="lamp ${s.flame?'on-g':''}">Flame</span><span class="lamp ${s.lockout?'on-r':''}">Lockout</span><span class="lamp ${u.dumpAuto?'on-g':''}">Dump Auto</span></div>`;
-  $('hmiName').textContent=M.hmi;
-  $('hmi').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.p;paintHmi();});
+  $('hmiName').textContent=M.hmi+' · provisional';
+  $('hmi').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.p;markDirty();paintPanels();});
   const hs=$('hmiStart'),hst=$('hmiStop'),hr=$('hmiReset');
-  if(hs)hs.onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
+  if(hs)hs.onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';markDirty();};
   if(hst)hst.onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
-  if(hr)hr.onclick=()=>{if(s.level>M.Llwl&&!u.estop){s.lockout=false;s.seq='off';delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;note('Lockout reset');}};
-  const dt=$('dumpToggle');if(dt)dt.onclick=()=>{u.dumpAuto=!u.dumpAuto;if(u.dumpAuto)u.dumpMan=s.dump;paintHmi();};
+  if(hr)hr.onclick=()=>{if(s.level>M.Llwl&&!u.estop){s.lockout=false;s.seq='off';u.estop=false;delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;delete s.trips.ESTOP;note('Lockout reset');markDirty();}};
+  const dt=$('dumpToggle');if(dt)dt.onclick=()=>{if(u.dumpAuto){u.dumpMan=s.dump;u.dumpAuto=false;}else{pidBumpless(pidDump,u.dumpMan);u.dumpAuto=true;}markDirty();paintPanels();};
   const dm=$('dumpMan');if(dm)dm.oninput=()=>{u.dumpMan=+dm.value;$('dumpManO').textContent=u.dumpMan+'%';};
   const ha=$('hmiAck');if(ha)ha.onclick=()=>ackAll();
-  const kp=$('kpP'),ti=$('tiP');if(kp)kp.oninput=()=>{pidP.kp=+kp.value;kp.previousElementSibling.querySelector('output').textContent=pidP.kp;};
-  if(ti)ti.oninput=()=>{pidP.ti=+ti.value;ti.previousElementSibling.querySelector('output').textContent=pidP.ti;};
-  const pd=$('pidDef');if(pd)pd.onclick=()=>{resetLoops();note('PID defaults restored');paintHmi();};
-  $('hmi').querySelectorAll('[data-insp]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.insp;if(k==='lwl')f.lwlTest=true;if(k==='llwl')f.llwlTest=true;if(k==='ff')f.flameTest=true;
-    note('Inspection test: '+k,'w');setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},2);
-  });
+  const kp=$('kpP'),ti=$('tiP');
+  if(kp)kp.oninput=()=>{pidP.kp=+kp.value;kp.previousElementSibling.querySelector('output').textContent=pidP.kp;const h=$('pidHint');if(h)h.textContent=pidP.kp>28?'High Kp — expect hunting / oscillation.':'Higher Kp — burner reacts harder; watch hunting.';};
+  if(ti)ti.oninput=()=>{pidP.ti=+ti.value;ti.previousElementSibling.querySelector('output').textContent=pidP.ti;const h=$('pidHint');if(h)h.textContent=pidP.ti<15?'Short Ti — fast offset kill, risk of overshoot.':'Longer Ti — softer integral; leftover offset if too weak.';};
+  const pd=$('pidDef');if(pd)pd.onclick=()=>{resetLoops();note('PID defaults restored');markDirty();paintPanels();};
+  $('hmi').querySelectorAll('[data-insp]').forEach(b=>b.onclick=()=>runInsp(b.dataset.insp));
 }
 
 function paintDoor(){
@@ -646,12 +696,12 @@ function paintDoor(){
       <button class="pbtn sp" id="locEstop">E-STOP</button>
     </div>
     <span class="lamp ${s.flame?'on-g':''}">Flame</span> <span class="lamp ${s.lockout?'on-r':''}">Trip</span>`;
-  $('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;u.mode=b.dataset.mode;paintDoor();};
-  $('locStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
+  $('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;u.mode=b.dataset.mode;markDirty();paintPanels();};
+  $('locStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';markDirty();};
   $('locStop').onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
   $('locAck').onclick=()=>ackAll();
   $('locLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
-  $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
+  $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');markDirty();};
 }
 
 function mkStarter(id,lab,key){
@@ -690,15 +740,15 @@ function paintControls(){
   bind('mel',e=>{u.meLoad=e.target.value/100;e.target.previousElementSibling.querySelector('output').textContent=(u.meLoad*100).toFixed(0)+'%';});
   bind('fuelSel',e=>u.fuel=e.target.value);
   bind('psp',e=>{u.Psp=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.Psp.toFixed(1);});
-  $('foHeat').onclick=()=>{u.foHeat=!u.foHeat;paintControls();};
-  $('steamStop').onclick=()=>{u.steamStop=!u.steamStop;paintControls();};
+  $('foHeat').onclick=()=>{u.foHeat=!u.foHeat;markDirty();paintPanels();};
+  $('steamStop').onclick=()=>{u.steamStop=!u.steamStop;markDirty();paintPanels();};
   bind('bd',e=>{u.blowdown=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.blowdown;});
   bind('dr',e=>{u.doseRate=+e.target.value;e.target.previousElementSibling.querySelector('output').textContent=u.doseRate;});
-  $('mdoseGo').onclick=()=>{u.manualDoseL=+$('mdose').value||0;$('mdose').value=0;};
+  $('mdoseGo').onclick=()=>{u.manualDoseL=+$('mdose').value||0;$('mdose').value=0;note('Manual dose queued');};
 }
 
 function paintWater(){
-  const rec=waterRec();
+  const rec=waterRec(),clHi=s.chem.Cl>80;
   $('waterLab').innerHTML=`
     <table><tr><th>Test</th><th>Result</th><th>Band</th></tr>
     <tr><td>P-alkalinity</td><td class="v">${s.chem.pAlk.toFixed(1)}</td><td>6–18</td></tr>
@@ -708,14 +758,25 @@ function paintWater(){
     <tr><td>Scavenger</td><td class="v">${s.chem.scav.toFixed(2)}</td><td>0.2–1.0</td></tr>
     <tr><td>Condensate pH</td><td class="v">${s.chem.condPH.toFixed(1)}</td><td>8.5–9.5</td></tr></table>
     <div class="rec"><b>Recommendation</b><ul>${rec.map(r=>`<li>${r}</li>`).join('')}</ul>
-    <button class="sbtn" id="runTest">Re-sample</button></div>`;
-  $('runTest').onclick=()=>note('Sample taken — residuals from model state');
+    <div class="pumpbox" style="margin-top:8px">
+      <button class="sbtn" id="applyDose" ${clHi?'disabled':''}>Apply: dosing +10%</button>
+      <button class="sbtn" id="applyMan" ${clHi?'disabled':''}>Apply: manual 2 L</button>
+      <button class="sbtn" id="applyBd">Apply: blowdown 40%</button>
+      <button class="sbtn" id="runTest">Re-sample</button>
+    </div>
+    ${clHi?'<p class="note">Chloride high — dose buttons locked. Blow down and find the leak.</p>':''}
+    </div>`;
+  $('runTest').onclick=()=>{note('Sample taken — residuals from live model');markDirty();paintPanels();};
+  $('applyDose').onclick=()=>{if(clHi)return;u.dose=true;u.doseRate=Math.min(100,u.doseRate+10);note('Dosing pump +10% applied');markDirty();paintPanels();};
+  $('applyMan').onclick=()=>{if(clHi)return;u.manualDoseL=2;note('Manual 2 L into cascade');};
+  $('applyBd').onclick=()=>{u.blowdown=40;note('Blowdown set 40%');markDirty();paintPanels();};
 }
 
 function paintReadings(){
   $('readings').innerHTML=`<tr><th>Point</th><th>Value</th><th></th></tr>
   <tr><td>Steam P</td><td class="v">${s.P.toFixed(2)} bar a</td><td></td></tr>
-  <tr><td>Drum level</td><td class="v">${(s.level*100).toFixed(1)} %</td><td></td></tr>
+  <tr><td>Drum level (mass / gauge)</td><td class="v">${(s.level*100).toFixed(1)} / ${(s.levelGauge*100).toFixed(1)} %</td><td></td></tr>
+  <tr><td>Status</td><td class="v">${s.statusWhy}</td><td></td></tr>
   <tr><td>Oil steam</td><td class="v">${s.oilSteam.toFixed(2)} t/h</td><td></td></tr>
   <tr><td>EG steam</td><td class="v">${s.egSteam.toFixed(2)} t/h</td><td></td></tr>
   <tr><td>Total steam</td><td class="v">${s.totalSteam.toFixed(2)} t/h</td><td></td></tr>
@@ -761,17 +822,27 @@ function paintSteps(){
   $('steps').innerHTML=P.map((p,i)=>`<li class="${i<stepIdx?'done':i===stepIdx?'now':''}"><span class="n">${i+1}</span><span>${p.t}${i===stepIdx?'<span class="why">Current</span>':''}</span></li>`).join('');
 }
 
+function runInsp(k){
+  const labs={lwl:'LWL',llwl:'LLWL',ff:'Flame failure',hp:'High steam P',fd:'FD fail',casc:'Cascade low'};
+  if(k==='lwl')f.lwlTest=true;if(k==='llwl')f.llwlTest=true;if(k==='ff')f.flameTest=true;
+  if(k==='hp'){u.demand=0.05;u.meLoad=1;u.dumpAuto=false;u.dumpMan=0;f.dumpStuck=true;}
+  if(k==='fd')f.fdFail=true;if(k==='casc'){s.casc=M.cascKg*0.05;}
+  note('Inspection: '+(labs[k]||k),'w');
+  inspLog.unshift({id:k,lab:labs[k]||k,result:'RUN',t:Math.floor(s.t)});
+  setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},3);
+  markDirty();paintInspect();
+}
 function paintInspect(){
-  $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. Each drives real trips.</p>
-    ${[['lwl','LWL'],['llwl','LLWL'],['ff','Flame failure'],['hp','High steam P']].map(([k,l])=>`<button class="sbtn" data-i="${k}">${l}</button> `).join('')}
-    <div id="inspLog" class="note" style="margin-top:8px"></div>`;
+  $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. Observe trip → ack on HMI and local → restore → reset → mark pass.</p>
+    ${[['lwl','LWL'],['llwl','LLWL'],['ff','Flame failure'],['hp','High steam P'],['fd','FD fail'],['casc','Cascade low']].map(([k,l])=>`<button class="sbtn" data-i="${k}">${l}</button> `).join('')}
+    <table style="margin-top:10px"><tr><th>Time</th><th>Item</th><th>Result</th><th></th></tr>
+    ${inspLog.slice(0,12).map((r,i)=>`<tr><td class="v">${r.t}s</td><td>${r.lab}</td><td>${r.result}</td>
+    <td><button class="sbtn" data-pass="${i}">Pass</button> <button class="sbtn" data-fail="${i}">Fail</button></td></tr>`).join('')||'<tr><td colspan="4" class="note">No tests yet</td></tr>'}
+    </table>`;
   $('inspect').onclick=e=>{
-    const b=e.target.closest('[data-i]');if(!b)return;
-    const k=b.dataset.i;
-    if(k==='lwl')f.lwlTest=true;if(k==='llwl')f.llwlTest=true;if(k==='ff')f.flameTest=true;
-    if(k==='hp'){u.demand=0.05;u.meLoad=1;u.dumpAuto=false;u.dumpMan=0;f.dumpStuck=true;}
-    note('Inspection: '+k,'w');$('inspLog').textContent='Ran '+k+' — observe HMI/panel, ack, restore, reset.';
-    setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},3);
+    const b=e.target.closest('[data-i],[data-pass],[data-fail]');if(!b)return;
+    if(b.dataset.i)return runInsp(b.dataset.i);
+    const i=+(b.dataset.pass??b.dataset.fail);if(inspLog[i]){inspLog[i].result=b.dataset.pass!=null?'PASS':'FAIL';paintInspect();}
   };
 }
 
@@ -804,8 +875,13 @@ function paintTrends(){
     <div class="strip"><div class="st"><span>Burner load</span><span>${s.load.toFixed(0)}%</span></div>${spark(hist.load,'#1f6db5')}</div>`;
 }
 
+function paintPanels(){
+  if(!uiDirty)return;uiDirty=false;
+  paintHmi();paintDoor();paintStarters();paintControls();paintWater();paintInspect();
+}
 function paintAll(){
-  paintMimic();paintHmi();paintDoor();paintStarters();paintControls();paintWater();paintReadings();paintGauges();paintAlarms();paintSteps();paintTrends();
+  paintMimic();paintReadings();paintGauges();paintAlarms();paintSteps();paintTrends();
+  paintPanels();
   const t=Math.floor(s.t);$('clock').textContent=[Math.floor(t/3600),Math.floor(t/60)%60,t%60].map(x=>String(x).padStart(2,'0')).join(':');
   $('bsub').textContent=M.tab+' · '+M.maker;
 }
@@ -813,7 +889,7 @@ function paintAll(){
 function switchModel(id){
   M=MODELS[id]||MODELS.mission;
   document.querySelectorAll('.stabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===M.id));
-  buildMimic();loadScenario(+$('scenario').value||0);
+  hmiPage='home';inspLog=[];markDirty();buildMimic();loadScenario(+$('scenario').value||0);
 }
 
 /* boot */
@@ -839,12 +915,14 @@ $('info').onclick=()=>{
 buildMimic();paintInspect();paintDrills();paintTrb();
 switchModel('mission');
 
-let acc=0,last=performance.now();
+let acc=0,liveT=0,last=performance.now();
 function frame(now){
   const real=(now-last)/1000;last=now;
   if(!paused){
-    acc+=real*speed;
+    acc+=real*speed;liveT+=real;
     while(acc>=0.25){step(0.25);acc-=0.25;}
+    /* refresh read-only HMI pages ~1 Hz without fighting open sliders on pid/dump */
+    if(liveT>=1){liveT=0;if(['home','alarms','water','burner','service'].includes(hmiPage))markDirty();}
     paintAll();
   }
   requestAnimationFrame(frame);
