@@ -1,4 +1,4 @@
-<title>Diskarte — Marine Boiler</title>
+<title>Diskarte - Marine Boiler</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap">
@@ -142,6 +142,45 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
 .statusline{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin:4px 0 0}
 .basis-est{color:var(--warn);font-weight:600}
 .check{display:inline-flex;align-items:center;gap:4px;margin:2px 6px 2px 0;font-size:12px}
+
+.ttiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-top:6px}
+.ttile{flex:1 1 110px;min-width:100px;background:#152020;border:2px solid #3a4a4a;color:#dfe8e2;padding:8px;cursor:pointer;text-align:left;display:grid;gap:2px}
+.ttile b{font-family:var(--disp);font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.ttile span{font-family:var(--mono);font-size:12px;color:var(--led)}
+.ttile.on{border-color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
+.tarrow{align-self:center;color:var(--led);font-size:18px;font-weight:700}
+/* Alfa Laval Touch Control — light mimic + blue chrome (MDD00214EN) */
+.hmibox.face-touch{background:#e8ebef;color:#1a2430;border-color:#9aa4ad}
+.hmibox.face-touch .hmihd{background:#d0d5dc;border-bottom-color:#b0b8c0}
+.hmibox.face-touch .hmibtn{background:#f4f6f8;border-color:#8a94a0;color:#1a2430}
+.hmibox.face-touch .hmibtn.on{background:#2a6a3a;color:#fff;border-color:#1a4a28}
+.hmibox.face-touch .hmibody .v{color:#0a5a9a}
+.hmibox.face-touch .hmift{background:#0b3a6e;border-top-color:#062848}
+.hmibox.face-touch .hmi-face{color:#4a5560}
+.hmibox.face-touch .ttile{background:#f7f8fa;border-color:#9aa4ad;color:#1a2430}
+.hmibox.face-touch .ttile span{color:#0a5a9a}
+.hmibox.face-touch .ttile.on{border-color:#2a8a4a;box-shadow:inset 0 0 0 1px #2a8a4a}
+.hmibox.face-touch .tarrow{color:#2a8a4a}
+.touch-chrome{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0 8px;border-bottom:1px solid #c0c6ce;margin-bottom:8px;font-size:11px;color:#4a5560}
+.touch-chrome b{font-family:var(--disp);letter-spacing:.04em;text-transform:uppercase;color:#0b3a6e}
+.touch-ft{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.touch-ft button{flex:1 1 70px;background:#0b3a6e;color:#fff;border:1px solid #062848;padding:6px 4px;font-family:var(--disp);font-size:11px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.touch-ft button.on{outline:2px solid #54e08c;outline-offset:1px}
+/* SAACKE se@vis HMI 10e — dark tile dashboard */
+.hmibox.face-bms{background:#1a1e24}
+.seavis-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.seavis-cell{background:#2a3038;border:1px solid #3a4450;padding:8px;min-height:64px}
+.seavis-cell b{display:block;font-family:var(--disp);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#9aa4ad;margin-bottom:4px}
+.seavis-cell .big{font-family:var(--mono);font-size:20px;color:var(--led)}
+.seavis-cell .sub{font-family:var(--mono);font-size:11px;color:#c8d0d4;margin-top:2px}
+.seavis-lvl{height:72px;width:18px;background:#0a1010;border:1px solid #4a5560;position:relative;display:inline-block;vertical-align:middle;margin-right:8px}
+.seavis-lvl i{position:absolute;left:1px;right:1px;bottom:0;background:#54e08c}
+.seavis-ft{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.seavis-ft span{width:36px;height:28px;display:grid;place-items:center;font-size:14px;border-radius:2px;background:#3a4450;color:#e8eef2}
+.pkdoor{display:block;width:100%;height:auto;background:var(--enamel-3);border:1px solid var(--line)}
+.mimic .pmp,.mimic .vlv{cursor:pointer}
+.mimic .pmp:focus,.mimic .vlv:focus{outline:2px solid var(--water)}
+
 </style>
 
 <div id="bms" hidden aria-hidden="true"></div>
@@ -152,7 +191,7 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
   <span class="progn"><b>Marine boiler</b><small id="bsub">Composite · provisional HMI</small></span>
   <span class="stabs" role="tablist" aria-label="Boiler unit">
     <button role="tab" data-m="mission" aria-selected="true">Mission OC</button>
-    <button role="tab" data-m="saacke" aria-selected="false">SAACKE FMB-VM</button>
+    <button role="tab" data-m="saacke" aria-selected="false">SAACKE CMB-VS</button>
     <button role="tab" data-m="kangrim" aria-selected="false">Kangrim PC</button>
     <button role="tab" data-m="miura" aria-selected="false">Miura GK</button>
   </span>
@@ -232,28 +271,28 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
   <section class="panel"><div class="ph">Actual</div><div class="pb"><table id="actTbl"></table><div id="actDx"></div></div></section>
   <h2 class="sec-h">About this model</h2>
   <section class="panel"><div class="pb prose" id="about">
-    <p>Composite marine boiler trainer: shared SI mass/energy plant; four maker faces. HMI labels and sequences are <b>provisional</b> until each maker instruction PDF is mapped — see <code>sim-source/MANUAL-MAPS.md</code> / vault <code>boiler-manuals/MANUAL-MAPS.md</code>.</p>
+    <p>Composite marine boiler trainer: shared SI mass/energy plant; four maker faces. HMI labels and sequences are <b>provisional</b> until each maker instruction PDF is mapped - see <code>sim-source/MANUAL-MAPS.md</code> / vault <code>boiler-manuals/MANUAL-MAPS.md</code>.</p>
     <h3>Physics</h3>
     <ul>
       <li>Steam from oil fire + EG section into one drum (mass + energy). Oil and EG t/h shown separately.</li>
       <li>Indicated level includes shrink/swell teaching; trips use indicated glass.</li>
       <li>Fuel grade sets LHV and FO viscosity gate. Status line states EG-only vs oil+EG.</li>
       <li>Dump Auto PID is separate from pressure→burner; Auto/Manual is bumpless with anti-windup.</li>
-      <li>Distillate air-bound needs casing bleed. SAACKE EG circ has dry-run protection when fitted.</li>
+      <li>Distillate air-bound needs casing bleed. When an EG circulating pump is fitted (not CMB-VS), dry-run protection applies.</li>
       <li>Water: recommend → apply → retest. Chloride is never dosed away; blowdown lowers Cl/cond.</li>
     </ul>
-    <h3>Units <span class="basis-est">(HMI estimated)</span></h3>
+    <h3>Units <span class="basis-est">(cutaways from public GA/product notes; softkeys provisional)</span></h3>
     <ul>
-      <li><b>Mission OC:</b> Touch-ish pages — MANUAL-MAPS Mission.</li>
-      <li><b>SAACKE FMB-VM:</b> BMS sequence + EG circ — MANUAL-MAPS SAACKE.</li>
-      <li><b>Kangrim PC:</b> panel-first cues — MANUAL-MAPS Kangrim.</li>
-      <li><b>Miura GK:</b> sequencer lamps — MANUAL-MAPS Miura.</li>
+      <li><b>Mission OC:</b> cylindrical composite cutaway (oil pin-tube + smoke-tube EG); Alfa Laval Touch Control face (MDD00214EN brochure).</li>
+      <li><b>SAACKE CMB-VS:</b> one-shell composite — plate furnace + rifled oil smoke tubes + EG plain smoke tubes; se@vis HMI 10e cues.</li>
+      <li><b>Kangrim PC:</b> cylindrical composite plant; enamel local panel door.</li>
+      <li><b>Miura GK:</b> dual-drum Ablecompo W-flow water-tube; sequencer step lamps.</li>
     </ul>
   </div></section>
 </main>
 
 <script>
-/* Diskarte Marine Boiler — shared SI plant, four composite units. Step 0.25 s.
+/* Diskarte Marine Boiler - shared SI plant, four composite units. Step 0.25 s.
    Live edit path: sim-source/boiler-simulator.html (vault mirror via build-web when vault present). */
 const $=id=>document.getElementById(id);
 const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
@@ -278,22 +317,22 @@ const MODELS={
     Pwork:7.0,Prated:8.0,steamOil:2.5,steamEgMax:1.8,drumKg:1800,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
     cascKg:900,distKg:2500,doseKg:80,FO:FUELS.HFO,
     pidP:{kp:18,ti:45,td:0},pidDump:{kp:12,ti:30,td:0},pidLvl:{kp:8,ti:60,td:2},
-    hmi:'Mission Control Touch (provisional · MANUAL-MAPS)'},
-  saacke:{id:'saacke',tab:'SAACKE FMB-VM',maker:'SAACKE',egCirc:true,face:'bms',
+    hmi:'Alfa Laval Touch Control (MDD00214EN · softkeys provisional)'},
+  saacke:{id:'saacke',tab:'SAACKE CMB-VS',maker:'SAACKE',egCirc:false,face:'bms',
     Pwork:7.0,Prated:8.5,steamOil:3.0,steamEgMax:2.2,drumKg:2200,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
     cascKg:1000,distKg:2500,doseKg:80,FO:FUELS.HFO,
     pidP:{kp:16,ti:50,td:0},pidDump:{kp:10,ti:35,td:0},pidLvl:{kp:8,ti:60,td:2},
-    hmi:'SAACKE BMS / HMI (provisional · MANUAL-MAPS)'},
+    hmi:'SAACKE se@vis HMI 10e (product photo · softkeys provisional)'},
   kangrim:{id:'kangrim',tab:'Kangrim PC',maker:'Kangrim',egCirc:false,face:'panel',
     Pwork:7.0,Prated:8.0,steamOil:2.2,steamEgMax:1.6,drumKg:1600,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
     cascKg:850,distKg:2500,doseKg:80,FO:FUELS.HFO,
     pidP:{kp:17,ti:48,td:0},pidDump:{kp:11,ti:32,td:0},pidLvl:{kp:8,ti:60,td:2},
-    hmi:'Kangrim panel (provisional · MANUAL-MAPS)'},
+    hmi:'Kangrim local panel (catalogue · softkeys provisional)'},
   miura:{id:'miura',tab:'Miura GK',maker:'Miura',egCirc:false,face:'seq',
     Pwork:7.0,Prated:8.0,steamOil:2.0,steamEgMax:1.5,drumKg:1400,Lwl:0.25,Llwl:0.12,Lhi:0.85,Lnml:0.55,
     cascKg:800,distKg:2500,doseKg:80,FO:FUELS.HFO,
     pidP:{kp:15,ti:55,td:0},pidDump:{kp:10,ti:40,td:0},pidLvl:{kp:7,ti:65,td:2},
-    hmi:'Miura sequencer (provisional · MANUAL-MAPS)'}
+    hmi:'Miura GK sequencer (Ablecompo / service news · provisional)'}
 };
 let M=MODELS.mission;
 
@@ -325,7 +364,7 @@ function coldState(){
     flame:false,seq:'off',purgeT:0,load:0,egSteam:0,oilSteam:0,totalSteam:0,mGen:0,mOut:0,mFuel:0,
     dump:0,dumpMode:'auto',burnerMode:'off',swell:0,dP:0,_Pprev:null,_mGenPrev:0,
     FO_T:35,FO_P:0,smoke:0,egT:180,egDP:0.8,meLoad:0.75,exhAvail:true,egDryTrip:false,
-    fuel:'HFO',demand:0.4,plantMode:'secured',statusLine:'Cold — secured',
+    fuel:'HFO',demand:0.4,plantMode:'secured',statusLine:'Cold - secured',
     chem:{pAlk:8,pH:10.2,Cl:40,cond:180,scav:0.4,condPH:8.7},
     airBound:false,bleedOpen:false,
     lockout:false,trips:{},acks:{},
@@ -394,12 +433,12 @@ function step(dt){
   if(u.foHeat)s.FO_T+=(120-s.FO_T)*0.05*dt;else s.FO_T+=(35-s.FO_T)*0.02*dt;
   s.FO_P=u.fo&&!f.foPump?(f.foFilter?1.2:3.0):0;
   const viscOk=!fuel.viscGate||s.FO_T>=fuel.Tmin-5;
-  if(s.flame&&!viscOk){s.flame=false;s.lockout=true;s.trips.FO_T=true;s.trips.FF=true;s.seq='trip';note('FO viscosity gate — flame cut','a');}
+  if(s.flame&&!viscOk){s.flame=false;s.lockout=true;s.trips.FO_T=true;s.trips.FF=true;s.seq='trip';note('FO viscosity gate - flame cut','a');}
 
   /* Distillate → cascade (air-bound needs bleed) */
   if(f.suctionShut)s.airBound=true;
   if(u.bleed)s.bleedOpen=true;
-  if(s.bleedOpen&&s.dist>50&&!f.suctionShut){s.airBound=false;s.bleedOpen=false;u.bleed=false;note('Distillate casing bled — prime restored');uiDirty=true;}
+  if(s.bleedOpen&&s.dist>50&&!f.suctionShut){s.airBound=false;s.bleedOpen=false;u.bleed=false;note('Distillate casing bled - prime restored');uiDirty=true;}
   let distFlow=0;
   if(u.dist){
     if(s.airBound||s.dist<20){distFlow=0;if(!s.airBound&&s.dist<20){s.airBound=true;uiDirty=true;}}
@@ -407,7 +446,7 @@ function step(dt){
   }
   if(f.cascLeak)s.casc=Math.max(0,s.casc-0.4*dt);
 
-  /* Dosing — never moves chloride */
+  /* Dosing - never moves chloride */
   const doseEff=u.dose&&!f.doseEmpty&&s.dose>1?u.doseRate/100:0;
   if(doseEff){
     s.dose=Math.max(0,s.dose-0.02*doseEff*dt);
@@ -420,12 +459,12 @@ function step(dt){
     s.chem.pAlk=clamp(s.chem.pAlk+L*0.4,0,30);
     s.chem.pH=clamp(9.5+s.chem.pAlk*0.08,7,12);
     s.chem.scav=clamp(s.chem.scav+L*0.05,0,2);
-    note(`Manual dose ${L.toFixed(1)} L into cascade (alkalinity/scav — not chloride)`);
+    note(`Manual dose ${L.toFixed(1)} L into cascade (alkalinity/scav - not chloride)`);
     uiDirty=true;
   }
   if(u.amine){s.chem.condPH=clamp(s.chem.condPH+0.02*dt,7,10);u.amine=false;note('Condensate treatment nudge applied');uiDirty=true;}
 
-  /* Feed — level PID on indicated level */
+  /* Feed - level PID on indicated level */
   const cascFrac=s.casc/M.cascKg;
   let feedKg=0;
   if(u.feed&&cascFrac>0.08&&!s.lockout){
@@ -435,7 +474,7 @@ function step(dt){
     s.casc=Math.max(0,s.casc-feedKg*dt);
   }
 
-  /* Blowdown — removes mass and chloride / conductivity (not fixed by dosing) */
+  /* Blowdown - removes mass and chloride / conductivity (not fixed by dosing) */
   if(u.blowdown>0){
     const bd=u.blowdown*0.15*dt;
     s.mw=Math.max(50,s.mw-bd);
@@ -449,7 +488,7 @@ function step(dt){
   if(M.egCirc){
     if(u.egCirc&&s.levelTrue<=M.Llwl+0.02){
       u.egCirc=false;s.egDryTrip=true;s.trips.EGDRY=true;s.lockout=s.lockout||false;
-      note('EG circ trip — dry-run protection (water unsafe)','a');uiDirty=true;
+      note('EG circ trip - dry-run protection (water unsafe)','a');uiDirty=true;
     }
     egOk=!!u.egCirc&&!s.egDryTrip&&s.levelTrue>M.Llwl;
   }
@@ -457,7 +496,7 @@ function step(dt){
   /* Burner sequence */
   const fdOk=u.fd&&!f.fdFail;
   const canLight=fdOk&&u.fo&&viscOk&&s.FO_P>2&&!s.lockout&&!u.estop&&s.level>M.Llwl&&!f.flameEye&&!f.flameTest;
-  if(u.burnerStop||u.mode==='off'){if(s.flame){s.flame=false;s.seq='post';s.purgeT=8;note('Burner stop — post-purge');}u.burnerStart=false;}
+  if(u.burnerStop||u.mode==='off'){if(s.flame){s.flame=false;s.seq='post';s.purgeT=8;note('Burner stop - post-purge');}u.burnerStart=false;}
   if(u.mode==='auto'||u.mode==='man'){
     if(u.burnerStart&&!s.flame&&(s.seq==='off'||s.seq==='trip')&&canLight&&!s.lockout){s.seq='purge';s.purgeT=12;note('Purge start');u.burnerStart=false;}
     if(s.seq==='purge'){s.purgeT-=dt;if(s.purgeT<=0){s.seq='pilot';s.purgeT=3;note('Pilot trial');}}
@@ -472,7 +511,7 @@ function step(dt){
   }else if(s.flame&&u.mode==='man'){pidP.man=true;pidP.out=u.loadMan;s.load=u.loadMan;}
   else if(!s.flame)s.load=0;
 
-  /* Heat release — oil + EG into one drum. Oil t/h tracks burner load × rating; EG tracks ME load. */
+  /* Heat release - oil + EG into one drum. Oil t/h tracks burner load × rating; EG tracks ME load. */
   const eta=0.85*(fdOk?1:0.25)*(viscOk?1:0);
   const egFrac=s.exhAvail?clamp(u.meLoad,0,1):0;
   const mSteamOil=s.flame?eta*(s.load/100)*M.steamOil:0; /* t/h */
@@ -525,7 +564,7 @@ function step(dt){
   s.swell=swell;
   s.level=clamp(s.levelTrue+swell,0.05,0.98);
 
-  /* Chemistry drift — Cl rises with leak / concentration; dose never clears Cl */
+  /* Chemistry drift - Cl rises with leak / concentration; dose never clears Cl */
   s.chem.Cl+= (0.002+(f.cascLeak?0.05:0)+(u.blowdown>0?0:0.001))*dt;
   s.chem.cond=80+s.chem.Cl*2.2+s.chem.pAlk*3;
   s.chem.condPH+=(8.8-s.chem.condPH)*0.01*dt;
@@ -556,9 +595,9 @@ function step(dt){
   else s.plantMode=u.mode==='off'?'secured':u.mode;
   const egNote=!egOk&&M.egCirc?' · EG circ OFF/protected':'';
   if(s.plantMode==='oil+eg')s.statusLine=`Oil + EG steaming · oil ${s.oilSteam.toFixed(2)} / EG ${s.egSteam.toFixed(2)} t/h${egNote}`;
-  else if(s.plantMode==='eg-only')s.statusLine=`EG only — ME ${(u.meLoad*100).toFixed(0)}% · EG ${s.egSteam.toFixed(2)} t/h · oil flame off${egNote}`;
+  else if(s.plantMode==='eg-only')s.statusLine=`EG only - ME ${(u.meLoad*100).toFixed(0)}% · EG ${s.egSteam.toFixed(2)} t/h · oil flame off${egNote}`;
   else if(s.plantMode==='oil')s.statusLine=`Oil firing · ${s.oilSteam.toFixed(2)} t/h · EG ${(s.egSteam).toFixed(2)} t/h${egNote}`;
-  else if(s.plantMode==='lockout')s.statusLine='Lockout / trip — clear cause, ack, reset';
+  else if(s.plantMode==='lockout')s.statusLine='Lockout / trip - clear cause, ack, reset';
   else s.statusLine='Secured / standby';
 
   s.smoke=s.flame?(s.load>90&&!fdOk?0.8:0.15):0;
@@ -593,9 +632,8 @@ function procFor(id){
     {t:'Start feed pump; fill drum toward normal (watch shrink/swell on glass)',ok:()=>u.feed&&s.levelTrue>M.Lnml-0.08},
     {t:'Water lab: sample → apply recommendation → retest',ok:()=>s.waterApplied.length>0||(s.lastSample&&s.chem.pAlk>=6)},
     {t:'Start FD fan, FO pump; heat FO through viscosity gate',ok:foWarm},
-    {t:'BMS Auto — burner start; watch purge→pilot→main lamps',ok:()=>s.flame},
-    {t:'Start EG circulating pump before relying on EG steam (dry-run protected)',ok:()=>u.egCirc||s.egSteam>0.05},
-    {t:'Put EG in service with ME load; compare oil vs EG t/h',ok:()=>s.egSteam>0.05||u.meLoad>0.5},
+    {t:'se@vis Auto - burner start; watch purge→pilot→main',ok:()=>s.flame},
+    {t:'Put EG bank in service with ME load; compare oil vs EG t/h (same shell)',ok:()=>s.egSteam>0.05||u.meLoad>0.5},
     ...commonTail
   ];
   if(id==='kangrim')return [
@@ -603,7 +641,7 @@ function procFor(id){
     {t:'Start feed from panel starters; bring level to normal',ok:()=>u.feed&&s.level>M.Lnml-0.06},
     {t:'Run water test; apply dose/blowdown from Water lab',ok:()=>s.waterApplied.length>0||s.chem.Cl<100},
     {t:'FD fan then FO pump; FO heater to grade viscosity',ok:foWarm},
-    {t:'Local/panel start — purge→pilot→main',ok:()=>s.flame},
+    {t:'Local/panel start - purge→pilot→main',ok:()=>s.flame},
     {t:'Open steam stop; watch oil vs EG on gauges',ok:()=>u.steamStop&&s.P>=u.Psp-0.4},
     {t:'Dump Auto under rising EG; Manual bypass drill',ok:()=>true},
     {t:'Secure from panel: stop, post-purge, motors off',ok:()=>!s.flame&&u.mode==='off'}
@@ -613,7 +651,7 @@ function procFor(id){
     {t:'Feed pump on; sequencer ready at normal level',ok:()=>u.feed&&s.level>M.Lnml-0.05},
     {t:'Water lab recommend → apply → retest',ok:()=>s.waterApplied.length>0||s.chem.pAlk>=6},
     {t:'FD + FO; FO temp past viscosity gate',ok:foWarm},
-    {t:'Sequencer start — lamps PURGE → PILOT → MAIN',ok:()=>s.flame&&s.seq==='main'},
+    {t:'Sequencer start - lamps PURGE → PILOT → MAIN',ok:()=>s.flame&&s.seq==='main'},
     {t:'Steam stop open; pressure to working',ok:()=>u.steamStop&&s.P>=u.Psp-0.3},
     {t:'Observe EG contribution; dump Auto separate from firing',ok:()=>u.dumpAuto},
     {t:'Secure: stop → POST lamp → motors → steam stop',ok:()=>!s.flame&&u.mode==='off'}
@@ -625,7 +663,7 @@ function procFor(id){
     {t:'Start feed pump; fill drum to normal (glass shows shrink/swell)',ok:()=>u.feed&&s.level>M.Lnml-0.05},
     {t:'Water page: run test; apply recommendation; retest',ok:()=>s.waterApplied.length>0||(s.lastSample!=null)},
     {t:'Start FD fan, then FO pump; heat FO to viscosity',ok:foWarm},
-    {t:'HMI Auto — Burner start; watch purge→pilot→main',ok:()=>s.flame},
+    {t:'HMI Auto - Burner start; watch purge→pilot→main',ok:()=>s.flame},
     {t:'Open steam stop; raise pressure to working',ok:()=>u.steamStop&&s.P>=u.Psp-0.3},
     {t:'EG in service; confirm oil vs EG t/h on Overview',ok:()=>s.egSteam>0.05||u.meLoad>0.3},
     {t:'Dump page: prove Auto, Manual bypass, return Auto',ok:()=>u.dumpAuto},
@@ -672,13 +710,13 @@ function loadScenario(i){
 
 function waterRec(){
   const c=s.chem,recs=[];
-  if(c.pAlk<6)recs.push({id:'palk_lo',text:'P-alkalinity low — increase boiler treatment.',acts:[{id:'dose10',lab:'Apply: dosing +10%'},{id:'man2',lab:'Apply: manual 2 L'}]});
-  else if(c.pAlk>18)recs.push({id:'palk_hi',text:'P-alkalinity high — reduce dose; increase blowdown.',acts:[{id:'doseDown',lab:'Apply: dose −10%'},{id:'bd30',lab:'Apply: blowdown 30%'}]});
-  if(c.Cl>80)recs.push({id:'cl_hi',text:'Chloride high — do not dose it away. Blow down and find seawater in-leak / bad make-up.',acts:[{id:'bd50',lab:'Apply: blowdown 50%'},{id:'fixLeak',lab:'Note: check make-up / condenser'}]});
-  if(c.condPH<8.5)recs.push({id:'cph_lo',text:'Condensate pH low — raise amine / check hotwell temperature.',acts:[{id:'amine',lab:'Apply: condensate treatment'}]});
-  if(c.cond>400)recs.push({id:'cond_hi',text:'Conductivity high — increase blowdown (Cl often rides with it).',acts:[{id:'bd40',lab:'Apply: blowdown 40%'}]});
-  if(c.scav<0.2)recs.push({id:'scav_lo',text:'Oxygen scavenger low — increase dose briefly.',acts:[{id:'dose10',lab:'Apply: dosing +10%'}]});
-  if(!recs.length)recs.push({id:'ok',text:'Residuals in band — maintain present dose and sample schedule.',acts:[]});
+  if(c.pAlk<6)recs.push({id:'palk_lo',text:'P-alkalinity low - increase boiler treatment.',acts:[{id:'dose10',lab:'Apply: dosing +10%'},{id:'man2',lab:'Apply: manual 2 L'}]});
+  else if(c.pAlk>18)recs.push({id:'palk_hi',text:'P-alkalinity high - reduce dose; increase blowdown.',acts:[{id:'doseDown',lab:'Apply: dose −10%'},{id:'bd30',lab:'Apply: blowdown 30%'}]});
+  if(c.Cl>80)recs.push({id:'cl_hi',text:'Chloride high - do not dose it away. Blow down and find seawater in-leak / bad make-up.',acts:[{id:'bd50',lab:'Apply: blowdown 50%'},{id:'fixLeak',lab:'Note: check make-up / condenser'}]});
+  if(c.condPH<8.5)recs.push({id:'cph_lo',text:'Condensate pH low - raise amine / check hotwell temperature.',acts:[{id:'amine',lab:'Apply: condensate treatment'}]});
+  if(c.cond>400)recs.push({id:'cond_hi',text:'Conductivity high - increase blowdown (Cl often rides with it).',acts:[{id:'bd40',lab:'Apply: blowdown 40%'}]});
+  if(c.scav<0.2)recs.push({id:'scav_lo',text:'Oxygen scavenger low - increase dose briefly.',acts:[{id:'dose10',lab:'Apply: dosing +10%'}]});
+  if(!recs.length)recs.push({id:'ok',text:'Residuals in band - maintain present dose and sample schedule.',acts:[]});
   return recs;
 }
 
@@ -688,98 +726,524 @@ function applyWaterAct(id){
   else if(id==='man2'){u.manualDoseL=2;s.waterApplied.push(id);}
   else if(id==='bd30'){u.blowdown=30;s.waterApplied.push(id);note('Applied: blowdown 30%');}
   else if(id==='bd40'){u.blowdown=40;s.waterApplied.push(id);note('Applied: blowdown 40%');}
-  else if(id==='bd50'){u.blowdown=50;s.waterApplied.push(id);note('Applied: blowdown 50% — chloride only falls with blowdown');}
+  else if(id==='bd50'){u.blowdown=50;s.waterApplied.push(id);note('Applied: blowdown 50% - chloride only falls with blowdown');}
   else if(id==='amine'){u.amine=true;s.waterApplied.push(id);}
-  else if(id==='fixLeak'){note('Field check: condenser / make-up path for seawater — not a dose fix','w');s.waterApplied.push(id);}
+  else if(id==='fixLeak'){note('Field check: condenser / make-up path for seawater - not a dose fix','w');s.waterApplied.push(id);}
   uiDirty=true;paintWater();paintControls();
 }
 
+/* spliced into boiler-simulator.html - plant cutaway + maker faces */
+
 function buildMimic(){
-  const eg=M.egCirc?'EG circ':'EG bank';
-  $('mimic').innerHTML=`<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
-  <rect x="40" y="200" width="100" height="90" fill="#cfe0f0" stroke="#1b2321"/><text x="90" y="195" text-anchor="middle">Distillate</text>
-  <text class="tagv" id="vDist" x="90" y="250" text-anchor="middle">—</text>
-  <rect x="180" y="210" width="90" height="70" fill="#dce8df" stroke="#1b2321"/><text x="225" y="205" text-anchor="middle">Cascade</text>
-  <text class="tagv" id="vCasc" x="225" y="250" text-anchor="middle">—</text>
-  <text class="small" x="225" y="270" text-anchor="middle">dose / bleed</text>
-  <rect x="360" y="120" width="160" height="200" rx="8" fill="#c8cdc4" stroke="#1b2321" stroke-width="2"/><text x="440" y="110" text-anchor="middle">Steam drum</text>
-  <text class="tagv" id="vP" x="440" y="200" text-anchor="middle">—</text>
-  <text class="tagv" id="vL" x="440" y="225" text-anchor="middle">—</text>
-  <text class="small" id="vSw" x="440" y="248" text-anchor="middle"></text>
-  <rect x="560" y="140" width="110" height="70" fill="#e8d5c0" stroke="#1b2321"/><text x="615" y="130" text-anchor="middle">Oil burner</text>
-  <text class="tagv" id="vOil" x="615" y="180" text-anchor="middle">—</text>
-  <rect x="560" y="240" width="110" height="70" fill="#e0d0c8" stroke="#1b2321"/><text x="615" y="230" text-anchor="middle">${eg}</text>
-  <text class="tagv" id="vEg" x="615" y="280" text-anchor="middle">—</text>
-  <rect x="720" y="160" width="100" height="50" fill="#d0d8e0" stroke="#1b2321"/><text x="770" y="150" text-anchor="middle">Dump</text>
-  <text class="tagv" id="vDump" x="770" y="190" text-anchor="middle">—</text>
-  <line x1="140" y1="245" x2="180" y2="245" stroke="#1f6db5" stroke-width="3"/>
-  <line x1="270" y1="245" x2="360" y2="245" stroke="#1f6db5" stroke-width="3"/>
-  <line x1="520" y1="180" x2="560" y2="175" stroke="#8a5a2b" stroke-width="3"/>
-  <line x1="520" y1="280" x2="560" y2="275" stroke="#6b4a3a" stroke-width="3"/>
-  <line x1="520" y1="140" x2="720" y2="175" stroke="#5a6e7a" stroke-width="2"/>
-  <text class="small" x="440" y="340" text-anchor="middle">${M.tab} · ${M.maker}</text>
-  <text class="tagv" id="vTot" x="440" y="360" text-anchor="middle">—</text>
-  <text class="small" id="vStat" x="440" y="390" text-anchor="middle">—</text>
+  /* Maker-faithful plant cutaways from public GA / product structure notes:
+     Mission OC - vertical cylindrical composite (oil pin-tube + smoke-tube EG one shell; GA 04Y:056884 / steam-water X01:701406 concept).
+     SAACKE CMB-VS - one-shell composite: plate furnace + rifled oil smoke tubes + EG plain smoke tubes (brochure).
+     Miura GK - dual-drum vertical water-tube Ablecompo W-flow (Miura product page).
+     Kangrim PC - cylindrical composite oil+EG (Kangrim catalogue). */
+  const shellLab=M.id==='saacke'?'CMB-VS one-shell composite (plate furnace + oil/EG smoke tubes)':M.id==='kangrim'?'PC cylindrical composite':M.id==='miura'?'GK dual-drum W-flow water-tube':'Aalborg OC / Mission OC section cutaway';
+
+  function shellMission(){
+    /* Aalborg / Mission OC cutaway — ResearchGate fig.1 / Aalborg OC section:
+       LEFT EG smoke+stay tubes, RIGHT oil furnace + pin tubes, common water/steam drum. */
+    const smoke=Array.from({length:14},(_,i)=>{
+      const x=492+i*7;
+      return `<line x1="${x}" y1="168" x2="${x}" y2="448" stroke="#e07020" stroke-width="2.2"/>`;
+    }).join('');
+    return `<g id="shell">
+    <!-- cylindrical shell -->
+    <rect x="470" y="90" width="300" height="410" rx="8" fill="#d8dde6" stroke="#1b2321" stroke-width="2.5"/>
+    <!-- steam space (above NWL) -->
+    <rect x="474" y="94" width="292" height="70" fill="#eef2f6"/>
+    <text x="620" y="118" text-anchor="middle" style="font:700 12px var(--disp,#333)">Steam drum</text>
+    <text class="tagv" id="vP" x="620" y="138" text-anchor="middle">-</text>
+    <!-- water drum fill (animated) -->
+    <rect id="lvlDrum" x="474" y="200" width="292" height="280" fill="#5a9ec8" fill-opacity=".72"/>
+    <line id="nwlLine" x1="474" y1="164" x2="766" y2="164" stroke="#1f6db5" stroke-width="2"/>
+    <text class="small" x="772" y="168" fill="#1f6db5">NWL</text>
+    <text class="tagv" id="vL" x="620" y="190" text-anchor="middle">-</text>
+    <text class="small" id="vSw" x="620" y="206" text-anchor="middle"></text>
+    <text class="small" x="620" y="230" text-anchor="middle" fill="#0a3a5a">Water drum</text>
+
+    <!-- LEFT: waste-gas / smoke-tube section -->
+    <rect x="486" y="160" width="110" height="300" fill="#4a88b0" fill-opacity=".25" stroke="#3a6078" stroke-width="1"/>
+    ${smoke}
+    <!-- stay tubes (structural, thicker) -->
+    <line x1="486" y1="168" x2="486" y2="448" stroke="#c45810" stroke-width="5"/>
+    <line x1="598" y1="168" x2="598" y2="448" stroke="#c45810" stroke-width="4"/>
+    <text class="small" x="540" y="155" text-anchor="middle" fill="#8a3a10">Smoke tubes</text>
+    <text class="small" x="478" y="320" text-anchor="end" fill="#8a3a10">Stay</text>
+    <text class="tagv" id="vEg" x="540" y="280" text-anchor="middle">-</text>
+
+    <!-- EG lower / upper plenums -->
+    <rect x="486" y="448" width="112" height="28" fill="#6b4a3a" stroke="#1b2321"/>
+    <path d="M542 476 V505" stroke="#c98a00" stroke-width="4"/>
+    <polygon points="542,505 534,492 550,492" fill="#c98a00"/>
+    <text class="small" x="560" y="512" fill="#6b4a3a">Waste gas inlet</text>
+    <rect x="486" y="100" width="112" height="36" fill="#6b4a3a" stroke="#1b2321"/>
+    <path d="M542 100 V72" stroke="#c98a00" stroke-width="4"/>
+    <polygon points="542,72 534,84 550,84" fill="#c98a00"/>
+    <text class="small" x="560" y="68" fill="#6b4a3a">Waste gas outlet</text>
+
+    <!-- RIGHT: oil furnace + pin tubes -->
+    <rect x="620" y="360" width="130" height="115" fill="#6a6560" stroke="#1b2321" stroke-width="1.5"/>
+    <path id="flamePath" d="M640 450 Q685 380 730 450 Q685 420 640 450" fill="url(#flameG)" opacity="0"/>
+    <text class="small" x="685" y="455" text-anchor="middle" fill="#eee">Furnace</text>
+    <text class="tagv" id="vOil" x="685" y="350" text-anchor="middle">-</text>
+    <!-- pin-tube elements (two vertical columns with pins) -->
+    <g id="pinEls">
+      <rect x="640" y="175" width="36" height="185" rx="3" fill="#8a4a18" stroke="#5a3010"/>
+      <rect x="690" y="175" width="36" height="185" rx="3" fill="#8a4a18" stroke="#5a3010"/>
+      ${[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>`<line x1="636" y1="${190+i*14}" x2="680" y2="${190+i*14}" stroke="#c47830" stroke-width="1.4"/><line x1="686" y1="${190+i*14}" x2="730" y2="${190+i*14}" stroke="#c47830" stroke-width="1.4"/>`).join('')}
+    </g>
+    <text class="small" x="685" y="168" text-anchor="middle" fill="#8a4a18">Pin tube</text>
+
+    <!-- side-fired burner (right, matching OC cutaway) -->
+    <g id="burnerAsm">
+      <rect x="750" y="400" width="48" height="36" rx="3" fill="#a22320" stroke="#1b2321"/>
+      <circle cx="812" cy="418" r="22" fill="#9aa4ad" stroke="#1b2321" stroke-width="2"/>
+      <circle cx="812" cy="418" r="10" fill="#6a7078"/>
+      <text class="small" x="812" y="452" text-anchor="middle">Burner</text>
+    </g>
+    <path d="M748 418 H750" stroke="#8a5a2b" stroke-width="4"/>
+
+    <!-- gauge glasses -->
+    <rect x="454" y="150" width="12" height="110" fill="#b8d4e8" stroke="#1b2321"/>
+    <rect id="ggL" x="456" y="200" width="8" height="50" fill="#1f6db5" fill-opacity=".75"/>
+    <rect x="774" y="150" width="12" height="110" fill="#b8d4e8" stroke="#1b2321"/>
+    <rect id="ggR" x="776" y="200" width="8" height="50" fill="#1f6db5" fill-opacity=".75"/>
+    <text class="small" x="460" y="142" text-anchor="middle">GG</text>
+    <text class="small" x="780" y="142" text-anchor="middle">GG</text>
+    <text class="small" x="620" y="520" text-anchor="middle" fill="#6d7873">Aalborg OC / Mission OC section (public cutaway)</text>
+  </g>`;
+  }
+
+  function shellKangrim(){
+    return `<g id="shell">
+    <rect x="470" y="80" width="280" height="420" rx="18" fill="#bcc2ba" stroke="#1b2321" stroke-width="2.5"/>
+    <rect x="474" y="84" width="272" height="88" fill="#e8eef2"/>
+    <text x="610" y="108" text-anchor="middle" style="font:700 13px var(--disp,#333)">PC steam drum</text>
+    <text class="tagv" id="vP" x="610" y="130" text-anchor="middle">-</text>
+    <rect id="lvlDrum" x="474" y="200" width="272" height="80" fill="url(#waterG)" fill-opacity=".55"/>
+    <line id="nwlLine" x1="474" y1="220" x2="746" y2="220" stroke="#1f6db5" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text class="tagv" id="vL" x="610" y="250" text-anchor="middle">-</text>
+    <text class="small" id="vSw" x="610" y="268" text-anchor="middle"></text>
+    <rect x="452" y="160" width="14" height="100" fill="#b8d4e8" stroke="#1b2321"/><rect id="ggL" x="454" y="220" width="10" height="38" fill="#1f6db5" fill-opacity=".7"/>
+    <rect x="754" y="160" width="14" height="100" fill="#b8d4e8" stroke="#1b2321"/><rect id="ggR" x="756" y="220" width="10" height="38" fill="#1f6db5" fill-opacity=".7"/>
+    <rect x="490" y="290" width="110" height="100" fill="url(#pinTube)" stroke="#5a4a3a"/>
+    <text class="small" x="545" y="320" text-anchor="middle">Oil / pin-tube</text>
+    <ellipse cx="545" cy="440" rx="44" ry="36" fill="#3a3530" stroke="#1b2321"/>
+    <path id="flamePath" d="M525 450 Q545 400 565 450 Q545 430 525 450" fill="url(#flameG)" opacity="0"/>
+    <text class="tagv" id="vOil" x="545" y="278" text-anchor="middle">-</text>
+    <rect x="620" y="290" width="110" height="190" fill="url(#smokeTube)" stroke="#5a4a3a"/>
+    <text class="small" x="675" y="320" text-anchor="middle">EG bank</text>
+    <text class="tagv" id="vEg" x="675" y="340" text-anchor="middle">-</text>
+    <path d="M675 480 V510 H790" stroke="#6b4a3a" stroke-width="3" fill="none"/>
+    <text class="small" x="740" y="505" fill="#6b4a3a">ME exh.</text>
+    <path d="M675 290 V240 H810 V190" stroke="#6b4a3a" stroke-width="3" fill="none"/>
+    <text class="small" x="830" y="200" fill="#6b4a3a">Stack</text>
+  </g>`;
+  }
+
+  function shellSaacke(){
+    /* SAACKE CMB-VS brochure cutaway: one vertical shell —
+       plate furnace (lower centre) + rifled oil smoke tubes above,
+       EG plain smoke-tube bank on the right, spherical furnace roof, side burner. */
+    const oilTubes=Array.from({length:9},(_,i)=>{
+      const x=520+i*9;
+      return `<line x1="${x}" y1="175" x2="${x}" y2="355" stroke="#c04028" stroke-width="2.4"/>`;
+    }).join('');
+    const egTubes=Array.from({length:12},(_,i)=>{
+      const x=620+i*8;
+      return `<line x1="${x}" y1="155" x2="${x}" y2="455" stroke="#d4a820" stroke-width="2.2"/>`;
+    }).join('');
+    return `<g id="shell">
+    <!-- cylindrical shell -->
+    <rect x="470" y="90" width="300" height="410" rx="8" fill="#dfe4e8" stroke="#1b2321" stroke-width="2.5"/>
+    <!-- steam space -->
+    <rect x="474" y="94" width="292" height="55" fill="#eef2f6"/>
+    <text x="620" y="118" text-anchor="middle" style="font:700 12px var(--disp,#333)">Steam space</text>
+    <text class="tagv" id="vP" x="620" y="138" text-anchor="middle">-</text>
+    <!-- water band -->
+    <rect id="lvlDrum" x="474" y="200" width="292" height="280" fill="#5a9ec8" fill-opacity=".55"/>
+    <line id="nwlLine" x1="474" y1="164" x2="766" y2="164" stroke="#1f6db5" stroke-width="2"/>
+    <text class="small" x="772" y="168" fill="#1f6db5">NWL</text>
+    <text class="tagv" id="vL" x="560" y="190" text-anchor="middle">-</text>
+    <text class="small" id="vSw" x="560" y="206" text-anchor="middle"></text>
+
+    <!-- RIGHT: EG plain smoke-tube bank -->
+    <rect x="612" y="150" width="140" height="315" fill="#e8c84a" fill-opacity=".35" stroke="#a88820" stroke-width="1"/>
+    ${egTubes}
+    <text class="small" x="682" y="145" text-anchor="middle" fill="#8a6a10">EG plain smoke tubes</text>
+    <text class="tagv" id="vEg" x="682" y="300" text-anchor="middle">-</text>
+    <!-- EG lower / upper plenums -->
+    <rect x="612" y="455" width="140" height="28" fill="#6b4a3a" stroke="#1b2321"/>
+    <path d="M682 483 V512" stroke="#c98a00" stroke-width="4"/>
+    <polygon points="682,512 674,499 690,499" fill="#c98a00"/>
+    <text class="small" x="700" y="520" fill="#6b4a3a">ME exh. in</text>
+    <rect x="612" y="100" width="140" height="36" fill="#c4a888" stroke="#1b2321"/>
+    <ellipse cx="682" cy="100" rx="36" ry="12" fill="#a88868" stroke="#1b2321"/>
+    <path d="M682 88 V62" stroke="#c98a00" stroke-width="4"/>
+    <polygon points="682,62 674,74 690,74" fill="#c98a00"/>
+    <text class="small" x="720" y="58" fill="#6b4a3a">EG outlet</text>
+    <circle cx="740" cy="112" r="10" fill="#d8d0c8" stroke="#1b2321"/><circle cx="755" cy="112" r="8" fill="#d8d0c8" stroke="#1b2321"/>
+    <text class="small" x="748" y="132" text-anchor="middle" fill="#6d7873">manholes</text>
+
+    <!-- LEFT/CENTRE: plate furnace + rifled oil smoke tubes -->
+    <path d="M490 355 Q560 330 610 355 L610 470 L490 470 Z" fill="#c42820" stroke="#1b2321" stroke-width="1.5"/>
+    <!-- spherical furnace roof -->
+    <path d="M490 355 Q550 318 610 355" fill="none" stroke="#8a2018" stroke-width="3"/>
+    <text class="small" x="550" y="348" text-anchor="middle" fill="#fff8f0">Spherical roof</text>
+    <path id="flamePath" d="M510 440 Q550 370 590 440 Q550 415 510 440" fill="url(#flameG)" opacity="0"/>
+    <text class="small" x="550" y="455" text-anchor="middle" fill="#eee">Plate furnace</text>
+    ${oilTubes}
+    <text class="small" x="560" y="168" text-anchor="middle" fill="#a03020">Rifled oil smoke tubes</text>
+    <text class="tagv" id="vOil" x="560" y="250" text-anchor="middle">-</text>
+
+    <!-- side burner (left, matching CMB-VS teal mount) -->
+    <g id="burnerAsm">
+      <circle cx="448" cy="420" r="28" fill="#2a9aaa" stroke="#1b2321" stroke-width="2"/>
+      <circle cx="448" cy="420" r="14" fill="#1a6068"/>
+      <rect x="476" y="405" width="18" height="30" fill="#8a3030" stroke="#1b2321"/>
+      <text class="small" x="448" y="468" text-anchor="middle">Burner</text>
+    </g>
+
+    <!-- gauge glasses -->
+    <rect x="454" y="150" width="12" height="110" fill="#b8d4e8" stroke="#1b2321"/>
+    <rect id="ggL" x="456" y="200" width="8" height="50" fill="#1f6db5" fill-opacity=".75"/>
+    <rect x="774" y="150" width="12" height="110" fill="#b8d4e8" stroke="#1b2321"/>
+    <rect id="ggR" x="776" y="200" width="8" height="50" fill="#1f6db5" fill-opacity=".75"/>
+    <text class="small" x="460" y="142" text-anchor="middle">GG</text>
+    <text class="small" x="780" y="142" text-anchor="middle">GG</text>
+    <text class="small" x="620" y="530" text-anchor="middle" fill="#6d7873">SAACKE CMB-VS cutaway (public brochure)</text>
+  </g>`;
+  }
+
+  function shellMiura(){
+    return `<g id="shell">
+    <!-- Upper steam drum -->
+    <ellipse cx="610" cy="130" rx="130" ry="42" fill="#d0d5ce" stroke="#1b2321" stroke-width="2.5"/>
+    <text x="610" y="120" text-anchor="middle" style="font:700 12px var(--disp,#333)">Steam drum</text>
+    <text class="tagv" id="vP" x="610" y="140" text-anchor="middle">-</text>
+    <!-- Lower water drum -->
+    <ellipse cx="610" cy="480" rx="130" ry="36" fill="#b8c0c8" stroke="#1b2321" stroke-width="2.5"/>
+    <text x="610" y="485" text-anchor="middle" style="font:600 11px var(--disp,#333)">Water drum</text>
+    <!-- Water tubes / W-flow -->
+    <rect x="500" y="170" width="90" height="280" fill="url(#wTube)" stroke="#4a5a6a"/>
+    <rect x="630" y="170" width="90" height="280" fill="url(#wTube)" stroke="#4a5a6a"/>
+    <text class="small" x="545" y="200" text-anchor="middle">Burner</text>
+    <text class="small" x="545" y="214" text-anchor="middle">W-flow</text>
+    <text class="small" x="675" y="200" text-anchor="middle">EG</text>
+    <text class="small" x="675" y="214" text-anchor="middle">W-flow</text>
+    <ellipse cx="545" cy="340" rx="28" ry="40" fill="#3a3530"/>
+    <path id="flamePath" d="M530 360 Q545 300 560 360 Q545 340 530 360" fill="url(#flameG)" opacity="0"/>
+    <text class="tagv" id="vOil" x="545" y="280" text-anchor="middle">-</text>
+    <text class="tagv" id="vEg" x="675" y="280" text-anchor="middle">-</text>
+    <!-- level band between drums -->
+    <rect id="lvlDrum" x="500" y="300" width="220" height="80" fill="url(#waterG)" fill-opacity=".35"/>
+    <line id="nwlLine" x1="500" y1="320" x2="720" y2="320" stroke="#1f6db5" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text class="tagv" id="vL" x="610" y="360" text-anchor="middle">-</text>
+    <text class="small" id="vSw" x="610" y="378" text-anchor="middle"></text>
+    <rect x="478" y="250" width="14" height="100" fill="#b8d4e8" stroke="#1b2321"/><rect id="ggL" x="480" y="290" width="10" height="40" fill="#1f6db5" fill-opacity=".7"/>
+    <rect x="728" y="250" width="14" height="100" fill="#b8d4e8" stroke="#1b2321"/><rect id="ggR" x="730" y="290" width="10" height="40" fill="#1f6db5" fill-opacity=".7"/>
+    <path d="M675 450 V510 H800" stroke="#6b4a3a" stroke-width="3" fill="none"/>
+    <text class="small" x="750" y="505" fill="#6b4a3a">ME exh. in</text>
+    <path d="M675 170 V140 H820 V200" stroke="#6b4a3a" stroke-width="3" fill="none"/>
+    <text class="small" x="840" y="180" fill="#6b4a3a">EG out (W)</text>
+    <path d="M545 170 H460 V220" stroke="#6b4a3a" stroke-width="2" fill="none"/>
+    <text class="small" x="430" y="210" fill="#6b4a3a">Burner</text>
+    <text class="small" x="430" y="224" fill="#6b4a3a">side out</text>
+    <text class="small" x="610" y="165" text-anchor="middle">Ablecompo · dual drum</text>
+  </g>`;
+  }
+
+  $('mimic').innerHTML=`<svg viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${M.tab} plant diagram">
+  <defs>
+    <pattern id="pinTube" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 10 L10 0" stroke="#8a7a6a" stroke-width=".8"/><circle cx="5" cy="5" r="1.2" fill="#6b5b4b"/></pattern>
+    <pattern id="smokeTube" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="2.2" fill="none" stroke="#7a6a5a" stroke-width=".9"/></pattern>
+    <pattern id="wTube" width="12" height="6" patternUnits="userSpaceOnUse"><path d="M0 3 H12" stroke="#6a7a8a" stroke-width="1.4"/><circle cx="3" cy="3" r="1.5" fill="#9ab"/><circle cx="9" cy="3" r="1.5" fill="#9ab"/></pattern>
+    <pattern id="membrane" width="14" height="8" patternUnits="userSpaceOnUse"><rect width="14" height="8" fill="#5a5550"/><path d="M0 0 V8 M7 0 V8 M14 0 V8" stroke="#3a3530" stroke-width="1.2"/></pattern>
+    <linearGradient id="flameG" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#ff6a00"/><stop offset="60%" stop-color="#ffcc33"/><stop offset="100%" stop-color="#fff3c0" stop-opacity=".2"/></linearGradient>
+    <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a8c8e0"/><stop offset="100%" stop-color="#3a6a90"/></linearGradient>
+  </defs>
+
+  <text x="20" y="28" style="font:700 16px var(--disp,#333);letter-spacing:.06em;text-transform:uppercase">${M.tab} · plant diagram</text>
+  <text x="20" y="48" class="small" style="fill:#4b5652">${shellLab} · ${M.maker} · public GA / product structure (provisional until yard PDF)</text>
+
+  <!-- Distillate -->
+  <g id="gDist">
+    <rect x="30" y="420" width="70" height="140" rx="4" fill="#cfe0f0" stroke="#1b2321" stroke-width="1.5"/>
+    <rect id="lvlDist" x="32" y="548" width="66" height="10" fill="#1f6db5" fill-opacity=".55"/>
+    <text x="65" y="410" text-anchor="middle" style="font:600 12px var(--disp,#333)">Distillate</text>
+    <text class="tagv" id="vDist" x="65" y="490" text-anchor="middle">-</text>
+    <text class="small" x="65" y="575" text-anchor="middle">make-up</text>
+  </g>
+  <g class="pmp" data-k="dist" role="button" tabindex="0" aria-label="Distillate pump">
+    <circle cx="140" cy="530" r="22" fill="#fff" stroke="#1b2321" stroke-width="2"/>
+    <path d="M128 530 h24 M140 518 v24" stroke="#1b2321" stroke-width="2"/>
+    <circle id="lampDist" cx="155" cy="515" r="5" fill="#9aa49d" stroke="#000"/>
+    <text class="small" x="140" y="565" text-anchor="middle">Dist. pump</text>
+  </g>
+  <g class="vlv" data-k="bleed" role="button" tabindex="0" aria-label="Casing air bleed">
+    <rect x="118" y="488" width="44" height="18" rx="2" fill="#f2f3ee" stroke="#1b2321"/>
+    <text class="small" x="140" y="501" text-anchor="middle">Bleed</text>
+  </g>
+
+  <!-- Cascade / hotwell -->
+  <g id="gCasc">
+    <rect x="200" y="460" width="120" height="100" fill="#dce8df" stroke="#1b2321" stroke-width="1.5"/>
+    <rect id="lvlCasc" x="202" y="530" width="116" height="28" fill="#2a7a5a" fill-opacity=".4"/>
+    <text x="260" y="450" text-anchor="middle" style="font:600 12px var(--disp,#333)">Cascade / hotwell</text>
+    <text class="tagv" id="vCasc" x="260" y="510" text-anchor="middle">-</text>
+    <text class="small" x="260" y="575" text-anchor="middle">atm. · dose suction</text>
+  </g>
+  <g class="pmp" data-k="dose" role="button" tabindex="0" aria-label="Dosing pump">
+    <rect x="230" y="400" width="60" height="36" fill="#e8f0ea" stroke="#2a7a5a" stroke-width="1.5"/>
+    <circle id="lampDose" cx="280" cy="408" r="5" fill="#9aa49d" stroke="#000"/>
+    <text class="small" x="260" y="422" text-anchor="middle">Dose</text>
+  </g>
+  <text class="small" x="260" y="392" text-anchor="middle">chem. tank</text>
+  <rect x="248" y="360" width="24" height="32" fill="#cfe6d6" stroke="#1b2321"/>
+
+  <g class="pmp" data-k="feed" role="button" tabindex="0" aria-label="Feed pump">
+    <circle cx="360" cy="510" r="24" fill="#fff" stroke="#1b2321" stroke-width="2"/>
+    <path d="M346 510 h28 M360 496 v28" stroke="#1b2321" stroke-width="2"/>
+    <circle id="lampFeed" cx="376" cy="494" r="5" fill="#9aa49d" stroke="#000"/>
+    <text class="small" x="360" y="548" text-anchor="middle">Feed pump</text>
+  </g>
+  <path d="M100 530 H118" stroke="#1f6db5" stroke-width="4" fill="none"/>
+  <path d="M162 530 H200" stroke="#1f6db5" stroke-width="4" fill="none" id="pipeDist"/>
+  <path d="M320 510 H336" stroke="#1f6db5" stroke-width="4" fill="none"/>
+  <path d="M384 510 H430 V280 H470" stroke="#1f6db5" stroke-width="4" fill="none" id="pipeFeed"/>
+  <text class="small" x="430" y="270" fill="#1f6db5">Feed</text>
+  <!-- Feed control valve (Mission P&amp;ID C16/C198 concept) -->
+  <g class="vlv" data-k="feedCtl" role="button" tabindex="0" aria-label="Feed control valve">
+    <polygon points="450,268 462,280 450,292 438,280" fill="#fff" stroke="#1f6db5" stroke-width="1.5"/>
+    <text class="small" x="450" y="258" text-anchor="middle" fill="#1f6db5">FCV</text>
+  </g>
+
+  ${M.id==='miura'?shellMiura():M.id==='saacke'?shellSaacke():M.id==='kangrim'?shellKangrim():shellMission()}
+
+  <!-- Main steam + dump -->
+  <path d="M610 80 V50 H900" stroke="#5a6e7a" stroke-width="4" fill="none"/>
+  <g class="vlv" data-k="steamStop" role="button" tabindex="0" aria-label="Main steam stop">
+    <polygon points="700,40 720,50 700,60 680,50" fill="#fff" stroke="#1b2321" stroke-width="1.5"/>
+    <text class="small" x="700" y="32" text-anchor="middle">Steam stop</text>
+  </g>
+  <g class="vlv" data-k="dump" role="button" tabindex="0" aria-label="Dump valve">
+    <rect x="820" y="35" width="70" height="36" rx="3" fill="#d0d8e0" stroke="#1b2321" stroke-width="1.5"/>
+    <text class="small" x="855" y="50" text-anchor="middle">Dump</text>
+    <text class="tagv" id="vDump" x="855" y="66" text-anchor="middle">-</text>
+  </g>
+  <text class="small" x="940" y="55" fill="#5a6e7a">→ dump condenser</text>
+  <text class="small" x="940" y="72" fill="#5a6e7a">/ cascade return</text>
+  <path d="M520 80 V55 M520 55 l-8 -12 M520 55 l8 -12" stroke="#c4211f" stroke-width="2" fill="none"/>
+  <path d="M700 80 V55 M700 55 l-8 -12 M700 55 l8 -12" stroke="#c4211f" stroke-width="2" fill="none"/>
+  <text class="small" x="610" y="42" text-anchor="middle" fill="#c4211f">Safety valves</text>
+
+  <!-- Burner FO / FD (common) -->
+  <g class="pmp" data-k="fd" role="button" tabindex="0" aria-label="FD fan">
+    <rect x="380" y="400" width="70" height="50" fill="#e8d5c0" stroke="#1b2321" stroke-width="1.5"/>
+    <circle id="lampFd" cx="440" cy="410" r="5" fill="#9aa49d" stroke="#000"/>
+    <text class="small" x="415" y="430" text-anchor="middle">FD fan</text>
+  </g>
+  <path d="M450 425 H500" stroke="#7c8791" stroke-width="3" fill="none"/>
+  <g class="pmp" data-k="fo" role="button" tabindex="0" aria-label="FO pump">
+    <rect x="380" y="340" width="70" height="44" fill="#e8d5c0" stroke="#8a5a2b" stroke-width="1.5"/>
+    <circle id="lampFo" cx="440" cy="350" r="5" fill="#9aa49d" stroke="#000"/>
+    <text class="small" x="415" y="365" text-anchor="middle">FO pump</text>
+  </g>
+  <rect x="390" y="300" width="50" height="28" fill="#f5e6d3" stroke="#8a5a2b"/>
+  <text class="small" x="415" y="318" text-anchor="middle">FO heat</text>
+  <path d="M450 362 H500 V420" stroke="#8a5a2b" stroke-width="3" fill="none"/>
+  <text class="small" x="480" y="455" text-anchor="middle">Burner</text>
+
+  <!-- Blowdown / scum / sample (Mission steam-water P&amp;ID tags) -->
+  <g class="vlv" data-k="bd" role="button" tabindex="0" aria-label="Bottom blowdown">
+    <rect x="500" y="520" width="54" height="22" rx="2" fill="#e8eef2" stroke="#1b2321"/>
+    <text class="small" x="527" y="535" text-anchor="middle">B/D</text>
+  </g>
+  <g class="vlv" data-k="scum" role="button" tabindex="0" aria-label="Scum blowdown">
+    <rect x="570" y="160" width="44" height="18" rx="2" fill="#e8eef2" stroke="#1b2321"/>
+    <text class="small" x="592" y="173" text-anchor="middle">Scum</text>
+  </g>
+  <g class="vlv" data-k="sample" role="button" tabindex="0" aria-label="Sample cooler">
+    <rect x="640" y="160" width="50" height="18" rx="2" fill="#e8eef2" stroke="#1b2321"/>
+    <text class="small" x="665" y="173" text-anchor="middle">Sample</text>
+  </g>
+
+  <rect x="30" y="620" width="1040" height="80" fill="#f2f3ee" stroke="#9aa49d"/>
+  <text class="tagv" id="vTot" x="40" y="648">-</text>
+  <text class="small" id="vStat" x="40" y="672">-</text>
+  <text class="small" x="40" y="692" fill="#6d7873">Water/steam blue · FO brown · Exhaust hatched · Click pumps/valves. Sources: Mission OC GA; SAACKE CMB-VS brochure; Miura GK Ablecompo; Kangrim PC; Touch Control MDD00214EN; se@vis HMI 10e.</text>
   </svg>`;
+
+  $('mimic').querySelectorAll('.pmp').forEach(g=>{
+    const go=()=>{
+      const k=g.dataset.k;
+      if(k==='egCirc'&&!u.egCirc&&s.levelTrue<=M.Llwl+0.02){note('EG circ blocked - dry-run','a');return;}
+      u[k]=!u[k];
+      if(k==='dist'&&u.dist&&(s.dist<30||f.suctionShut))s.airBound=true;
+      if(k==='egCirc'&&u.egCirc)s.egDryTrip=false;
+      uiDirty=true;paintStarters();paintMimic();
+    };
+    g.onclick=go;g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}};
+  });
+  $('mimic').querySelectorAll('.vlv').forEach(g=>{
+    const go=()=>{
+      const k=g.dataset.k;
+      if(k==='bleed'){u.bleed=true;note('Bleed open');}
+      else if(k==='steamStop'){u.steamStop=!u.steamStop;uiDirty=true;paintControls();}
+      else if(k==='dump'){setDumpAuto(!u.dumpAuto);uiDirty=true;paintHmi();}
+      else if(k==='feedCtl'){note('Feed control valve - auto level loop');}
+      else if(k==='bd'){note('Bottom blowdown pulse'); s.chem.Cl=Math.max(5,s.chem.Cl*0.92); s.chem.cond=Math.max(50,s.chem.cond*0.92);}
+      else if(k==='scum'){note('Scum blow');}
+      else if(k==='sample'){note('Sample cooler open - take lab sample');}
+      paintMimic();
+    };
+    g.onclick=go;g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}};
+  });
 }
+
+
 function paintMimic(){
   const set=(id,t)=>{const e=$(id);if(e)e.textContent=t;};
+  const fillLvl=(id,frac,yBottom,hMax)=>{
+    const el=$(id);if(!el)return;
+    const h=Math.max(2,hMax*clamp(frac));
+    el.setAttribute('y',String(yBottom-h));
+    el.setAttribute('height',String(h));
+  };
   set('vDist',(s.dist/M.distKg*100).toFixed(0)+'%'+ (s.airBound?' AIR':''));
   set('vCasc',(s.casc/M.cascKg*100).toFixed(0)+'%');
-  set('vP',s.P.toFixed(2)+' bar');
-  set('vL',(s.level*100).toFixed(0)+'% ind');
+  set('vP',s.P.toFixed(2)+' bar a');
+  set('vL',(s.level*100).toFixed(0)+'% glass');
   set('vSw',s.swell>0.015?'swell':(s.swell<-0.015?'shrink':'mass '+(s.levelTrue*100).toFixed(0)+'%'));
-  set('vOil',s.oilSteam.toFixed(2)+' t/h');
-  set('vEg',s.egSteam.toFixed(2)+' t/h'+(M.egCirc&&!u.egCirc?' (circ off)':''));
-  set('vDump',s.dump.toFixed(0)+'% '+(u.dumpAuto?'A':'M'));
-  set('vTot','Total '+s.totalSteam.toFixed(2)+' t/h · demand '+(u.demand*M.steamOil).toFixed(2));
+  set('vOil',s.oilSteam.toFixed(2)+' t/h oil');
+  set('vEg',s.egSteam.toFixed(2)+' t/h EG'+(M.egCirc&&!u.egCirc?' · circ OFF':''));
+  set('vDump',s.dump.toFixed(0)+'% '+(u.dumpAuto?'Auto':'Man'));
+  set('vTot','Oil '+s.oilSteam.toFixed(2)+' + EG '+s.egSteam.toFixed(2)+' = '+s.totalSteam.toFixed(2)+' t/h   ·   demand '+(u.demand*M.steamOil).toFixed(2)+' t/h   ·   FO '+u.fuel+' '+s.FO_T.toFixed(0)+' °C');
   set('vStat',s.statusLine);
+  fillLvl('lvlDist',s.dist/M.distKg,558,136);
+  fillLvl('lvlCasc',s.casc/M.cascKg,558,96);
+  /* Drum water band bottoms match each cutaway geometry */
+  const drumBottom=M.id==='miura'?380:M.id==='saacke'?480:M.id==='mission'?480:470;
+  const drumH=M.id==='miura'?120:M.id==='saacke'?310:M.id==='mission'?310:200;
+  fillLvl('lvlDrum',s.level,drumBottom,drumH);
+  const ggB=M.id==='miura'?348:M.id==='saacke'?258:M.id==='mission'?258:258;
+  fillLvl('ggL',s.level,ggB,96);
+  fillLvl('ggR',s.level,ggB,96);
+  const fl=$('flamePath');if(fl)fl.setAttribute('opacity',s.flame?String(0.35+0.65*(s.load/100)):0);
+  const lamp=(id,on)=>{const e=$(id);if(e)e.setAttribute('fill',on?'#54e08c':'#9aa49d');};
+  lamp('lampDist',u.dist);lamp('lampDose',u.dose);lamp('lampFeed',u.feed);
+  lamp('lampFd',u.fd);lamp('lampFo',u.fo);lamp('lampEg',u.egCirc);
 }
 
 function hmiPagesFor(){
   if(M.face==='panel')return ['panel','burner','dump','alarms','water','service'];
   if(M.face==='seq')return ['seq','burner','dump','alarms','water','service'];
-  if(M.face==='bms')return ['bms','burner','dump','eg','alarms','water','pid','service'];
-  return ['home','burner','dump','alarms','water','pid','service'];
+  if(M.face==='bms')return M.egCirc
+    ?['bms','burner','dump','eg','alarms','water','pid','service']
+    :['bms','burner','dump','alarms','water','pid','service'];
+  return ['home','system','burner','dump','alarms','trends','water','pid','service'];
+}
+
+function touchTiles(){
+  /* Alfa Laval Touch Control plant overview — brochure MDD00214EN chrome + tiles. */
+  const onB=s.flame||s.egSteam>0.05,onBu=s.flame||s.seq!=='off',onF=u.fo||u.foHeat,onW=u.feed||u.dist||u.dose;
+  const tile=(id,title,lines,active)=>`<button type="button" class="ttile${active?' on':''}" data-go="${id}">
+    <b>${title}</b>${lines.map(l=>`<span>${l}</span>`).join('')}</button>`;
+  const chrome=`<div class="touch-chrome"><b>Alfa Laval Touch Control</b><span>1.4 Boiler 1 · ${new Date().toLocaleString()}</span></div>`;
+  const ft=`<div class="touch-ft">
+    <button type="button" data-go="water" class="${hmiPage==='water'?'on':''}">Water/Fuel</button>
+    <button type="button" data-go="system" class="${hmiPage==='system'||hmiPage==='home'?'on':''}">Boiler</button>
+    <button type="button" data-go="burner" class="${hmiPage==='burner'?'on':''}">Burner</button>
+    <button type="button" data-go="service">System</button>
+    <button type="button" data-go="trends">Hist</button>
+    <button type="button" data-go="service">Utility</button>
+  </div>`;
+  return chrome+`<div class="ttiles">
+    ${tile('system','Boiler',[s.P.toFixed(2)+' bar',(s.level*100).toFixed(0)+'% · '+(s.level*100-55).toFixed(0)+' mm',s.load.toFixed(1)+'% MODULATION'],onB)}
+    <span class="tarrow">→</span>
+    ${tile('burner','Burner',[s.seq,s.load.toFixed(0)+'% load',s.flame?'FLAME':'-'],onBu)}
+    <span class="tarrow" style="color:#c98a00">→</span>
+    ${tile('burner','Fuel',[u.fuel+' operation',s.FO_T.toFixed(0)+' °C',s.FO_P.toFixed(1)+' bar'],onF)}
+    <span class="tarrow" style="color:#1f6db5">→</span>
+    ${tile('water','Water',['Casc '+(s.casc/M.cascKg*100).toFixed(0)+'%','Feed '+(u.feed?'RUN':'OFF'),'P-alk '+s.chem.pAlk.toFixed(0)],onW)}
+  </div>`+ft+
+  `<p class="note" style="color:#6a7480;margin:8px 0 0">Touch Control plant overview (MDD00214EN). Softkey depth provisional until Mission OC Control System (Touch) PDF.</p>`;
+}
+
+function seavisBody(){
+  /* se@vis HMI 10e product-photo cues: dark tile grid, burner %, P, O2, level bar, footer icons. */
+  const o2=(3.5+Math.max(0,8-s.load/12)).toFixed(1);
+  const flue=(180+s.load*1.2+s.egSteam*25).toFixed(0);
+  const lvlPct=(s.level*100).toFixed(0);
+  const lvlMm=((s.level-0.55)*250).toFixed(0);
+  return `
+    <div class="seavis-grid">
+      <div class="seavis-cell"><b>Burner</b><div class="big">${s.load.toFixed(1)}%</div><div class="sub">Steam ${s.totalSteam.toFixed(1)} t/h · Oil ${s.oilSteam.toFixed(1)}</div></div>
+      <div class="seavis-cell"><b>Boiler pressure</b><div class="big">${s.P.toFixed(1)} bar</div><div class="sub">O₂ ${o2}% · Flue ${flue} °C</div></div>
+      <div class="seavis-cell"><b>Water level</b>
+        <div class="seavis-lvl"><i style="height:${Math.max(4,Math.min(100,s.level*100))}%"></i></div>
+        <span class="big" style="font-size:16px">${lvlMm} mm</span>
+        <div class="sub">${lvlPct}%</div>
+      </div>
+      <div class="seavis-cell"><b>EG / Oil</b><div class="big">${s.egSteam.toFixed(2)}</div><div class="sub">EG t/h · Oil ${s.oilSteam.toFixed(2)} · Dump ${s.dump.toFixed(0)}%</div></div>
+      <div class="seavis-cell"><b>Feed / FO</b><div class="sub">Feed ${u.feed?'Ready':'Stop'} · FO ${u.fo?'Ready':'Stop'} · FD ${u.fd?'On':'Off'}</div><div class="sub" style="margin-top:6px">${u.fuel} ${s.FO_T.toFixed(0)} °C</div></div>
+      <div class="seavis-cell"><b>Sequence</b>
+        <div class="seq-lamps" style="margin:0">
+          <span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span>
+          <span class="lamp ${s.seq==='pilot'?'on-g':''}">Pilot</span>
+          <span class="lamp ${s.seq==='main'||s.flame?'on-g':''}">Main</span>
+          <span class="lamp ${s.lockout||s.seq==='trip'?'on-r':''}">Trip</span>
+        </div>
+      </div>
+    </div>
+    <div class="seavis-ft" aria-hidden="true"><span title="Overview">▦</span><span title="P&amp;ID">⧉</span><span title="Settings">⚙</span><span title="PID">⌀</span><span title="Alarms" style="background:#c9a227;color:#1a1408">⚠</span></div>
+    <p class="note" style="color:#7f918b;margin:8px 0 0">se@vis HMI 10e layout cues from SAACKE product photo. Softkeys provisional until plant BMS PDF.</p>`;
 }
 
 function paintHmi(){
   const pages=hmiPagesFor();
   if(!pages.includes(hmiPage))hmiPage=pages[0];
-  const labels={home:'Overview',bms:'BMS',seq:'Sequencer',panel:'Panel',burner:'Burner',dump:'Dump',eg:'EG circ',alarms:'Alarms',water:'Water',pid:'PID',service:'Service'};
+  const labels={home:'Plant',system:'System',bms:'se@vis',seq:'Sequencer',panel:'Panel',burner:'Burner',dump:'Dump',eg:'EG circ',alarms:'Alarms',trends:'Trends',water:'Water',pid:'PID',service:'Service'};
   const hd=pages.map(p=>`<button class="hmibtn${hmiPage===p?' on':''}" data-p="${p}">${labels[p]||p}</button>`).join('');
   let body='';
   const faceNote=`<div class="hmi-face">${M.hmi}</div>`;
-  const status=`<p class="note" style="color:#9aa;margin:0 0 8px">${s.statusLine}</p>`;
-  if(hmiPage==='home'||hmiPage==='bms'||hmiPage==='panel'){
-    body=faceNote+status+`
+  const status=`<p class="note" style="color:${M.face==='touch'?'#6a7480':'#9aa'};margin:0 0 8px">${s.statusLine}</p>`;
+  const box=$('hmi');
+  if(box)box.className='hmibox face-'+M.face;
+  if(hmiPage==='home'){
+    body=faceNote+status+touchTiles();
+  }else if(hmiPage==='system'||hmiPage==='bms'||hmiPage==='panel'){
+    body=faceNote+status;
+    if(M.face==='bms')body+=seavisBody();
+    else if(M.face==='touch')body+=touchTiles()+`
+    <div class="row" style="margin-top:8px"><span>Steam pressure</span><span class="v">${s.P.toFixed(2)} bar</span></div>
+    <div class="row"><span>Level (glass / mass)</span><span class="v">${(s.level*100).toFixed(1)} / ${(s.levelTrue*100).toFixed(1)} %</span></div>
+    <div class="row"><span>Modulation</span><span class="v">${s.load.toFixed(1)}%</span></div>
+    <p class="note" style="color:#6a7480">Touch Control system view — FO yellow · water cyan · air white (brochure).</p>`;
+    else body+=`
     <div class="row"><span>Steam pressure</span><span class="v">${s.P.toFixed(2)} bar</span></div>
-    <div class="row"><span>Drum level (ind / mass)</span><span class="v">${(s.level*100).toFixed(1)} / ${(s.levelTrue*100).toFixed(1)} %</span></div>
-    <div class="row"><span>Burner / seq</span><span class="v">${s.flame?'FLAME':'—'} ${s.seq}</span></div>
+    <div class="row"><span>Drum level (glass / mass)</span><span class="v">${(s.level*100).toFixed(1)} / ${(s.levelTrue*100).toFixed(1)} %</span></div>
+    <div class="row"><span>Burner / seq</span><span class="v">${s.flame?'FLAME':'-'} ${s.seq}</span></div>
     <div class="row"><span>Oil / EG / Total</span><span class="v">${s.oilSteam.toFixed(2)} / ${s.egSteam.toFixed(2)} / ${s.totalSteam.toFixed(2)} t/h</span></div>
     <div class="row"><span>Dump</span><span class="v">${u.dumpAuto?'Auto':'Manual'} ${s.dump.toFixed(0)} %</span></div>
-    <div class="row"><span>Mode</span><span class="v">${u.mode.toUpperCase()}${s.lockout?' LOCKOUT':''}</span></div>`;
-    if(M.face==='bms')body+=`<div class="seq-lamps">
-      <span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span>
-      <span class="lamp ${s.seq==='pilot'?'on-g':''}">Pilot</span>
-      <span class="lamp ${s.seq==='main'||s.flame?'on-g':''}">Main</span>
-      <span class="lamp ${s.seq==='post'?'on-g':''}">Post</span>
-      <span class="lamp ${s.lockout||s.seq==='trip'?'on-r':''}">Trip</span>
-      <span class="lamp ${u.egCirc?'on-g':''}">EG circ</span>
-    </div><p class="note" style="color:#7f918b">BMS cues provisional — MANUAL-MAPS SAACKE.</p>`;
-    if(M.face==='panel')body+=`<p class="note" style="color:#7f918b">Panel legend provisional — MANUAL-MAPS Kangrim. Use Local control + Starters with this face.</p>`;
+    <div class="row"><span>Mode</span><span class="v">${u.mode.toUpperCase()}${s.lockout?' LOCKOUT':''}</span></div>
+    <div class="row"><span>Pipes</span><span class="v"><span style="color:#1f6db5">■ water</span> · <span style="color:#8a5a2b">■ FO</span> · <span style="color:#5a6e7a">■ steam</span> · <span style="color:#6b4a3a">■ exh.</span></div>`;
+    if(M.face==='panel')body+=`<p class="note" style="color:#7f918b">Kangrim PC local panel - SDC-class pressure control cues (restoration notes). Softkeys provisional until Kangrim panel PDF.</p>`;
   }else if(hmiPage==='seq'){
     body=faceNote+status+`<div class="seq-lamps">
       <span class="lamp ${s.seq==='off'?'on-g':''}">Off</span>
-      <span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span>
-      <span class="lamp ${s.seq==='pilot'?'on-g':''}">Pilot</span>
-      <span class="lamp ${s.seq==='main'?'on-g':''}">Main</span>
-      <span class="lamp ${s.seq==='post'?'on-g':''}">Post</span>
-      <span class="lamp ${s.seq==='trip'||s.lockout?'on-r':''}">Trip</span>
+      <span class="lamp ${s.seq==='purge'?'on-g':''}">Pre-purge</span>
+      <span class="lamp ${s.seq==='pilot'?'on-g':''}">Ignition</span>
+      <span class="lamp ${s.seq==='main'?'on-g':''}">Combustion</span>
+      <span class="lamp ${s.seq==='post'?'on-g':''}">Post-purge</span>
+      <span class="lamp ${s.seq==='trip'||s.lockout?'on-r':''}">Lockout</span>
     </div>
-    <div class="row"><span>Load</span><span class="v">${s.load.toFixed(0)} %</span></div>
+    <div class="row"><span>Load / stage</span><span class="v">${s.load.toFixed(0)} %</span></div>
     <div class="row"><span>P / Level</span><span class="v">${s.P.toFixed(2)} bar · ${(s.level*100).toFixed(0)}%</span></div>
-    <p class="note" style="color:#7f918b">Sequencer lamps provisional — MANUAL-MAPS Miura.</p>
+    <p class="note" style="color:#7f918b">Miura GK sequencer - CQM1H-class step lamps from Miura sequencer service news / Ablecompo notes (provisional labels).</p>
     <div class="hmift" style="margin-top:8px;background:transparent;border:0;padding:0">
       <button class="pbtn st" id="hmiStart">Start</button>
       <button class="pbtn sp" id="hmiStop">Stop</button>
@@ -804,29 +1268,31 @@ function paintHmi(){
     <button class="sbtn" id="dumpToggle">${u.dumpAuto?'Switch to Manual':'Switch to Auto'}</button>`;
   else if(hmiPage==='eg')body=faceNote+`
     <div class="row"><span>EG circ pump</span><span class="v">${u.egCirc?'RUN':'STOP'}</span></div>
-    <div class="row"><span>Dry-run trip</span><span class="v">${s.egDryTrip?'ACTIVE':'—'}</span></div>
+    <div class="row"><span>Dry-run trip</span><span class="v">${s.egDryTrip?'ACTIVE':'-'}</span></div>
     <div class="row"><span>EG steam / gas T / ΔP</span><span class="v">${s.egSteam.toFixed(2)} t/h · ${s.egT.toFixed(0)} °C · ${s.egDP.toFixed(2)}</span></div>
-    <p class="note" style="color:#9aa">SAACKE: circ required for EG duty; trip if water unsafe (MANUAL-MAPS).</p>
+    <p class="note" style="color:#9aa">SAACKE: circ required when EG eco uses FMB-VM as separator (FMB-VM datasheet).</p>
     <button class="sbtn" id="egCircBtn">${u.egCirc?'Stop EG circ':'Start EG circ'}</button>
     <button class="sbtn" id="egDryReset">Reset dry-run trip</button>`;
-  else if(hmiPage==='alarms')body=faceNote+ALARMS.map(a=>{const on=!!s.trips[a.id];return `<div class="row"><span>${a.lab}</span><span class="v">${on?(s.acks[a.id]?'ACK':'ACTIVE'):'—'}</span></div>`;}).join('')+`<button class="sbtn" id="hmiAck" style="margin-top:8px">Accept / Acknowledge</button>`;
+  else if(hmiPage==='alarms')body=faceNote+ALARMS.map(a=>{const on=!!s.trips[a.id];return `<div class="row"><span>${a.lab}</span><span class="v">${on?(s.acks[a.id]?'ACK':'ACTIVE'):'-'}</span></div>`;}).join('')+`<button class="sbtn" id="hmiAck" style="margin-top:8px">Accept / Acknowledge</button>`;
+  else if(hmiPage==='trends')body=faceNote+`<p class="note" style="color:#9aa">Trend view - Touch Control trend concept; see Readings / Trends panel.</p><div class="row"><span>P / Load / Oil / EG</span><span class="v">${s.P.toFixed(2)} / ${s.load.toFixed(0)}% / ${s.oilSteam.toFixed(2)} / ${s.egSteam.toFixed(2)}</span></div>`;
   else if(hmiPage==='water')body=faceNote+`<div class="row"><span>P-alk</span><span class="v">${s.chem.pAlk.toFixed(1)}</span></div>
     <div class="row"><span>pH / Cl / Cond</span><span class="v">${s.chem.pH.toFixed(1)} / ${s.chem.Cl.toFixed(0)} / ${s.chem.cond.toFixed(0)}</span></div>
     <div class="row"><span>Condensate pH</span><span class="v">${s.chem.condPH.toFixed(1)}</span></div>
     <p class="note" style="color:#9aa">Use Water lab for recommend → apply → retest. Chloride is never dosed away.</p>`;
   else if(hmiPage==='pid')body=faceNote+`
-    <p class="note" style="color:#9aa;margin:0 0 8px">Pressure→burner and dump PIDs with anti-windup. <span class="basis-est">Tuning estimated</span> — Reset restores maker defaults.</p>
+    <p class="note" style="color:#9aa;margin:0 0 8px">Pressure→burner and dump PIDs with anti-windup. <span class="basis-est">Tuning estimated</span>.</p>
     <div class="row"><span>P loop Kp/Ti/Td</span><span class="v">${pidP.kp}/${pidP.ti}/${pidP.td}</span></div>
     <div class="row"><span>P err / MV</span><span class="v">${(u.Psp-s.P).toFixed(2)} / ${s.load.toFixed(0)}%</span></div>
     <div class="row"><span>Dump Kp/Ti / MV</span><span class="v">${pidDump.kp}/${pidDump.ti} / ${s.dump.toFixed(0)}%</span></div>
     <div class="ctl"><label>Kp pressure <output>${pidP.kp}</output></label><input type="range" id="kpP" min="2" max="40" value="${pidP.kp}"></div>
     <div class="ctl"><label>Ti pressure <output>${pidP.ti}</output></label><input type="range" id="tiP" min="5" max="120" value="${pidP.ti}"></div>
     <button class="sbtn" id="pidDef">Load maker defaults</button>`;
-  else body=faceNote+`<p class="note" style="color:#9aa">Service / test paths only as in maker manual. Inspection drills drive real trips.</p>
+  else body=faceNote+`<p class="note" style="color:#9aa">Service / test - maker paths only when PDF mapped. Inspection drills drive real trips.</p>
     <button class="sbtn" data-insp="lwl">Test LWL</button> <button class="sbtn" data-insp="llwl">Test LLWL</button> <button class="sbtn" data-insp="ff">Test flame fail</button> <button class="sbtn" data-insp="hp">Test high P</button>`;
   $('hmi').innerHTML=`<div class="hmihd">${hd}</div><div class="hmibody">${body}</div><div class="hmift"><span class="lamp ${s.flame?'on-g':''}">Flame</span><span class="lamp ${s.lockout?'on-r':''}">Lockout</span><span class="lamp ${u.dumpAuto?'on-g':''}">Dump Auto</span>${M.egCirc?`<span class="lamp ${u.egCirc?'on-g':''}">EG circ</span>`:''}</div>`;
   $('hmiName').textContent=M.hmi;
   $('hmi').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.p;uiDirty=true;paintHmi();});
+  $('hmi').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.go;uiDirty=true;paintHmi();});
   const hs=$('hmiStart'),hst=$('hmiStop'),hr=$('hmiReset');
   if(hs)hs.onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';uiDirty=true;};
   if(hst)hst.onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
@@ -834,7 +1300,7 @@ function paintHmi(){
   const dt=$('dumpToggle');if(dt)dt.onclick=()=>{setDumpAuto(!u.dumpAuto);paintHmi();};
   const dm=$('dumpMan');if(dm)dm.oninput=()=>{u.dumpMan=+dm.value;$('dumpManO').textContent=u.dumpMan+'%';};
   const ha=$('hmiAck');if(ha)ha.onclick=()=>ackAll();
-  const egb=$('egCircBtn');if(egb)egb.onclick=()=>{if(!u.egCirc&&s.levelTrue<=M.Llwl+0.02){note('Cannot start EG circ — water unsafe (dry-run)','a');return;}u.egCirc=!u.egCirc;if(u.egCirc)s.egDryTrip=false;uiDirty=true;paintHmi();paintStarters();};
+  const egb=$('egCircBtn');if(egb)egb.onclick=()=>{if(!u.egCirc&&s.levelTrue<=M.Llwl+0.02){note('Cannot start EG circ - water unsafe (dry-run)','a');return;}u.egCirc=!u.egCirc;if(u.egCirc)s.egDryTrip=false;uiDirty=true;paintHmi();paintStarters();};
   const egr=$('egDryReset');if(egr)egr.onclick=()=>{if(s.levelTrue>M.Llwl){s.egDryTrip=false;delete s.trips.EGDRY;note('EG dry-run trip reset');uiDirty=true;paintHmi();}};
   const kp=$('kpP'),ti=$('tiP');if(kp)kp.oninput=()=>{pidP.kp=+kp.value;kp.previousElementSibling.querySelector('output').textContent=pidP.kp;};
   if(ti)ti.oninput=()=>{pidP.ti=+ti.value;ti.previousElementSibling.querySelector('output').textContent=pidP.ti;};
@@ -843,30 +1309,47 @@ function paintHmi(){
 }
 
 function paintDoor(){
+  /* Hardwired local panel - enamel door; labels follow unit face family. */
+  const title=M.face==='bms'?'SAACKE local / BMS':M.face==='seq'?'Miura sequencer panel':M.face==='panel'?'Kangrim local panel':'Mission gauge / local';
+  const sub=M.face==='bms'?'se@vis remote + hardwired':M.face==='seq'?'CQM1H-class I/O face':M.face==='panel'?'PLC / SDC face':'Touch remote + door';
   $('door').innerHTML=`
-    <div class="ctl"><label>Mode</label>
-      <span class="seg" id="modeSeg">${['off','auto','man','emergency'].map(m=>`<button data-mode="${m}" aria-pressed="${u.mode===m}">${m}</button>`).join('')}</span></div>
-    <div class="pumpbox">
-      <button class="pbtn st" id="locStart">Start</button><button class="pbtn sp" id="locStop">Stop</button>
-      <button class="sbtn" id="locAck">Accept</button><button class="sbtn" id="locLamp">Lamp test</button>
-      <button class="pbtn sp" id="locEstop">E-STOP</button>
-    </div>
-    <span class="lamp ${s.flame?'on-g':''}">Flame</span> <span class="lamp ${s.lockout?'on-r':''}">Trip</span>
-    ${M.face==='seq'?`<div class="seq-lamps" style="margin-top:8px"><span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span><span class="lamp ${s.seq==='main'?'on-g':''}">Main</span><span class="lamp ${s.lockout?'on-r':''}">Lock</span></div>`:''}
-    <p class="statusline">${s.statusLine}</p>`;
-  $('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;u.mode=b.dataset.mode;uiDirty=true;paintDoor();};
-  $('locStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
-  $('locStop').onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
-  $('locAck').onclick=()=>ackAll();
-  $('locLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
-  $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
+  <svg viewBox="0 0 520 240" class="pkdoor" role="group" aria-label="${title}">
+    <rect width="520" height="240" fill="#cdd1cc" stroke="#1b2321" stroke-width="2"/>
+    <rect x="12" y="12" width="496" height="36" fill="#1e2a2b"/>
+    <text x="260" y="28" text-anchor="middle" fill="#dfe8e2" style="font:700 13px var(--disp,#fff);letter-spacing:.08em;text-transform:uppercase">${title}</text>
+    <text x="260" y="42" text-anchor="middle" fill="#7f918b" style="font:500 10px var(--body,#aaa)">${sub}</text>
+    <text x="24" y="72" style="font:600 12px var(--disp,#333)">MODE</text>
+    ${['off','auto','man','emergency'].map((m,i)=>{
+      const x=24+i*90,on=u.mode===m;
+      return `<g class="doorMode" data-mode="${m}" role="button" tabindex="0"><rect x="${x}" y="80" width="80" height="28" fill="${on?'#54e08c':'#e3e6df'}" stroke="#1b2321"/><text x="${x+40}" y="98" text-anchor="middle" style="font:700 11px var(--disp,#333);text-transform:uppercase">${m}</text></g>`;
+    }).join('')}
+    <g id="dStart" role="button" tabindex="0"><rect x="24" y="130" width="70" height="36" fill="#23713f" stroke="#000"/><text x="59" y="152" text-anchor="middle" fill="#fff" style="font:700 12px var(--disp,#fff)">START</text></g>
+    <g id="dStop" role="button" tabindex="0"><rect x="104" y="130" width="70" height="36" fill="#a22320" stroke="#000"/><text x="139" y="152" text-anchor="middle" fill="#fff" style="font:700 12px var(--disp,#fff)">STOP</text></g>
+    <g id="dAck" role="button" tabindex="0"><rect x="184" y="130" width="70" height="36" fill="#e3e6df" stroke="#1b2321"/><text x="219" y="152" text-anchor="middle" style="font:700 11px var(--disp,#333)">ACCEPT</text></g>
+    <g id="dLamp" role="button" tabindex="0"><rect x="264" y="130" width="80" height="36" fill="#e3e6df" stroke="#1b2321"/><text x="304" y="152" text-anchor="middle" style="font:700 11px var(--disp,#333)">LAMP TEST</text></g>
+    <g id="dEstop" role="button" tabindex="0"><circle cx="420" cy="148" r="28" fill="#c4211f" stroke="#000" stroke-width="2"/><text x="420" y="152" text-anchor="middle" fill="#fff" style="font:700 10px var(--disp,#fff)">E-STOP</text></g>
+    <circle cx="380" cy="90" r="8" fill="${s.flame?'#54e08c':'#2b3736'}" stroke="#000"/><text x="400" y="94" style="font:600 11px var(--disp,#333)">FLAME</text>
+    <circle cx="460" cy="90" r="8" fill="${s.lockout?'#ff5a4f':'#2b3736'}" stroke="#000"/><text x="400" y="70" style="font:600 11px var(--disp,#333)">TRIP</text>
+    ${M.face==='seq'?`<text x="24" y="200" style="font:600 11px var(--disp,#333)">SEQ ${s.seq.toUpperCase()} · FWP · FD · IGN</text>`:''}
+    ${M.face==='bms'?`<text x="24" y="200" style="font:600 11px var(--disp,#333)">BMS ${s.seq.toUpperCase()} · EG CIRC ${u.egCirc?'ON':'OFF'} · CAP ${s.load.toFixed(0)}%</text>`:''}
+    ${M.face==='panel'?`<text x="24" y="200" style="font:600 11px var(--disp,#333)">P ${s.P.toFixed(2)} · L ${(s.level*100).toFixed(0)}% · ${u.mode.toUpperCase()}</text>`:''}
+    ${M.face==='touch'?`<text x="24" y="200" style="font:600 11px var(--disp,#333)">LOCAL · see Touch HMI for plant tiles</text>`:''}
+    <text x="24" y="222" style="font:500 10px var(--body,#666);fill:#6d7873">Hardwired door - enamel face like FWG/purifier trainers</text>
+  </svg>
+  <p class="statusline">${s.statusLine}</p>`;
+  $('door').querySelectorAll('.doorMode').forEach(g=>{g.onclick=()=>{u.mode=g.dataset.mode;uiDirty=true;paintDoor();};});
+  $('dStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
+  $('dStop').onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
+  $('dAck').onclick=()=>ackAll();
+  $('dLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
+  $('dEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
 }
 
 function mkStarter(id,lab,key){
   return `<div class="starter" data-k="${key}"><h4>${lab}</h4>
     <div class="pumpbox"><button class="pbtn st" data-on="1">Start</button><button class="pbtn sp" data-on="0">Stop</button>
     <span class="lamp ${u[key]?'on-g':''}">Run</span></div>
-    <div class="note">${key==='dist'&&s.airBound?'Amps light — air-bound; bleed casing':key==='egCirc'&&s.egDryTrip?'Dry-run trip':key==='egCirc'&&!M.egCirc?'Not fitted':''}</div></div>`;
+    <div class="note">${key==='dist'&&s.airBound?'Amps light - air-bound; bleed casing':key==='egCirc'&&s.egDryTrip?'Dry-run trip':key==='egCirc'&&!M.egCirc?'Not fitted':''}</div></div>`;
 }
 function paintStarters(){
   let html=mkStarter('feed','Feed pump','feed')+mkStarter('dist','Distillate / make-up','dist')+mkStarter('dose','Dosing pump','dose')+mkStarter('fo','FO pump','fo')+mkStarter('fd','FD fan','fd');
@@ -878,7 +1361,7 @@ function paintStarters(){
     if(e.target.id==='bleedBtn'){u.bleed=true;note('Bleed open');return;}
     const on=e.target.dataset.on;if(on==null)return;
     const key=st.dataset.k;
-    if(key==='egCirc'&&on==='1'&&s.levelTrue<=M.Llwl+0.02){note('EG circ blocked — dry-run protection','a');return;}
+    if(key==='egCirc'&&on==='1'&&s.levelTrue<=M.Llwl+0.02){note('EG circ blocked - dry-run protection','a');return;}
     u[key]=on==='1';
     if(key==='egCirc'&&on==='1')s.egDryTrip=false;
     if(key==='dist'&&on==='1'&&(s.dist<30||f.suctionShut))s.airBound=true;
@@ -920,19 +1403,19 @@ function paintWater(){
   $('waterLab').innerHTML=`
     <p class="note">Loop: <b>sample</b> → read recommendation → <b>apply</b> → wait → <b>retest</b>. Chloride never falls from dosing.</p>
     <table><tr><th>Test</th><th>Result</th><th>Band</th></tr>
-    <tr><td>P-alkalinity</td><td class="v">${s.chem.pAlk.toFixed(1)}</td><td>6–18</td></tr>
-    <tr><td>pH</td><td class="v">${s.chem.pH.toFixed(1)}</td><td>9.5–11</td></tr>
+    <tr><td>P-alkalinity</td><td class="v">${s.chem.pAlk.toFixed(1)}</td><td>6-18</td></tr>
+    <tr><td>pH</td><td class="v">${s.chem.pH.toFixed(1)}</td><td>9.5-11</td></tr>
     <tr><td>Chloride</td><td class="v">${s.chem.Cl.toFixed(0)} ppm</td><td>&lt;80</td></tr>
     <tr><td>Conductivity</td><td class="v">${s.chem.cond.toFixed(0)}</td><td>&lt;400</td></tr>
-    <tr><td>Scavenger</td><td class="v">${s.chem.scav.toFixed(2)}</td><td>0.2–1.0</td></tr>
-    <tr><td>Condensate pH</td><td class="v">${s.chem.condPH.toFixed(1)}</td><td>8.5–9.5</td></tr></table>
+    <tr><td>Scavenger</td><td class="v">${s.chem.scav.toFixed(2)}</td><td>0.2-1.0</td></tr>
+    <tr><td>Condensate pH</td><td class="v">${s.chem.condPH.toFixed(1)}</td><td>8.5-9.5</td></tr></table>
     <div class="rec"><b>Recommendation</b>
     ${rec.map(r=>`<div style="margin:6px 0"><div>${r.text}</div><div class="applyrow">${r.acts.map(a=>`<button class="sbtn" data-wa="${a.id}">${a.lab}</button>`).join('')}</div></div>`).join('')}
     <div class="applyrow"><button class="sbtn" id="runTest">Re-sample / retest</button>
     <button class="sbtn" id="stopBd">Stop blowdown</button></div>
-    <p class="note">Applied this scenario: ${s.waterApplied.length?s.waterApplied.join(', '):'—'}</p></div>`;
+    <p class="note">Applied this scenario: ${s.waterApplied.length?s.waterApplied.join(', '):'-'}</p></div>`;
   $('waterLab').querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>applyWaterAct(b.dataset.wa));
-  $('runTest').onclick=()=>{note('Sample taken — residuals from live model state');paintWater();};
+  $('runTest').onclick=()=>{note('Sample taken - residuals from live model state');paintWater();};
   $('stopBd').onclick=()=>{u.blowdown=0;note('Blowdown shut');paintControls();paintWater();};
 }
 
@@ -989,11 +1472,11 @@ function paintSteps(){
     if(step.ok()){stepIdx++;autoPulseT=s.t;note('Procedure step '+stepIdx+' complete');uiDirty=true;}
     else if(s.t-autoPulseT>=0.9){autoPulseT=s.t;autoAdvance(step);}
   }
-  $('steps').innerHTML=P.map((p,i)=>`<li class="${i<stepIdx?'done':i===stepIdx?'now':''}"><span class="n">${i+1}</span><span>${p.t}${i===stepIdx?'<span class="why">Current — auto-run gates on model state</span>':''}</span></li>`).join('');
+  $('steps').innerHTML=P.map((p,i)=>`<li class="${i<stepIdx?'done':i===stepIdx?'now':''}"><span class="n">${i+1}</span><span>${p.t}${i===stepIdx?'<span class="why">Current - auto-run gates on model state</span>':''}</span></li>`).join('');
 }
 
 function autoAdvance(step){
-  /* Lightweight assists that match gates — no invented proprietary menus */
+  /* Lightweight assists that match gates - no invented proprietary menus */
   const t=step.t.toLowerCase();
   if(t.includes('cascade')||t.includes('make up')||t.includes('make-up')){
     if(s.casc/M.cascKg<0.35){if(s.airBound)u.bleed=true;else u.dist=true;}
@@ -1022,7 +1505,7 @@ function runInspection(k){
   if(k==='llwl')f.llwlTest=true;
   if(k==='ff')f.flameTest=true;
   if(k==='hp'){f.hpTest=true;u.dumpAuto=false;u.dumpMan=0;f.dumpStuck=true;}
-  note('Inspection test fired: '+(labels[k]||k)+' — observe, ack, clear, reset','w');
+  note('Inspection test fired: '+(labels[k]||k)+' - observe, ack, clear, reset','w');
   setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},4);
   paintInspect();
 }
@@ -1049,7 +1532,7 @@ function finishInspection(k,pass){
   }
   st.cleared=true;st.reset=true;st.pass=!!pass;st.phase='done';
   const lab={lwl:'LWL',llwl:'LLWL',ff:'Flame failure',hp:'High steam P'}[k]||k;
-  const line=`${lab}: ${pass?'PASS':'FAIL'} — ack/clear/reset path ${pass?'complete':'incomplete'}`;
+  const line=`${lab}: ${pass?'PASS':'FAIL'} - ack/clear/reset path ${pass?'complete':'incomplete'}`;
   inspLog.unshift({t:s.t,line});
   note('Inspection '+line,pass?'n':'a');
   paintInspect();uiDirty=true;
@@ -1060,7 +1543,7 @@ function paintInspect(){
   $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. Path: <b>fire</b> → observe trip → <b>Acknowledge</b> → clear cause → <b>Reset</b> → log pass/fail.</p>
     ${items.map(([k,l,d])=>{
       const st=inspState[k];
-      const tag=st?(st.pass===true?'PASS':st.pass===false?'FAIL':st.phase):'—';
+      const tag=st?(st.pass===true?'PASS':st.pass===false?'FAIL':st.phase):'-';
       return `<div class="insp-item"><div><b>${l}</b><div class="note">${d}</div></div>
         <button class="sbtn" data-i="${k}">Fire test</button>
         <span class="pill ${st&&st.pass===true?'ok':st&&st.pass===false?'xx':'lo'}">${tag}</span>
@@ -1087,7 +1570,7 @@ function paintDrills(){
 function paintTrb(){
   const makerFirst={
     mission:[
-      ['Flame failure','Touch/Burner: confirm FO valve, filter ΔP, pump, flame eye, air–fuel; clear trip; Reset lockout. Provisional menu — MANUAL-MAPS Mission.'],
+      ['Flame failure','Touch/Burner: confirm FO valve, filter ΔP, pump, flame eye, air-fuel; clear trip; Reset lockout. Provisional menu - MANUAL-MAPS Mission.'],
       ['Air-bound distillate','Bleed casing on Starters until solid water; check suction valve and tank. Do not only restart.'],
       ['High chloride','Water lab: blow down; find leak. Never dose chloride away.'],
       ['Dump / high P under EG','Dump page: Auto PID or Manual; stuck dump is a teachable fault. Separate from burner PID.']
@@ -1099,15 +1582,15 @@ function paintTrb(){
       ['Dump / high P','Dump Auto SP vs burner SP; Manual bypass bumpless; check stuck dump drill.']
     ],
     kangrim:[
-      ['Flame failure','Panel start path: FD/FO lamps, local Accept, Reset after clear. Legend estimated — MANUAL-MAPS Kangrim.'],
+      ['Flame failure','Panel start path: FD/FO lamps, local Accept, Reset after clear. Legend estimated - MANUAL-MAPS Kangrim.'],
       ['Air-bound distillate','Bleed casing; check suction. Do not chase with restarts only.'],
-      ['High chloride','Blowdown + find in-leak — dosing will not fix Cl.'],
+      ['High chloride','Blowdown + find in-leak - dosing will not fix Cl.'],
       ['Dump / high P','Local dump Auto/Manual; verify valve moves.']
     ],
     miura:[
       ['Flame failure','Sequencer: which lamp stuck; FO/FD; Reset to Off before restart. MANUAL-MAPS Miura (estimated).'],
       ['Air-bound distillate','Bleed casing first.'],
-      ['High chloride','Blow down; find leak — no chemical fix for Cl.'],
+      ['High chloride','Blow down; find leak - no chemical fix for Cl.'],
       ['Dump / high P','Dump Auto separate from firing; Manual then back Auto.']
     ]
   };
@@ -1117,7 +1600,7 @@ function paintTrb(){
   </ul>
   <h3 class="sec-h" style="font-size:14px">Field cases (secondary)</h3>
   <ul>
-    <li><b>Field:</b> Dirty flame eye after burner work — clean scanner, then maker reset path.</li>
+    <li><b>Field:</b> Dirty flame eye after burner work - clean scanner, then maker reset path.</li>
     <li><b>Field:</b> FO filter change-over when FO_P low and FO pump running.</li>
     <li><b>Field:</b> After EG soot blow, expect ΔP down and EG t/h up.</li>
   </ul>
@@ -1133,7 +1616,8 @@ function paintActual(){
   <tr><td>FO viscosity gate</td><td class="v">${u.fuel} ≥ ${(FUELS[u.fuel]||M.FO).Tmin} °C</td><td>Grade table estimated</td></tr>
   <tr><td>Shrink/swell</td><td class="v">${(s.swell*100).toFixed(1)} % bias</td><td>Teaching, not class calc</td></tr>
   <tr><td>EG circ dry-run</td><td class="v">${M.egCirc?(s.egDryTrip?'TRIP':'armed'):'n/a'}</td><td>SAACKE when fitted</td></tr>
-  <tr><td>HMI menus</td><td class="v">provisional</td><td class="basis-est">MANUAL-MAPS — estimated</td></tr>`;
+  <tr><td>Plant cutaway</td><td class="v">${M.tab}</td><td>Public GA / product structure - MANUAL-MAPS</td></tr>
+  <tr><td>HMI / door face</td><td class="v">${M.face}</td><td class="basis-est">Brochure/lit. softkeys provisional</td></tr>`;
   $('actDx').innerHTML=`<p class="note">${s.statusLine}</p>`;
 }
 
@@ -1190,7 +1674,7 @@ document.querySelector('.stabs').onclick=e=>{const b=e.target.closest('button');
 $('info').onclick=async()=>{
   let ov=$('infoOv');if(!ov){ov=document.createElement('div');ov.id='infoOv';document.body.append(ov);}
   ov.hidden=false;
-  let body='<p>Four composite units share one SI plant. HMI is provisional until maker manuals are filed — see MANUAL-MAPS.</p><p>Operate: cascade → distillate (bleed if air-bound) → feed → FD/FO (viscosity) → burner → steam → EG → dump Auto/Manual → water recommend/apply/retest.</p>';
+  let body='<p>Four composite units share one SI plant. HMI is provisional until maker manuals are filed - see MANUAL-MAPS.</p><p>Operate: cascade → distillate (bleed if air-bound) → feed → FD/FO (viscosity) → burner → steam → EG → dump Auto/Manual → water recommend/apply/retest.</p>';
   try{
     const paths=['../src/shared/info-boiler.html','../../src/shared/info-boiler.html','info-boiler.html'];
     for(const p of paths){try{const r=await fetch(p);if(r.ok){body=await r.text();break;}}catch(e){}}
