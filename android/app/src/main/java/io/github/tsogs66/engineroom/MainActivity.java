@@ -1,16 +1,21 @@
 package io.github.tsogs66.engineroom;
 
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends BridgeActivity {
 
@@ -52,6 +57,23 @@ public class MainActivity extends BridgeActivity {
             a.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             getWindow().setAttributes(a);
         }
+        keepBackSwipeCentred(getWindow().getDecorView());
+    }
+
+    /* Android's back swipe from a side edge works only in the middle of that side, so panning the plant near a corner cannot leave the page.
+       Android allows 200 dp of each edge to be kept for the app: 100 dp at the top and 100 dp at the bottom. */
+    private void keepBackSwipeCentred(View v) {
+        v.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> {
+            float dp = getResources().getDisplayMetrics().density;
+            int w = r - l, h = b - t, band = Math.round(48 * dp), cut = Math.min(Math.round(100 * dp), h / 3);
+            List<Rect> keep = new ArrayList<>();
+            keep.add(new Rect(0, 0, band, cut));
+            keep.add(new Rect(0, h - cut, band, h));
+            keep.add(new Rect(w - band, 0, w, cut));
+            keep.add(new Rect(w - band, h - cut, w, h));
+            ViewCompat.setSystemGestureExclusionRects(view, keep);
+        });
+        v.requestLayout();
     }
 
     /* Full screen: the mimic needs all the height it can get. A swipe from the edge brings the bars back for a moment. */

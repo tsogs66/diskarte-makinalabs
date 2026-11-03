@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Marine Boiler Simulator">
+  <!-- Composite boiler in section: drum with tube bank, furnace flame, exhaust gas in, steam out. Flat colours so the 3D script can split it. -->
+  <rect x="24" y="24" width="464" height="464" rx="88" fill="#E0622B"/>
+  <rect x="56" y="56" width="400" height="400" rx="62" fill="#0F2A47"/>
+  <!-- steam outlet and puffs -->
+  <path fill="#E7ECF5" d="M240 84H272V122H240Z"/>
+  <path fill="#2FC4B2" d="M256 66C268 52 290 54 296 70 312 66 322 82 312 94H210C198 84 208 66 224 70 230 58 246 56 256 66Z"/>
+  <!-- boiler shell -->
+  <path fill="#E7ECF5" fill-rule="evenodd" d="M184 122H328C352 122 368 138 368 162V392C368 410 354 424 336 424H176C158 424 144 410 144 392V162C144 138 160 122 184 122ZM186 148C176 148 170 154 170 164V390C170 396 174 398 178 398H334C338 398 342 396 342 390V164C342 154 336 148 326 148Z"/>
+  <!-- water line and tube bank -->
+  <path fill="#2FC4B2" d="M170 214C192 204 214 204 236 214S280 224 302 214 334 204 342 210V226H170Z"/>
+  <path fill="#2FC4B2" d="M186 246H202V306H186ZM216 246H232V306H216ZM246 246H262V306H246ZM276 246H292V306H276ZM306 246H322V306H306Z"/>
+  <!-- furnace flame -->
+  <path fill="#E0622B" d="M256 316C282 336 300 352 300 372 300 388 288 398 272 398H240C224 398 212 388 212 372 212 352 230 336 256 316Z"/>
+  <path fill="#FFC857" d="M256 346C268 356 276 364 276 376 276 386 268 392 256 392S236 386 236 376C236 364 244 356 256 346Z"/>
+  <!-- exhaust gas in -->
+  <path fill="#E7ECF5" d="M80 300H144V326H80Z"/>
+</svg>

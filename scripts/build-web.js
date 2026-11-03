@@ -24,12 +24,13 @@ for(const [src,out,desk] of [['purifier-simulator.html','mobile-purifier.html','
  try{fs.writeFileSync(path.join(SIM_VAULT,'app-'+desk),d);fs.writeFileSync(path.join(SIM_VAULT,out),page(t));}catch(e){}
  fs.writeFileSync(path.join(WWW,desk),page(offline(d)));
  fs.writeFileSync(path.join(WWW,out),page(offline(t)));
- /* Keep sim-source mirror for boiler when vault was the read path; do not clobber if we just read from SIM_REPO. */
- try{if(pathSrc.startsWith(SIM_VAULT)){fs.mkdirSync(SIM_REPO,{recursive:true});fs.writeFileSync(path.join(SIM_REPO,src),raw);}}catch(e){}}
+ /* Keep the sim-source mirror of the hand-edited sources (FWG, boiler) when the vault was the read path, so the cloud can build them.
+    The purifier page is generated from src/purifier, so it is not mirrored. Paths are resolved first: the vault path uses / and path.join gives \ on Windows. */
+ try{if(src!=='purifier-simulator.html'&&path.resolve(pathSrc).startsWith(path.resolve(SIM_VAULT))){fs.mkdirSync(SIM_REPO,{recursive:true});fs.writeFileSync(path.join(SIM_REPO,src),raw);}}catch(e){}}
 
 /* dashboard: three.js is bundled with the code, split so the cards show before the 3D loads */
 esbuild.buildSync({entryPoints:[path.join(SRC,'home','home.js')],bundle:true,minify:true,format:'esm',splitting:true,chunkNames:'home-[name]-[hash]',outdir:WWW,target:['es2020'],legalComments:'none'});
 for(const f of ['index.html','home.css'])fs.copyFileSync(path.join(SRC,'home',f),path.join(WWW,f));
-fs.copyFileSync(path.join(SRC,'shared','logo.svg'),path.join(WWW,'logo.svg'));for(const n of ['diskarte-logo.svg','makinalabs-logo.svg','makinalabs-wordmark.svg','purifier-simulator-logo.svg','fwg-simulator-logo.svg'])fs.copyFileSync(path.join(SRC,'shared',n),path.join(WWW,n));
+fs.copyFileSync(path.join(SRC,'shared','logo.svg'),path.join(WWW,'logo.svg'));for(const n of ['diskarte-logo.svg','makinalabs-logo.svg','makinalabs-wordmark.svg','purifier-simulator-logo.svg','fwg-simulator-logo.svg','boiler-simulator-logo.svg'])fs.copyFileSync(path.join(SRC,'shared',n),path.join(WWW,n));
 fs.rmSync(path.join(WWW,'purifier-panels'),{recursive:true,force:true});
 console.log('www ready');
