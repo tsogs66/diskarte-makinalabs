@@ -242,5 +242,17 @@ ok('hot well never exceeds tank',B.s.casc<=B.M.cascKg+1e-6);
 B.u.dumpMan=0;
 B.switchModel('mission');
 
+const hmi=()=>doc.getElementById('hmi');
+B.switchModel('mission');B.loadScenario(sc('steady'));sim(8);B.paintHmi();
+ok('Aalborg HMI is a touch-GUI screen with a system view',hmi().classList.contains('tc')&&!!hmi().querySelector('svg.tcsys')&&/Touch Control/.test(hmi().textContent));
+ok('Aalborg system view shows live pressure',new RegExp(B.s.P.toFixed(2)).test(hmi().querySelector('svg.tcsys').textContent));
+ok('Aalborg screen keeps Start/Stop/Reset/Accept',['ftStart','ftStop','ftReset','ftAck'].every(id=>doc.getElementById(id)));
+B.switchModel('saacke');B.loadScenario(sc('steady'));sim(8);B.paintHmi();
+ok('SAACKE HMI is a tile GUI with function keys',hmi().classList.contains('sv')&&hmi().querySelectorAll('.svt').length>=7&&hmi().querySelectorAll('.svfk .hmibtn').length===8);
+ok('SAACKE tile shows live pressure',new RegExp(B.s.P.toFixed(1)+' bar').test(hmi().querySelector('.svgrid').textContent));
+B.switchModel('kangrim');B.paintHmi();
+ok('Kangrim HMI keeps the plain panel list',!hmi().classList.contains('tc')&&!hmi().classList.contains('sv'));
+B.switchModel('mission');
+
 if(fail.length){console.error('FAILED',fail.length);fail.forEach(x=>console.error(' -',x));process.exit(1);}
 console.log('boiler-check passed');
