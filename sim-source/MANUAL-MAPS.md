@@ -38,5 +38,7 @@ See vault `boiler-manuals/MANUAL-MAPS.md` for the full checklist. Source of trut
 - FO viscosity gate by fuel grade · shrink/swell teaching on indicated level
 - Local soot blow (needs steam stop and about 2 bar) clears an EG soot drill: ΔP down, EG t/h up
 - FO filter change-over restores FO pressure after a dirty in-service filter
+- Dirty flame scanner: clean on the local panel, then reset. Reset stays blocked while the eye is dirty. An inspection flame-fail test is a separate cause.
+- Water exercise includes a seawater leak drill. Blowdown lowers chloride; isolating the leak stops the rebound. Dosing never removes chloride. Leak rate is a drill, not a measured ship value.
 - Oil+EG composite one drum; EG-only status when oil flame off and EG steaming
 - Cold cascade feed is charged as sensible heat (no economiser credit)

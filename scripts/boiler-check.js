@@ -136,5 +136,35 @@ B.loadScenario(sc('cold'));
 B.startSootBlow();
 ok('soot blow refused when cold',B.s.sootBlowT===0);
 
+B.loadScenario(sc('eye'));
+sim(2);
+ok('dirty scanner locks the flame out',!B.s.flame&&B.s.lockout&&B.f.flameEye);
+ok('reset blocked while scanner is dirty',B.resetLockout()===false&&B.s.lockout);
+B.cleanFlameEye();
+ok('scanner cleaned',!B.f.flameEye&&B.s.lockout);
+ok('reset after the scanner is clean',B.resetLockout()===true&&!B.s.lockout);
+B.u.burnerStart=true;
+sim(80);
+ok('burner relights after clean and reset',B.s.flame&&B.s.seq==='main','seq='+B.s.seq);
+
+B.loadScenario(sc('water'));
+ok('water exercise starts with a seawater leak',B.f.cascLeak);
+B.applyWaterAct('bd50');
+sim(40);
+const midCl=B.s.chem.Cl;
+B.u.blowdown=0;
+sim(80);
+ok('chloride rebounds while the leak is open',B.s.chem.Cl>midCl+1,'Cl '+midCl.toFixed(1)+'→'+B.s.chem.Cl.toFixed(1));
+B.applyWaterAct('fixLeak');
+const heldCl=B.s.chem.Cl;
+sim(80);
+ok('isolating the leak stops the rebound',!B.f.cascLeak&&B.s.chem.Cl<heldCl+0.6,'Cl '+heldCl.toFixed(1)+'→'+B.s.chem.Cl.toFixed(1));
+
+B.loadScenario(sc('inspect'));
+B.runInspection('ff');
+B.f.flameEye=true;
+B.cleanFlameEye();
+ok('scanner clean does not clear an inspection flame test',B.f.flameTest&&B.f.flameEye);
+
 if(fail.length){console.error('FAILED',fail.length);fail.forEach(x=>console.error(' -',x));process.exit(1);}
 console.log('boiler-check passed');

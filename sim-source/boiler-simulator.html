@@ -244,7 +244,8 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
       <li>Distillate air-bound needs casing bleed. SAACKE EG circ has dry-run protection when fitted.</li>
       <li>Water: recommend → apply → retest. Chloride is never dosed away; blowdown lowers Cl/cond.</li>
       <li>Cold cascade feed takes sensible heat (no economiser credit), so firing must cover it.</li>
-      <li>Local actions: soot blow (steam stop open) and FO filter change-over. Not maker menu trees.</li>
+      <li>Local actions: soot blow, FO filter change-over, and clean flame scanner. Not maker menu trees.</li>
+      <li>Seawater leak drill: blowdown lowers chloride only while it runs, until the leak is isolated.</li>
       <li>Inspection tests latch: acknowledge → clear the cause → reset lockout. PASS stays off until that path is done.</li>
     </ul>
     <h3>Units <span class="basis-est">(HMI estimated)</span></h3>
@@ -545,8 +546,9 @@ function step(dt){
   s.swell=swell;
   s.level=clamp(s.levelTrue+swell,0.05,0.98);
 
-  /* Chemistry drift — Cl rises with leak / concentration; dose never clears Cl */
-  s.chem.Cl+= (0.002+(f.cascLeak?0.05:0)+(u.blowdown>0?0:0.001))*dt;
+  /* Chemistry drift — Cl rises with a seawater leak; dose never clears Cl.
+     0.15 ppm/s is a drill rate so the rebound is visible after blowdown stops. */
+  s.chem.Cl+= (0.002+(f.cascLeak?0.15:0)+(u.blowdown>0?0:0.001))*dt;
   s.chem.cond=80+s.chem.Cl*2.2+s.chem.pAlk*3;
   s.chem.condPH+=(8.8-s.chem.condPH)*0.01*dt;
   s.chem.pH=clamp(9.5+s.chem.pAlk*0.08+(s.chem.Cl>100?-0.1:0),7,12);
@@ -589,6 +591,8 @@ function step(dt){
   else if(s.plantMode==='lockout')s.statusLine='Lockout / trip — clear cause, ack, reset';
   else s.statusLine='Secured / standby';
   if(s.sootBlowT>0)s.statusLine+=' · soot blow '+s.sootBlowT.toFixed(0)+' s';
+  if(f.cascLeak)s.statusLine+=' · seawater leak';
+  if(f.flameEye)s.statusLine+=' · flame scanner dirty';
 
   checkInspProgress();
 
@@ -605,10 +609,11 @@ const SC=[
   {id:'egonly',name:'EG only'},
   {id:'dump',name:'Dump Auto under excess EG'},
   {id:'air',name:'Distillate air-bound'},
-  {id:'water',name:'Water exercise'},
+  {id:'water',name:'Water exercise — seawater leak'},
   {id:'pid',name:'PID lab'},
   {id:'inspect',name:'Inspection pack'},
-  {id:'soot',name:'Field: soot + dirty FO filter'}
+  {id:'soot',name:'Field: soot + dirty FO filter'},
+  {id:'eye',name:'Field: dirty flame eye'}
 ];
 
 function procFor(id){
@@ -689,7 +694,7 @@ function loadScenario(i){
     s.casc=M.cascKg*0.2;s.airBound=true;u.dist=true;u.meLoad=0;s.exhAvail=false;
   }else if(c.id==='water'){
     s.level=s.levelTrue=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.chem.pAlk=4;s.chem.pH=9.4;s.chem.Cl=120;s.chem.cond=400;
-    u.feed=true;u.mode='off';u.meLoad=0;s.exhAvail=false;
+    u.feed=true;u.mode='off';u.meLoad=0;s.exhAvail=false;f.cascLeak=true;
   }else if(c.id==='pid'){
     s.level=s.levelTrue=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.flame=true;s.seq='main';s.load=40;
     u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.demand=0.5;u.egCirc=M.egCirc;u.meLoad=0.4;
@@ -703,6 +708,11 @@ function loadScenario(i){
     u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.egCirc=M.egCirc;u.meLoad=0.75;
     pidTrack(pidP,55,s.P,u.Psp);pidTrack(pidDump,15,u.dumpSp,s.P);
     f.egSoot=true;f.foFilter=true;
+  }else if(c.id==='eye'){
+    s.level=s.levelTrue=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.T=tsat(s.P);s.flame=true;s.seq='main';s.load=50;
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.egCirc=M.egCirc;u.meLoad=0.4;
+    pidTrack(pidP,50,s.P,u.Psp);pidTrack(pidDump,10,u.dumpSp,s.P);
+    f.flameEye=true;
   }
   stepIdx=0;uiDirty=true;note('Scenario: '+c.name);paintAll(true);
 }
@@ -720,12 +730,19 @@ function changeFoFilter(){
   else note('FO filter in service is already clean');
   uiDirty=true;
 }
+function cleanFlameEye(){
+  if(f.flameTest){note('Inspection flame-fail test is still fired — clear that cause on the inspection row','w');return;}
+  if(!f.flameEye){note('Flame scanner is already clean');return;}
+  f.flameEye=false;
+  note('Flame scanner cleaned — reset the lockout, then start again');
+  uiDirty=true;
+}
 
 function waterRec(){
   const c=s.chem,recs=[];
   if(c.pAlk<6)recs.push({id:'palk_lo',text:'P-alkalinity low — increase boiler treatment.',acts:[{id:'dose10',lab:'Apply: dosing +10%'},{id:'man2',lab:'Apply: manual 2 L'}]});
   else if(c.pAlk>18)recs.push({id:'palk_hi',text:'P-alkalinity high — reduce dose; increase blowdown.',acts:[{id:'doseDown',lab:'Apply: dose −10%'},{id:'bd30',lab:'Apply: blowdown 30%'}]});
-  if(c.Cl>80)recs.push({id:'cl_hi',text:'Chloride high — do not dose it away. Blow down and find seawater in-leak / bad make-up.',acts:[{id:'bd50',lab:'Apply: blowdown 50%'},{id:'fixLeak',lab:'Note: check make-up / condenser'}]});
+  if(c.Cl>80)recs.push({id:'cl_hi',text:'Chloride high — do not dose it away. Blow down, and isolate a seawater leak or chloride climbs back.',acts:[{id:'bd50',lab:'Apply: blowdown 50%'},{id:'fixLeak',lab:f.cascLeak?'Apply: isolate seawater leak':'Apply: confirm no seawater leak'}]});
   if(c.condPH<8.5)recs.push({id:'cph_lo',text:'Condensate pH low — raise amine / check hotwell temperature.',acts:[{id:'amine',lab:'Apply: condensate treatment'}]});
   if(c.cond>400)recs.push({id:'cond_hi',text:'Conductivity high — increase blowdown (Cl often rides with it).',acts:[{id:'bd40',lab:'Apply: blowdown 40%'}]});
   if(c.scav<0.2)recs.push({id:'scav_lo',text:'Oxygen scavenger low — increase dose briefly.',acts:[{id:'dose10',lab:'Apply: dosing +10%'}]});
@@ -741,7 +758,11 @@ function applyWaterAct(id){
   else if(id==='bd40'){u.blowdown=40;s.waterApplied.push(id);note('Applied: blowdown 40%');}
   else if(id==='bd50'){u.blowdown=50;s.waterApplied.push(id);note('Applied: blowdown 50% — chloride only falls with blowdown');}
   else if(id==='amine'){u.amine=true;s.waterApplied.push(id);}
-  else if(id==='fixLeak'){note('Field check: condenser / make-up path for seawater — not a dose fix','w');s.waterApplied.push(id);}
+  else if(id==='fixLeak'){
+    s.waterApplied.push(id);
+    if(f.cascLeak){f.cascLeak=false;note('Seawater in-leak isolated — chloride now falls only while you blow down');}
+    else note('No seawater leak is active — dosing still does not remove chloride','w');
+  }
   uiDirty=true;paintWater();paintControls();
 }
 
@@ -905,7 +926,8 @@ function paintDoor(){
     <div class="pumpbox">
       <button class="sbtn" id="sootBtn">Soot blow</button>
       <button class="sbtn" id="foFiltBtn">Change FO filter</button>
-      <span class="note">${s.sootBlowT>0?'Blowing '+s.sootBlowT.toFixed(0)+' s':f.egSoot?'EG bank sooted':'EG bank clean'} · FO filter ${f.foFilter?'dirty':'clean'}</span>
+      <button class="sbtn" id="eyeBtn">Clean flame scanner</button>
+      <span class="note">${s.sootBlowT>0?'Blowing '+s.sootBlowT.toFixed(0)+' s':f.egSoot?'EG bank sooted':'EG bank clean'} · FO filter ${f.foFilter?'dirty':'clean'} · scanner ${f.flameEye?'dirty':'clean'}</span>
     </div>
     <span class="lamp ${s.flame?'on-g':''}">Flame</span> <span class="lamp ${s.lockout?'on-r':''}">Trip</span>
     ${M.face==='seq'?`<div class="seq-lamps" style="margin-top:8px"><span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span><span class="lamp ${s.seq==='main'?'on-g':''}">Main</span><span class="lamp ${s.lockout?'on-r':''}">Lock</span></div>`:''}
@@ -916,6 +938,7 @@ function paintDoor(){
   $('locAck').onclick=()=>ackAll();
   $('sootBtn').onclick=()=>{startSootBlow();paintDoor();};
   $('foFiltBtn').onclick=()=>{changeFoFilter();paintDoor();paintReadings();};
+  $('eyeBtn').onclick=()=>{cleanFlameEye();paintDoor();};
   $('locLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
   $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
 }
@@ -987,6 +1010,7 @@ function paintWater(){
     ${rec.map(r=>`<div style="margin:6px 0"><div>${r.text}</div><div class="applyrow">${r.acts.map(a=>`<button class="sbtn" data-wa="${a.id}">${a.lab}</button>`).join('')}</div></div>`).join('')}
     <div class="applyrow"><button class="sbtn" id="runTest">Re-sample / retest</button>
     <button class="sbtn" id="stopBd">Stop blowdown</button></div>
+    <p class="note">Seawater in-leak: ${f.cascLeak?'OPEN — blowdown only holds chloride while it runs':'none active'}</p>
     <p class="note">Applied this scenario: ${s.waterApplied.length?s.waterApplied.join(', '):'—'}</p></div>`;
   $('waterLab').querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>applyWaterAct(b.dataset.wa));
   $('runTest').onclick=()=>{s.lastSample={t:s.t,chem:{...s.chem}};note('Sample taken — residuals from live model state');paintWater();};
@@ -1221,7 +1245,7 @@ function paintTrb(){
   </ul>
   <h3 class="sec-h" style="font-size:14px">Field cases (secondary)</h3>
   <ul>
-    <li><b>Field:</b> Dirty flame eye after burner work — clean scanner, then maker reset path.</li>
+    <li><b>Field:</b> Dirty flame eye — Clean flame scanner on the local panel, then reset the lockout and start again. Reset stays blocked while the scanner is dirty.</li>
     <li><b>Field:</b> FO pressure low with the pump running — Change FO filter on the local panel.</li>
     <li><b>Field:</b> Soot blow on the local panel (steam stop open). After a sooted bank finishes, ΔP falls and EG t/h rises.</li>
   </ul>
@@ -1239,6 +1263,7 @@ function paintActual(){
   <tr><td>EG circ dry-run</td><td class="v">${M.egCirc?(s.egDryTrip?'TRIP':'armed'):'n/a'}</td><td>SAACKE when fitted</td></tr>
   <tr><td>Feed sensible heat</td><td class="v">no economiser</td><td>Cold cascade feed cools the drum</td></tr>
   <tr><td>Soot / FO filter</td><td class="v">${s.sootBlowT>0?'blowing':f.egSoot?'sooted':'clean'} / ${f.foFilter?'dirty':'clean'}</td><td>Local actions</td></tr>
+  <tr><td>Scanner / seawater leak</td><td class="v">${f.flameEye?'dirty':'clean'} / ${f.cascLeak?'open':'none'}</td><td>Clean, then reset. Isolate, or chloride rebounds. Leak rate is a drill.</td></tr>
   <tr><td>HMI menus</td><td class="v">provisional</td><td class="basis-est">MANUAL-MAPS — estimated</td></tr>`;
   $('actDx').innerHTML=`<p class="note">${s.statusLine}</p>`;
 }
@@ -1310,7 +1335,7 @@ buildMimic();paintInspect();paintDrills();paintTrb();
 switchModel('mission');
 window.__boiler={
   step,loadScenario,switchModel,runInspection,clearInspection,resetLockout,finishInspection,ackAll,
-  startSootBlow,changeFoFilter,applyWaterAct,setDumpAuto,inspReady,inspNext,
+  startSootBlow,changeFoFilter,cleanFlameEye,applyWaterAct,setDumpAuto,inspReady,inspNext,
   SC,
   get s(){return s;},get u(){return u;},get f(){return f;},get M(){return M;},
   get insp(){return inspState;},get log(){return inspLog;}
