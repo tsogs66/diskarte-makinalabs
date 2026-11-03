@@ -40,5 +40,6 @@ See vault `boiler-manuals/MANUAL-MAPS.md` for the full checklist. Source of trut
 - FO filter change-over restores FO pressure after a dirty in-service filter
 - Dirty flame scanner: clean on the local panel, then reset. Reset stays blocked while the eye is dirty. An inspection flame-fail test is a separate cause.
 - Water exercise includes a seawater leak drill. Blowdown lowers chloride; isolating the leak stops the rebound. Dosing never removes chloride. Leak rate is a drill, not a measured ship value.
+- Mimic layout (owner reference, Aalborg / SAACKE style): EG gas in bottom left, out top left through the tube bank; furnace, flame and FD fan on the right; oil flue out top right. SAACKE adds the EG circ loop on the left. Water line, flame size, EG and flue arrows, soot, valves and tanks follow the model. Schematic, not a maker drawing.
 - Oil+EG composite one drum; EG-only status when oil flame off and EG steaming
 - Cold cascade feed is charged as sensible heat (no economiser credit)

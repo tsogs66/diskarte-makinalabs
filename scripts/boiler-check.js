@@ -166,5 +166,29 @@ B.f.flameEye=true;
 B.cleanFlameEye();
 ok('scanner clean does not clear an inspection flame test',B.f.flameTest&&B.f.flameEye);
 
+const doc=dom.window.document,at=(id,k)=>{const e=doc.getElementById(id);return e?e.getAttribute(k):null;};
+B.switchModel('mission');
+B.loadScenario(sc('steady'));sim(8);B.paintMimic();
+ok('mimic has no EG circ pump on Mission',!doc.getElementById('bmPump'));
+ok('mimic flame lit when firing',+at('bmFlame','opacity')===1);
+ok('mimic EG arrows lit with ME load',+at('bmEgOut','opacity')>0.35&&+at('bmEgIn','opacity')>0.35);
+ok('mimic oil flue lit when firing',+at('bmFlue','opacity')>0.5);
+const wyNorm=+at('bmWater','y');
+B.s.level=0.2;B.paintMimic();
+ok('mimic water line drops with level',+at('bmWater','y')>wyNorm+30,'y '+wyNorm+'→'+at('bmWater','y'));
+B.loadScenario(sc('egonly'));sim(4);B.paintMimic();
+ok('mimic flame out in EG-only',+at('bmFlame','opacity')===0&&+at('bmFlue','opacity')<0.2);
+ok('mimic EG arrows lit in EG-only',+at('bmEgOut','opacity')>0.35);
+B.loadScenario(sc('soot'));sim(2);B.paintMimic();
+ok('mimic tubes dark when sooted',at('bmTubes','stroke')==='#2a2523');
+B.startSootBlow();sim(2);B.paintMimic();
+ok('mimic shows soot blow puffs',+at('bmPuffs','opacity')===1);
+sim(40);B.paintMimic();
+ok('mimic tubes clean after blow',at('bmTubes','stroke')!=='#2a2523'&&+at('bmPuffs','opacity')===0);
+B.switchModel('saacke');
+B.loadScenario(sc('steady'));sim(4);B.paintMimic();
+ok('mimic shows EG circ pump on SAACKE',!!doc.getElementById('bmPump')&&at('bmPump','fill')==='#1c8446');
+B.switchModel('mission');
+
 if(fail.length){console.error('FAILED',fail.length);fail.forEach(x=>console.error(' -',x));process.exit(1);}
 console.log('boiler-check passed');
