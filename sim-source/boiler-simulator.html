@@ -137,7 +137,9 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
 .seq-lamps{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
 .seq-lamps .lamp{background:#152020;padding:3px 8px;border-radius:2px}
 .applyrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.insp-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dotted var(--enamel-3)}
+.insp-item{display:grid;gap:6px;padding:8px 0;border-bottom:1px dotted var(--enamel-3)}
+.insp-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.insp-actions .sbtn:disabled{opacity:.45;cursor:not-allowed}
 .insp-log{font-family:var(--mono);font-size:12px;max-height:120px;overflow:auto;background:var(--paper);border:1px solid var(--line);padding:6px;margin-top:8px}
 .statusline{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin:4px 0 0}
 .basis-est{color:var(--warn);font-weight:600}
@@ -241,6 +243,9 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
       <li>Dump Auto PID is separate from pressure→burner; Auto/Manual is bumpless with anti-windup.</li>
       <li>Distillate air-bound needs casing bleed. SAACKE EG circ has dry-run protection when fitted.</li>
       <li>Water: recommend → apply → retest. Chloride is never dosed away; blowdown lowers Cl/cond.</li>
+      <li>Cold cascade feed takes sensible heat (no economiser credit), so firing must cover it.</li>
+      <li>Local actions: soot blow (steam stop open) and FO filter change-over. Not maker menu trees.</li>
+      <li>Inspection tests latch: acknowledge → clear the cause → reset lockout. PASS stays off until that path is done.</li>
     </ul>
     <h3>Units <span class="basis-est">(HMI estimated)</span></h3>
     <ul>
@@ -327,7 +332,7 @@ function coldState(){
     FO_T:35,FO_P:0,smoke:0,egT:180,egDP:0.8,meLoad:0.75,exhAvail:true,egDryTrip:false,
     fuel:'HFO',demand:0.4,plantMode:'secured',statusLine:'Cold — secured',
     chem:{pAlk:8,pH:10.2,Cl:40,cond:180,scav:0.4,condPH:8.7},
-    airBound:false,bleedOpen:false,
+    airBound:false,bleedOpen:false,sootBlowT:0,
     lockout:false,trips:{},acks:{},
     lastSample:null,waterApplied:[]
   };
@@ -425,13 +430,13 @@ function step(dt){
   }
   if(u.amine){s.chem.condPH=clamp(s.chem.condPH+0.02*dt,7,10);u.amine=false;note('Condensate treatment nudge applied');uiDirty=true;}
 
-  /* Feed — level PID on indicated level */
+  /* Feed — level PID on indicated level. Lockout stops the burner, not the feed, unless water is already low-low. */
   const cascFrac=s.casc/M.cascKg;
   let feedKg=0;
-  if(u.feed&&cascFrac>0.08&&!s.lockout){
+  if(u.feed&&cascFrac>0.08&&!u.estop){
     const want=pidStep(pidLvl,s.level,u.LvlSp,dt,0,100);
     feedKg=(want/100)*1.8;
-    if(s.level<=M.Llwl)feedKg=0;
+    if(s.level<=M.Llwl||f.llwlTest)feedKg=0;
     s.casc=Math.max(0,s.casc-feedKg*dt);
   }
 
@@ -454,17 +459,21 @@ function step(dt){
     egOk=!!u.egCirc&&!s.egDryTrip&&s.levelTrue>M.Llwl;
   }
 
-  /* Burner sequence */
+  /* Burner sequence. Post-purge still times out after mode is switched off. */
   const fdOk=u.fd&&!f.fdFail;
   const canLight=fdOk&&u.fo&&viscOk&&s.FO_P>2&&!s.lockout&&!u.estop&&s.level>M.Llwl&&!f.flameEye&&!f.flameTest;
-  if(u.burnerStop||u.mode==='off'){if(s.flame){s.flame=false;s.seq='post';s.purgeT=8;note('Burner stop — post-purge');}u.burnerStart=false;}
-  if(u.mode==='auto'||u.mode==='man'){
+  const stopPulse=u.burnerStop;u.burnerStop=false;
+  if(stopPulse||u.mode==='off'||u.estop){
+    if(s.flame){s.flame=false;s.seq='post';s.purgeT=8;note('Burner stop — post-purge');}
+    u.burnerStart=false;
+  }
+  if((u.mode==='auto'||u.mode==='man')&&!u.estop){
     if(u.burnerStart&&!s.flame&&(s.seq==='off'||s.seq==='trip')&&canLight&&!s.lockout){s.seq='purge';s.purgeT=12;note('Purge start');u.burnerStart=false;}
     if(s.seq==='purge'){s.purgeT-=dt;if(s.purgeT<=0){s.seq='pilot';s.purgeT=3;note('Pilot trial');}}
     if(s.seq==='pilot'){s.purgeT-=dt;if(s.purgeT<=0){if(canLight){s.flame=true;s.seq='main';note('Main flame established');}else{s.seq='trip';s.lockout=true;s.trips.FF=true;note('Flame failure on light-up','a');}}}
-    if(s.seq==='post'){s.purgeT-=dt;if(s.purgeT<=0)s.seq='off';}
   }
-  if(f.flameTest||f.flameEye){if(s.flame){s.flame=false;s.lockout=true;s.trips.FF=true;s.seq='trip';note('Flame failure','a');}}
+  if(s.seq==='post'){s.purgeT-=dt;if(s.purgeT<=0)s.seq='off';}
+  if((f.flameTest||f.flameEye)&&s.flame){s.flame=false;s.lockout=true;s.trips.FF=true;s.seq='trip';note('Flame failure','a');}
 
   /* Pressure PID → burner load (separate from dump) */
   if(u.loadAuto&&s.flame&&u.mode==='auto'){
@@ -495,21 +504,32 @@ function step(dt){
   if(f.dumpStuck||f.hpTest)dumpCmd=0;
   s.dump=dumpCmd;
 
-  /* Consumers + dump take-off; steam stop gates hotel/cargo. Dump can shed full generation. */
+  /* Consumers + dump take-off; steam stop gates hotel/cargo. Dump can shed full generation.
+     Soot blow adds a small steam use while the timer runs. */
   const demandTh=u.demand*M.steamOil;
   const dumpCap=Math.max(s.totalSteam,M.steamOil*0.5+M.steamEgMax*0.5);
   const dumpTh=(dumpCmd/100)*dumpCap;
-  const mOutRaw=((u.steamStop?demandTh:0)+dumpTh)/3600*1000;
+  const sootKg=s.sootBlowT>0&&u.steamStop?0.12:0;
+  const mOutRaw=((u.steamStop?demandTh:0)+dumpTh)/3600*1000+sootKg;
   const mOut=Math.min(mOutRaw,mGen+Math.max(s.mw-80,0)*0.05);
   s.mOut=mOut;
+  if(s.sootBlowT>0){
+    s.sootBlowT=Math.max(0,s.sootBlowT-dt);
+    if(s.sootBlowT===0){
+      if(f.egSoot){f.egSoot=false;note('Soot blow finished — EG ΔP down, EG t/h up');}
+      else note('Soot blow finished — bank was already clean');
+      uiDirty=true;
+    }
+  }
 
   /* Mass balance on liquid inventory */
   s.mw+= (feedKg - mGen)*dt;
   s.mw=clamp(s.mw,40,M.drumKg*1.05);
   s.levelTrue=clamp(s.mw/M.drumKg,0.02,0.99);
 
-  /* Energy → saturation pressure */
-  const dQ=(Qnet - mOut*hfg(s.T))*dt; /* kJ */
+  /* Energy → saturation pressure. Cold cascade feed is charged as sensible heat (no economiser). */
+  const feedCool=feedKg*cpW*Math.max(0,s.T-s.cascT);
+  const dQ=(Qnet - mOut*hfg(s.T) - feedCool)*dt; /* kJ */
   const C=Math.max(s.mw,80)*cpW+120;
   let Ttry=s.T+dQ/C;
   Ttry=clamp(Ttry,80,tsat(M.Prated+3));
@@ -537,7 +557,15 @@ function step(dt){
   else if(!f.llwlTest){delete s.trips.LLWL;}
   if(L<=M.Lwl)s.trips.LWL=true; else if(!f.lwlTest)delete s.trips.LWL;
   if(s.level>=M.Lhi)s.trips.HWL=true; else delete s.trips.HWL;
-  if(s.P>=M.Prated||f.hpTest){s.trips.HP=true;if(s.flame){s.flame=false;s.load=0;note('High pressure trip','a');}} else if(!f.hpTest)delete s.trips.HP;
+  const hp=(s.P>=M.Prated)||f.hpTest;
+  if(hp){
+    s.trips.HP=true;
+    if(s.flame||s.seq==='purge'||s.seq==='pilot'||s.seq==='main'){
+      const wasFlame=s.flame;
+      s.flame=false;s.load=0;s.seq='trip';s.lockout=true;
+      if(wasFlame)note('High pressure trip','a');
+    }
+  }else delete s.trips.HP;
   if(!viscOk&&u.fo)s.trips.FO_T=true; else delete s.trips.FO_T;
   if(u.fo&&s.FO_P<2&&s.seq!=='off'&&s.seq!=='post')s.trips.FO_P=true; else delete s.trips.FO_P;
   if(f.fdFail&&u.fd)s.trips.FD=true; else delete s.trips.FD;
@@ -560,6 +588,9 @@ function step(dt){
   else if(s.plantMode==='oil')s.statusLine=`Oil firing · ${s.oilSteam.toFixed(2)} t/h · EG ${(s.egSteam).toFixed(2)} t/h${egNote}`;
   else if(s.plantMode==='lockout')s.statusLine='Lockout / trip — clear cause, ack, reset';
   else s.statusLine='Secured / standby';
+  if(s.sootBlowT>0)s.statusLine+=' · soot blow '+s.sootBlowT.toFixed(0)+' s';
+
+  checkInspProgress();
 
   s.smoke=s.flame?(s.load>90&&!fdOk?0.8:0.15):0;
   s.t+=dt;
@@ -576,7 +607,8 @@ const SC=[
   {id:'air',name:'Distillate air-bound'},
   {id:'water',name:'Water exercise'},
   {id:'pid',name:'PID lab'},
-  {id:'inspect',name:'Inspection pack'}
+  {id:'inspect',name:'Inspection pack'},
+  {id:'soot',name:'Field: soot + dirty FO filter'}
 ];
 
 function procFor(id){
@@ -666,8 +698,27 @@ function loadScenario(i){
     s.level=s.levelTrue=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.flame=true;s.seq='main';s.load=50;
     u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.egCirc=M.egCirc;u.meLoad=0.5;
     pidTrack(pidP,50,s.P,u.Psp);pidTrack(pidDump,10,u.dumpSp,s.P);
+  }else if(c.id==='soot'){
+    s.level=s.levelTrue=M.Lnml;s.mw=M.drumKg*M.Lnml;s.P=M.Pwork;s.T=tsat(s.P);s.flame=true;s.seq='main';s.load=55;
+    u.feed=u.fo=u.fd=u.steamStop=true;u.mode='auto';u.foHeat=true;s.FO_T=120;u.egCirc=M.egCirc;u.meLoad=0.75;
+    pidTrack(pidP,55,s.P,u.Psp);pidTrack(pidDump,15,u.dumpSp,s.P);
+    f.egSoot=true;f.foFilter=true;
   }
   stepIdx=0;uiDirty=true;note('Scenario: '+c.name);paintAll(true);
+}
+
+function startSootBlow(){
+  if(s.P<2){note('Soot blow needs steam pressure (about 2 bar)','w');return;}
+  if(!u.steamStop){note('Open the steam stop — soot blowers use main steam','w');return;}
+  if(s.sootBlowT>0){note('Soot blow already running');return;}
+  s.sootBlowT=8;
+  note(f.egSoot?'Soot blow started — sooted EG bank':'Soot blow started');
+  uiDirty=true;
+}
+function changeFoFilter(){
+  if(f.foFilter){f.foFilter=false;note('FO filter changed over — pressure recovers with the FO pump running');}
+  else note('FO filter in service is already clean');
+  uiDirty=true;
 }
 
 function waterRec(){
@@ -822,15 +873,15 @@ function paintHmi(){
     <div class="ctl"><label>Kp pressure <output>${pidP.kp}</output></label><input type="range" id="kpP" min="2" max="40" value="${pidP.kp}"></div>
     <div class="ctl"><label>Ti pressure <output>${pidP.ti}</output></label><input type="range" id="tiP" min="5" max="120" value="${pidP.ti}"></div>
     <button class="sbtn" id="pidDef">Load maker defaults</button>`;
-  else body=faceNote+`<p class="note" style="color:#9aa">Service / test paths only as in maker manual. Inspection drills drive real trips.</p>
+  else body=faceNote+`<p class="note" style="color:#9aa">Service page stays on the shared inspection tests. Cause stays latched until acknowledge, clear, and reset.</p>
     <button class="sbtn" data-insp="lwl">Test LWL</button> <button class="sbtn" data-insp="llwl">Test LLWL</button> <button class="sbtn" data-insp="ff">Test flame fail</button> <button class="sbtn" data-insp="hp">Test high P</button>`;
   $('hmi').innerHTML=`<div class="hmihd">${hd}</div><div class="hmibody">${body}</div><div class="hmift"><span class="lamp ${s.flame?'on-g':''}">Flame</span><span class="lamp ${s.lockout?'on-r':''}">Lockout</span><span class="lamp ${u.dumpAuto?'on-g':''}">Dump Auto</span>${M.egCirc?`<span class="lamp ${u.egCirc?'on-g':''}">EG circ</span>`:''}</div>`;
   $('hmiName').textContent=M.hmi;
   $('hmi').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{hmiPage=b.dataset.p;uiDirty=true;paintHmi();});
   const hs=$('hmiStart'),hst=$('hmiStop'),hr=$('hmiReset');
   if(hs)hs.onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';uiDirty=true;};
-  if(hst)hst.onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
-  if(hr)hr.onclick=()=>{if(s.level>M.Llwl&&!u.estop){s.lockout=false;s.seq='off';s.egDryTrip=false;delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;delete s.trips.EGDRY;delete s.trips.ESTOP;u.estop=false;note('Lockout reset');uiDirty=true;}};
+  if(hst)hst.onclick=()=>{u.burnerStop=true;};
+  if(hr)hr.onclick=()=>{if(resetLockout()){paintHmi();paintInspect();}};
   const dt=$('dumpToggle');if(dt)dt.onclick=()=>{setDumpAuto(!u.dumpAuto);paintHmi();};
   const dm=$('dumpMan');if(dm)dm.oninput=()=>{u.dumpMan=+dm.value;$('dumpManO').textContent=u.dumpMan+'%';};
   const ha=$('hmiAck');if(ha)ha.onclick=()=>ackAll();
@@ -851,13 +902,20 @@ function paintDoor(){
       <button class="sbtn" id="locAck">Accept</button><button class="sbtn" id="locLamp">Lamp test</button>
       <button class="pbtn sp" id="locEstop">E-STOP</button>
     </div>
+    <div class="pumpbox">
+      <button class="sbtn" id="sootBtn">Soot blow</button>
+      <button class="sbtn" id="foFiltBtn">Change FO filter</button>
+      <span class="note">${s.sootBlowT>0?'Blowing '+s.sootBlowT.toFixed(0)+' s':f.egSoot?'EG bank sooted':'EG bank clean'} · FO filter ${f.foFilter?'dirty':'clean'}</span>
+    </div>
     <span class="lamp ${s.flame?'on-g':''}">Flame</span> <span class="lamp ${s.lockout?'on-r':''}">Trip</span>
     ${M.face==='seq'?`<div class="seq-lamps" style="margin-top:8px"><span class="lamp ${s.seq==='purge'?'on-g':''}">Purge</span><span class="lamp ${s.seq==='main'?'on-g':''}">Main</span><span class="lamp ${s.lockout?'on-r':''}">Lock</span></div>`:''}
     <p class="statusline">${s.statusLine}</p>`;
   $('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;u.mode=b.dataset.mode;uiDirty=true;paintDoor();};
   $('locStart').onclick=()=>{u.burnerStart=true;if(u.mode==='off')u.mode='auto';};
-  $('locStop').onclick=()=>{u.burnerStop=true;setTimeout(()=>u.burnerStop=false,100);};
+  $('locStop').onclick=()=>{u.burnerStop=true;};
   $('locAck').onclick=()=>ackAll();
+  $('sootBtn').onclick=()=>{startSootBlow();paintDoor();};
+  $('foFiltBtn').onclick=()=>{changeFoFilter();paintDoor();paintReadings();};
   $('locLamp').onclick=()=>{u.lampTest=true;note('Lamp test');setTimeout(()=>u.lampTest=false,1000);};
   $('locEstop').onclick=()=>{u.estop=true;note('Emergency stop','a');};
 }
@@ -916,7 +974,6 @@ function paintControls(){
 
 function paintWater(){
   const rec=waterRec();
-  s.lastSample={t:s.t,chem:{...s.chem}};
   $('waterLab').innerHTML=`
     <p class="note">Loop: <b>sample</b> → read recommendation → <b>apply</b> → wait → <b>retest</b>. Chloride never falls from dosing.</p>
     <table><tr><th>Test</th><th>Result</th><th>Band</th></tr>
@@ -932,7 +989,7 @@ function paintWater(){
     <button class="sbtn" id="stopBd">Stop blowdown</button></div>
     <p class="note">Applied this scenario: ${s.waterApplied.length?s.waterApplied.join(', '):'—'}</p></div>`;
   $('waterLab').querySelectorAll('[data-wa]').forEach(b=>b.onclick=()=>applyWaterAct(b.dataset.wa));
-  $('runTest').onclick=()=>{note('Sample taken — residuals from live model state');paintWater();};
+  $('runTest').onclick=()=>{s.lastSample={t:s.t,chem:{...s.chem}};note('Sample taken — residuals from live model state');paintWater();};
   $('stopBd').onclick=()=>{u.blowdown=0;note('Blowdown shut');paintControls();paintWater();};
 }
 
@@ -1015,62 +1072,109 @@ function autoAdvance(step){
   }
 }
 
+function inspNeedsReset(k){return k==='ff'||k==='llwl'||k==='hp';}
+function inspReady(k){
+  const st=inspState[k];if(!st||st.pass!=null)return false;
+  if(!(st.saw&&st.acked&&st.cleared))return false;
+  if(inspNeedsReset(k)&&!st.reset)return false;
+  return true;
+}
+function inspNext(k){
+  const st=inspState[k];if(!st)return 'Fire the test';
+  if(st.pass===true)return 'PASS';
+  if(st.pass===false)return 'FAIL';
+  if(!st.saw)return 'Wait for the alarm';
+  if(!st.acked)return 'Acknowledge';
+  if(!st.cleared)return 'Clear the test cause';
+  if(inspNeedsReset(k)&&!st.reset)return 'Reset lockout';
+  return 'Log the result';
+}
+
 function runInspection(k){
   const labels={lwl:'LWL',llwl:'LLWL',ff:'Flame failure',hp:'High steam P'};
-  inspState[k]={phase:'fired',t0:s.t,acked:false,cleared:false,reset:false,pass:null};
+  inspState[k]={phase:'fired',t0:s.t,saw:false,acked:false,cleared:false,reset:false,pass:null};
   if(k==='lwl')f.lwlTest=true;
   if(k==='llwl')f.llwlTest=true;
   if(k==='ff')f.flameTest=true;
-  if(k==='hp'){f.hpTest=true;u.dumpAuto=false;u.dumpMan=0;f.dumpStuck=true;}
-  note('Inspection test fired: '+(labels[k]||k)+' — observe, ack, clear, reset','w');
-  setTimeout(()=>{f.lwlTest=f.llwlTest=f.flameTest=false;},4);
-  paintInspect();
+  if(k==='hp'){f.hpTest=true;f.dumpStuck=true;}
+  const tripId={lwl:'LWL',llwl:'LLWL',ff:'FF',hp:'HP'}[k];
+  if(tripId)delete s.acks[tripId];
+  step(0.25);
+  note('Inspection test fired: '+(labels[k]||k)+' — alarm stays until you acknowledge, clear the cause'+(inspNeedsReset(k)?', then reset':''),'w');
+  uiDirty=true;paintInspect();
 }
 
 function checkInspProgress(){
+  const tripMap={lwl:'LWL',llwl:'LLWL',ff:'FF',hp:'HP'};
   for(const k of Object.keys(inspState)){
     const st=inspState[k];if(!st||st.pass!=null)continue;
-    if(st.phase==='fired'){
-      const tripMap={lwl:'LWL',llwl:'LLWL',ff:'FF',hp:'HP'};
-      if(s.trips[tripMap[k]]&&s.acks[tripMap[k]])st.acked=true;
-      if(st.acked)st.phase='acked';
-    }
+    if(s.trips[tripMap[k]])st.saw=true;
+    if(st.saw&&s.acks[tripMap[k]])st.acked=true;
   }
 }
 
-function finishInspection(k,pass){
-  const st=inspState[k];if(!st)return;
-  /* Clear path */
-  if(k==='hp'){f.hpTest=false;f.dumpStuck=false;u.dumpAuto=true;delete s.trips.HP;}
-  if(k==='lwl')delete s.trips.LWL;
-  if(k==='ff'||k==='llwl'){/* need reset after clear */}
-  if(pass&&(k==='ff'||k==='llwl')){
-    if(s.level>M.Llwl&&!u.estop){s.lockout=false;s.seq='off';delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;}
+function clearInspection(k){
+  const st=inspState[k];if(!st||st.pass!=null)return;
+  if(!st.saw){note('No trip observed yet','w');paintInspect();return;}
+  if(!st.acked){note('Acknowledge the alarm before clearing the cause','w');paintInspect();return;}
+  if(k==='lwl')f.lwlTest=false;
+  if(k==='llwl')f.llwlTest=false;
+  if(k==='ff')f.flameTest=false;
+  if(k==='hp'){f.hpTest=false;f.dumpStuck=false;}
+  st.cleared=true;st.phase='cleared';
+  note('Test cause cleared'+(inspNeedsReset(k)?' — reset the lockout':''));
+  uiDirty=true;paintInspect();
+}
+
+function resetLockout(){
+  if(s.level<=M.Llwl||f.llwlTest||f.flameTest||f.flameEye||f.hpTest||s.P>=M.Prated){
+    note('Reset blocked — cause still present or pressure / water still unsafe','a');return false;
   }
-  st.cleared=true;st.reset=true;st.pass=!!pass;st.phase='done';
+  s.lockout=false;s.seq='off';s.egDryTrip=false;u.estop=false;
+  delete s.trips.FF;delete s.trips.LOCK;delete s.trips.LLWL;delete s.trips.EGDRY;delete s.trips.ESTOP;delete s.trips.HP;
+  for(const k of Object.keys(inspState)){
+    const st=inspState[k];
+    if(st&&st.pass==null&&st.cleared)st.reset=true;
+  }
+  note('Lockout reset');
+  uiDirty=true;return true;
+}
+
+function finishInspection(k,pass){
+  const st=inspState[k];if(!st||st.pass!=null)return;
+  if(pass&&!inspReady(k)){note('PASS blocked — '+inspNext(k),'w');paintInspect();return;}
+  st.pass=!!pass;st.phase='done';
   const lab={lwl:'LWL',llwl:'LLWL',ff:'Flame failure',hp:'High steam P'}[k]||k;
-  const line=`${lab}: ${pass?'PASS':'FAIL'} — ack/clear/reset path ${pass?'complete':'incomplete'}`;
+  const line=`${lab}: ${pass?'PASS':'FAIL'} — ack/clear/reset path ${pass?'complete':'logged fail'}`;
   inspLog.unshift({t:s.t,line});
   note('Inspection '+line,pass?'n':'a');
   paintInspect();uiDirty=true;
 }
 
 function paintInspect(){
-  const items=[['lwl','LWL','Low-water alarm function'],['llwl','LLWL','Low-low trip / lockout'],['ff','Flame failure','Flame eye / fuel cut'],['hp','High steam P','Pressure trip (dump forced shut)']];
-  $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. Path: <b>fire</b> → observe trip → <b>Acknowledge</b> → clear cause → <b>Reset</b> → log pass/fail.</p>
+  const items=[['lwl','LWL','Low-water alarm. No burner lockout.'],['llwl','LLWL','Low-low trip and lockout.'],['ff','Flame failure','Flame eye / fuel cut and lockout.'],['hp','High steam P','Pressure trip. Dump held shut until you clear it.']];
+  $('inspect').innerHTML=`<p class="note">Class / flag / PSC function tests. The cause stays on until you <b>acknowledge</b>, <b>clear</b>, then <b>reset</b> a lockout. PASS stays off until that path is done.</p>
     ${items.map(([k,l,d])=>{
       const st=inspState[k];
-      const tag=st?(st.pass===true?'PASS':st.pass===false?'FAIL':st.phase):'—';
-      return `<div class="insp-item"><div><b>${l}</b><div class="note">${d}</div></div>
-        <button class="sbtn" data-i="${k}">Fire test</button>
-        <span class="pill ${st&&st.pass===true?'ok':st&&st.pass===false?'xx':'lo'}">${tag}</span>
-        ${st&&st.pass==null?`<span><button class="sbtn" data-ip="${k}">Log PASS</button> <button class="sbtn" data-if="${k}">Log FAIL</button></span>`:'<span></span>'}
+      const tag=st?(st.pass===true?'PASS':st.pass===false?'FAIL':inspNext(k)):'—';
+      const ready=inspReady(k);
+      const open=st&&st.pass==null;
+      return `<div class="insp-item"><div><b>${l}</b><div class="note">${d}${open?' · next: '+inspNext(k):''}</div></div>
+        <div class="insp-actions">
+          <button class="sbtn" data-i="${k}">Fire test</button>
+          ${open?'<button class="sbtn" data-ic="'+k+'">Clear cause</button>':''}
+          ${open&&inspNeedsReset(k)?'<button class="sbtn" data-ir="'+k+'">Reset</button>':''}
+          <span class="pill ${st&&st.pass===true?'ok':st&&st.pass===false?'xx':'lo'}">${tag}</span>
+          ${open?`<button class="sbtn" data-ip="${k}" ${ready?'':'disabled'}>Log PASS</button> <button class="sbtn" data-if="${k}">Log FAIL</button>`:''}
+        </div>
       </div>`;
     }).join('')}
     <div class="insp-log" id="inspLog">${inspLog.length?inspLog.map(x=>`<div>${Math.floor(x.t)}s · ${x.line}</div>`).join(''):'No inspection results yet.'}</div>`;
   $('inspect').onclick=e=>{
-    const b=e.target.closest('[data-i],[data-ip],[data-if]');if(!b)return;
+    const b=e.target.closest('[data-i],[data-ic],[data-ir],[data-ip],[data-if]');if(!b)return;
     if(b.dataset.i)runInspection(b.dataset.i);
+    else if(b.dataset.ic)clearInspection(b.dataset.ic);
+    else if(b.dataset.ir){if(resetLockout())paintInspect();}
     else if(b.dataset.ip)finishInspection(b.dataset.ip,true);
     else if(b.dataset.if)finishInspection(b.dataset.if,false);
   };
@@ -1118,8 +1222,8 @@ function paintTrb(){
   <h3 class="sec-h" style="font-size:14px">Field cases (secondary)</h3>
   <ul>
     <li><b>Field:</b> Dirty flame eye after burner work — clean scanner, then maker reset path.</li>
-    <li><b>Field:</b> FO filter change-over when FO_P low and FO pump running.</li>
-    <li><b>Field:</b> After EG soot blow, expect ΔP down and EG t/h up.</li>
+    <li><b>Field:</b> FO pressure low with the pump running — Change FO filter on the local panel.</li>
+    <li><b>Field:</b> Soot blow on the local panel (steam stop open). After a sooted bank finishes, ΔP falls and EG t/h rises.</li>
   </ul>
   <p class="note">Full maker fault chapters replace this when PDFs are mapped.</p>`;
   $('almT').innerHTML='<tr><th>Alarm</th><th>Action (provisional)</th></tr>'+ALARMS.map(a=>`<tr><td>${a.lab}</td><td>Ack on HMI and local panel; clear cause; reset per ${M.maker} (estimated).</td></tr>`).join('');
@@ -1133,6 +1237,8 @@ function paintActual(){
   <tr><td>FO viscosity gate</td><td class="v">${u.fuel} ≥ ${(FUELS[u.fuel]||M.FO).Tmin} °C</td><td>Grade table estimated</td></tr>
   <tr><td>Shrink/swell</td><td class="v">${(s.swell*100).toFixed(1)} % bias</td><td>Teaching, not class calc</td></tr>
   <tr><td>EG circ dry-run</td><td class="v">${M.egCirc?(s.egDryTrip?'TRIP':'armed'):'n/a'}</td><td>SAACKE when fitted</td></tr>
+  <tr><td>Feed sensible heat</td><td class="v">no economiser</td><td>Cold cascade feed cools the drum</td></tr>
+  <tr><td>Soot / FO filter</td><td class="v">${s.sootBlowT>0?'blowing':f.egSoot?'sooted':'clean'} / ${f.foFilter?'dirty':'clean'}</td><td>Local actions</td></tr>
   <tr><td>HMI menus</td><td class="v">provisional</td><td class="basis-est">MANUAL-MAPS — estimated</td></tr>`;
   $('actDx').innerHTML=`<p class="note">${s.statusLine}</p>`;
 }
@@ -1202,6 +1308,13 @@ $('info').onclick=async()=>{
 
 buildMimic();paintInspect();paintDrills();paintTrb();
 switchModel('mission');
+window.__boiler={
+  step,loadScenario,switchModel,runInspection,clearInspection,resetLockout,finishInspection,ackAll,
+  startSootBlow,changeFoFilter,applyWaterAct,setDumpAuto,inspReady,inspNext,
+  SC,
+  get s(){return s;},get u(){return u;},get f(){return f;},get M(){return M;},
+  get insp(){return inspState;},get log(){return inspLog;}
+};
 
 let acc=0,last=performance.now();
 function frame(now){
