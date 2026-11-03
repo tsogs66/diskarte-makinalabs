@@ -188,6 +188,58 @@ ok('mimic tubes clean after blow',at('bmTubes','stroke')!=='#2a2523'&&+at('bmPuf
 B.switchModel('saacke');
 B.loadScenario(sc('steady'));sim(4);B.paintMimic();
 ok('mimic shows EG circ pump on SAACKE',!!doc.getElementById('bmPump')&&at('bmPump','fill')==='#1c8446');
+const lampFill=i=>at('bmL'+i,'fill');
+const burnerOf=id=>{B.switchModel(id);B.paintMimic();return doc.querySelector('[data-slot="burner"]').innerHTML;};
+const panelOf=id=>{B.switchModel(id);B.paintMimic();return doc.querySelector('[data-slot="panel"]').innerHTML;};
+const bs={},ps={};['mission','saacke','kangrim','miura'].forEach(id=>{bs[id]=burnerOf(id);ps[id]=panelOf(id);});
+ok('burner glyph differs per maker',new Set(Object.values(bs)).size===4);
+ok('control-panel glyph differs per maker',new Set(Object.values(ps)).size===4);
+B.switchModel('saacke');B.loadScenario(sc('steady'));sim(4);B.paintMimic();
+ok('SAACKE panel Main lamp on when firing',lampFill(2)==='#2fbf5f'&&lampFill(4)==='#3a4448');
+ok('SAACKE panel EG circ lamp follows the pump',lampFill(5)==='#2fbf5f');
+B.switchModel('mission');B.loadScenario(sc('steady'));sim(4);B.paintMimic();
+ok('Mission panel Flame lamp on',lampFill(0)==='#2fbf5f'&&lampFill(1)==='#3a4448');
+ok('Mission screen shows firing',/FIRING/.test(doc.getElementById('vScr1').textContent));
+
+B.u.steamStop=true;B.u.demand=0.6;B.u.dumpAuto=false;B.u.dumpMan=0;sim(3);B.paintMimic();
+ok('service steam arrow lit with steam stop open',+at('bmSvcArr','opacity')===1);
+B.u.steamStop=false;sim(3);B.paintMimic();
+ok('service steam arrow dim with steam stop shut',+at('bmSvcArr','opacity')<0.5);
+
+B.u.dumpMan=60;sim(5);B.paintMimic();
+ok('dump line turns amber when dumping',at('bmDumpL','stroke')==='#c98a00'&&B.s.retKg>0);
+ok('condensate return line live when dumping',at('bmRetL','stroke')==='#2b78c0');
+B.u.dumpMan=0;B.u.steamStop=true;
+
+B.u.blowdown=40;sim(2);B.paintMimic();
+ok('overboard blowdown arrow lit',+at('bmBdArr','opacity')===1&&at('bmBd','fill')==='#1c8446');
+B.u.blowdown=0;sim(2);B.paintMimic();
+ok('overboard blowdown arrow dim when shut',+at('bmBdArr','opacity')<0.5);
+
+B.u.dose=true;B.f.doseEmpty=false;B.s.dose=30;sim(2);B.paintMimic();
+ok('dosing pump running',at('bmDoseP','fill')==='#1c8446');
+B.f.doseEmpty=true;sim(2);B.paintMimic();
+ok('dosing pump red when tank empty',at('bmDoseP','fill')==='#c4211f');
+B.f.doseEmpty=false;B.u.dose=false;
+
+B.f.cascLeak=true;B.paintMimic();
+ok('seawater leak marker shows',+at('bmLeak','opacity')===1);
+B.f.cascLeak=false;B.paintMimic();
+
+B.s.chem.Cl=120;B.paintMimic();
+ok('salinometer red on high chloride',at('bmSal','fill')==='#c4211f');
+
+B.u.meLoad=0.5;B.paintMimic();
+ok('ME load bar follows load',Math.abs(+at('bmMeBar','width')-84)<1);
+
+B.loadScenario(sc('steady'));B.u.steamStop=true;B.u.demand=0.8;B.u.dumpAuto=false;B.u.dumpMan=0;
+B.s.casc=B.M.cascKg*0.5;B.s.cascT=45;
+const c0=B.s.casc;sim(60);
+ok('service steam condensate returns to the hot well',B.s.retKg>0&&B.s.casc>c0-0.5*B.s.feedKg*60-1,'ret '+B.s.retKg.toFixed(3));
+B.s.casc=B.M.cascKg*0.5;B.s.cascT=45;B.u.dumpMan=80;sim(120);
+ok('dump condensate warms the hot well',B.s.cascT>46,'T '+B.s.cascT.toFixed(1));
+ok('hot well never exceeds tank',B.s.casc<=B.M.cascKg+1e-6);
+B.u.dumpMan=0;
 B.switchModel('mission');
 
 if(fail.length){console.error('FAILED',fail.length);fail.forEach(x=>console.error(' -',x));process.exit(1);}

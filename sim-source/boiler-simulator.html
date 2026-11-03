@@ -48,6 +48,8 @@ button,select,input{font:inherit;color:inherit}
 .scLab{font:700 13px var(--disp);letter-spacing:.04em;text-transform:uppercase;color:var(--screen-dim)}
 .wrap{padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px;max-width:1720px;margin:0 auto}
 .console{display:grid;grid-template-columns:290px minmax(0,1fr) 320px;gap:12px;align-items:start}
+.console>.panel:nth-child(2){grid-column:1/-1;grid-row:1}
+.console>.panel:nth-child(3){grid-column:2/-1}
 .panel{background:var(--enamel-2);border:1px solid var(--line);border-radius:3px;min-width:0}
 .ph{font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.07em;text-transform:uppercase;padding:7px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ph .r{margin-left:auto}
@@ -66,7 +68,7 @@ button,select,input{font:inherit;color:inherit}
 .why{display:block;font-size:12px;color:var(--ink-2);margin-top:3px}
 .autoline{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .mimic{overflow:auto;background:var(--paper)}
-.mimic svg{display:block;width:100%;min-width:820px;height:auto}
+.mimic svg{display:block;width:100%;min-width:900px;height:auto}
 .mimic text{font-family:var(--disp);font-size:12px;fill:var(--ink);font-weight:600}
 .mimic text.small{font-size:10px;fill:var(--ink-2);font-weight:500}
 .mimic text.tagv{font-family:var(--mono);font-size:12px;fill:var(--led);font-weight:400}
@@ -241,7 +243,7 @@ td.v{font-family:var(--mono);text-align:right;white-space:nowrap}
     <h3>Physics</h3>
     <ul>
       <li>Steam from oil fire + EG section into one drum (mass + energy). Oil and EG t/h shown separately.</li>
-      <li>Mimic layout: exhaust gas enters the tube bank at the bottom left and leaves at the top left. The furnace, flame and FD fan are on the right, with the oil flue out at the top right. Schematic only, not a maker drawing.</li>
+      <li>Mimic: one complete-system layout for all four units. Exhaust gas enters the tube bank at the bottom left and leaves at the top left. Furnace, flame and burner are on the right, oil flue out at the top right. Steam goes to service steam and the dump condenser, condensate returns to the hot well, and feed pumps, dosing, sample cooler, salinometer and blowdown follow the model. Burner and control-panel glyphs differ per maker and are provisional. Schematic only, not a maker drawing.</li>
       <li>Indicated level includes shrink/swell teaching; trips use indicated glass.</li>
       <li>Fuel grade sets LHV and FO viscosity gate. Status line states EG-only vs oil+EG.</li>
       <li>Dump Auto PID is separate from pressure→burner; Auto/Manual is bumpless with anti-windup.</li>
@@ -274,6 +276,7 @@ const psat=T=>Math.pow(10,8.07131-1730.63/(233.426+T))/750.06;
 const tsat=p=>{const mm=Math.max(p*750.06,1);return 1730.63/(8.07131-Math.log10(mm))-233.426;};
 const hfg=T=>2257-2.36*(T-100);
 const cpW=4.18;
+const COND_RET=0.7,COND_T=70; /* service-steam condensate return fraction and temperature — estimated */
 
 const FUELS={
   HFO:{name:'HFO',LHV:40500,Tmin:110,viscGate:true},
@@ -430,7 +433,7 @@ function step(dt){
     s.chem.pAlk=clamp(s.chem.pAlk+L*0.4,0,30);
     s.chem.pH=clamp(9.5+s.chem.pAlk*0.08,7,12);
     s.chem.scav=clamp(s.chem.scav+L*0.05,0,2);
-    note(`Manual dose ${L.toFixed(1)} L into cascade (alkalinity/scav — not chloride)`);
+    note(`Manual dose ${L.toFixed(1)} L into the feed line (alkalinity/scav — not chloride)`);
     uiDirty=true;
   }
   if(u.amine){s.chem.condPH=clamp(s.chem.condPH+0.02*dt,7,10);u.amine=false;note('Condensate treatment nudge applied');uiDirty=true;}
@@ -444,6 +447,7 @@ function step(dt){
     if(s.level<=M.Llwl||f.llwlTest)feedKg=0;
     s.casc=Math.max(0,s.casc-feedKg*dt);
   }
+  s.feedKg=feedKg;
 
   /* Blowdown — removes mass and chloride / conductivity (not fixed by dosing) */
   if(u.blowdown>0){
@@ -518,6 +522,17 @@ function step(dt){
   const mOutRaw=((u.steamStop?demandTh:0)+dumpTh)/3600*1000+sootKg;
   const mOut=Math.min(mOutRaw,mGen+Math.max(s.mw-80,0)*0.05);
   s.mOut=mOut;
+  /* Condensate return to the hot well: dump condenser returns all it condenses; service steam returns COND_RET
+     (estimated, not from a manual). Soot-blow steam is lost. Return water warms the hot well, which cuts feed cooling. */
+  const retRatio=mOutRaw>0?mOut/mOutRaw:0;
+  const retKg=((u.steamStop?demandTh*COND_RET:0)+dumpTh)/3600*1000*retRatio;
+  s.retKg=retKg;
+  if(retKg>0){
+    const add=Math.min(retKg*dt,Math.max(0,M.cascKg-s.casc));
+    s.cascT=(s.casc*s.cascT+add*COND_T)/Math.max(s.casc+add,1);
+    s.casc+=add;
+  }
+  s.cascT+=(45-s.cascT)*dt/600;
   if(s.sootBlowT>0){
     s.sootBlowT=Math.max(0,s.sootBlowT-dt);
     if(s.sootBlowT===0){
@@ -770,157 +785,316 @@ function applyWaterAct(id){
   uiDirty=true;paintWater();paintControls();
 }
 
-/* Mimic layout after the owner's reference: EG tube bank left (gas in bottom, out top), furnace + burner fan right,
-   oil flue top right. Schematic only — not a maker drawing. Same plant for all four units; SAACKE adds the EG circ loop. */
-const MIMIC_IDS=['bmWater','bmSurf','bmGlassW','bmFlame','bmFan','bmTubes','bmEgIn','bmEgOut','bmFlue','bmPuffs','bmStop','bmDumpV','bmDumpArr','bmEye','bmDistF','bmCascF','bmPump'];
-let MM={};const _ma=new Map();
+/* Mimic after the owner's complete-system reference: boiler with EG bank (gas in bottom left, out top left), angled oil flue
+   to the top right, furnace + burner on the right, steam header to dump condenser and service steam, hot well, feed pumps,
+   chemical dosing, sample cooler, salinometer, blowdown overboard. One layout for all units; the burner and control-panel
+   glyphs differ per maker and are provisional (MANUAL-MAPS). Schematic only, not a maker drawing. */
+const MIMIC_IDS=['bmWater','bmSurf','bmGlassW','bmColR','bmFlame','bmFurn','bmFan','bmTubes','bmEgIn','bmEgOut','bmFlue','bmFlueP','bmPuffs',
+  'bmStop','bmSvcArr','bmDumpV','bmDumpL','bmEye','bmDistF','bmCascF','bmPump','bmBd','bmBdArr','bmFeedL','bmFeedP1','bmDoseF','bmDoseP',
+  'bmCondIn','bmRetL','bmSal','bmMeBar','bmLeak','bmBleed','bmLoadBar'];
+const BURNER_COL={mission:'#c8232c',saacke:'#2f6fb5',kangrim:'#2f8a57',miura:'#d9792b'};
+let MM={},PANEL_L=[];const _ma=new Map();
 function sa(id,k,v){const el=MM[id];if(!el)return;const key=id+'|'+k,val=String(v);if(_ma.get(key)===val)return;_ma.set(key,val);el.setAttribute(k,val);}
 function mmPill(id,cx,cy,w){return `<rect x="${cx-w/2}" y="${cy-9}" width="${w}" height="18" rx="3" fill="#111a1b"/><text class="tagv" id="${id}" x="${cx}" y="${cy+4}" text-anchor="middle">—</text>`;}
 function mmArrow(id,x,yTip,fill){return `<path id="${id}" d="M${x} ${yTip} L${x+12} ${yTip+18} H${x+5} V${yTip+44} H${x-5} V${yTip+18} H${x-12} Z" fill="${fill}" stroke="#1b2321" stroke-width="1"/>`;}
+function mmArrowDn(id,x,yTip,fill,L){L=L||44;return `<path ${id?`id="${id}" `:''}d="M${x} ${yTip} L${x+12} ${yTip-18} H${x+5} V${yTip-L} H${x-5} V${yTip-18} H${x-12} Z" fill="${fill}" stroke="#1b2321" stroke-width="1"/>`;}
+function mmVlv(x,y,id,fill){return `<path ${id?`id="${id}" `:''}d="M${x-6} ${y-6} L${x+6} ${y+6} V${y-6} L${x-6} ${y+6} Z" fill="${fill||'#f4f6f5'}" stroke="#2b3436" stroke-width="1.2"/>`;}
+function mmPipe(id,d,col,w){return `<path ${id?`id="${id}" `:''}d="${d}" fill="none" stroke="${col||'#8a979d'}" stroke-width="${w||3}" stroke-linejoin="round"/>`;}
+function mmPump(id,cx,cy){return `<circle ${id?`id="${id}" `:''}cx="${cx}" cy="${cy}" r="11" fill="#9aa49d" stroke="#1b2321" stroke-width="1.6"/><path d="M${cx-4} ${cy-6} L${cx+7} ${cy} L${cx-4} ${cy+6} Z" fill="#1b2321"/>`;}
+
+function burnerGlyph(){
+  const nose='<rect x="300" y="314" width="30" height="14" fill="#6b3a30" stroke="#1b2321"/>';
+  const g={
+    mission:`${nose}<rect x="326" y="306" width="28" height="30" fill="#c8232c" stroke="#1b2321"/>
+      <circle id="bmFan" cx="356" cy="322" r="24" fill="#c8232c" stroke="#1b2321" stroke-width="2"/><circle cx="356" cy="322" r="12" fill="#2a1a18"/>
+      <path d="M347 316 H365 M347 322 H365 M347 328 H365" stroke="#e8c8c0" stroke-width="2"/><rect x="378" y="313" width="14" height="18" fill="#8a948f" stroke="#1b2321"/>`,
+    saacke:`${nose}<rect x="326" y="296" width="50" height="54" rx="9" id="bmFan" fill="#2f6fb5" stroke="#1b2321" stroke-width="2"/>
+      <rect x="332" y="284" width="36" height="12" fill="#aeb5ad" stroke="#1b2321"/><rect x="376" y="306" width="22" height="32" fill="#4a545a" stroke="#1b2321"/>
+      <path d="M334 310 H368 M334 322 H368 M334 334 H368" stroke="#dbe8f5" stroke-width="2"/><circle cx="347" cy="342" r="3" fill="#e8c34a"/>`,
+    kangrim:`${nose}<circle id="bmFan" cx="352" cy="324" r="22" fill="#2f8a57" stroke="#1b2321" stroke-width="2"/><circle cx="352" cy="324" r="10" fill="#10261a"/>
+      <rect x="330" y="288" width="44" height="14" rx="2" fill="#cfd8dc" stroke="#1b2321"/><path d="M336 295 H368" stroke="#2b3436" stroke-width="2"/>
+      <rect x="372" y="314" width="16" height="22" rx="4" fill="#4a545a" stroke="#1b2321"/>`,
+    miura:`${nose}<rect id="bmFan" x="324" y="290" width="40" height="62" rx="5" fill="#d9792b" stroke="#1b2321" stroke-width="2"/>
+      <rect x="324" y="316" width="40" height="8" fill="#f1ece3"/><circle cx="344" cy="338" r="9" fill="#2a1a18"/><rect x="364" y="318" width="20" height="14" fill="#8a948f" stroke="#1b2321"/>`
+  };
+  return g[M.id]||g.mission;
+}
+
+function panelGlyph(){
+  const x0=440,y0=104,w=150,h=146,face=M.face;
+  const col={touch:'#cfd8dc',bms:'#4d5961',panel:'#a9b99a',seq:'#d6cdbd'}[face]||'#cfd8dc';
+  const name={touch:'Touch HMI panel',bms:'BMS cabinet',panel:'Relay panel',seq:'Sequencer panel'}[face]||'Control panel';
+  let deco='';
+  if(face==='touch'){
+    deco=`<rect x="448" y="112" width="134" height="60" rx="4" fill="#0f1c24" stroke="#1b2321"/>
+      <text class="tagv" id="vScr1" x="456" y="132">—</text><text class="tagv" id="vScr2" x="456" y="152">—</text>
+      <rect x="448" y="180" width="40" height="16" rx="8" fill="#b9c4c9" stroke="#1b2321"/><rect x="494" y="180" width="40" height="16" rx="8" fill="#b9c4c9" stroke="#1b2321"/><rect x="540" y="180" width="40" height="16" rx="8" fill="#b9c4c9" stroke="#1b2321"/>`;
+    PANEL_L=[['Flame',()=>s.flame,'g'],['Lockout',()=>s.lockout,'r'],['Auto',()=>u.mode==='auto','g']];
+  }else if(face==='bms'){
+    deco=`<rect x="448" y="112" width="134" height="40" rx="3" fill="#0f1c24" stroke="#1b2321"/>
+      <text class="tagv" id="vScr1" x="456" y="130">—</text><text class="tagv" id="vScr2" x="456" y="146">—</text>
+      <rect x="448" y="160" width="22" height="14" fill="#8a948f" stroke="#1b2321"/><rect x="474" y="160" width="22" height="14" fill="#8a948f" stroke="#1b2321"/><rect x="500" y="160" width="22" height="14" fill="#8a948f" stroke="#1b2321"/><rect x="526" y="160" width="22" height="14" fill="#8a948f" stroke="#1b2321"/>
+      <circle cx="566" cy="172" r="10" fill="#c4211f" stroke="#1b2321" stroke-width="1.5"/><text class="small" x="566" y="194" text-anchor="middle" style="fill:#d6dad3">E-stop</text>`;
+    PANEL_L=[['Purge',()=>s.seq==='purge','g'],['Pilot',()=>s.seq==='pilot','g'],['Main',()=>s.seq==='main'||s.flame,'g'],['Post',()=>s.seq==='post','g'],['Trip',()=>s.lockout||s.seq==='trip','r'],['EG circ',()=>u.egCirc,'g']];
+  }else if(face==='panel'){
+    deco=`<circle cx="478" cy="138" r="16" fill="#2b3436" stroke="#1b2321"/><path d="M478 138 L488 128" stroke="#f1ece3" stroke-width="3"/>
+      <circle cx="544" cy="138" r="16" fill="#2b3436" stroke="#1b2321"/><path d="M544 138 L544 122" stroke="#f1ece3" stroke-width="3"/>
+      <text class="small" x="478" y="168" text-anchor="middle">Mode</text><text class="small" x="544" y="168" text-anchor="middle">Burner</text>
+      <circle cx="466" cy="186" r="7" fill="#1c8446" stroke="#1b2321"/><circle cx="511" cy="186" r="7" fill="#c4211f" stroke="#1b2321"/><circle cx="556" cy="186" r="7" fill="#c98a00" stroke="#1b2321"/>`;
+    PANEL_L=[['Run',()=>u.mode!=='off','g'],['Flame',()=>s.flame,'g'],['Trip',()=>s.lockout,'r'],['FO heat',()=>u.foHeat,'g']];
+  }else{
+    deco=`<text class="small" x="448" y="124">Firing rate</text><rect x="448" y="130" width="134" height="12" fill="#f1ece3" stroke="#1b2321"/>
+      <rect id="bmLoadBar" x="449" y="131" width="0" height="10" fill="#d9792b"/>
+      <rect x="448" y="154" width="134" height="30" fill="#2b3436" stroke="#1b2321"/><path d="M470 154 V184 M514 154 V184 M558 154 V184" stroke="#6b7a82"/><text class="small" x="515" y="173" text-anchor="middle" style="fill:#d6dad3">Sequence</text>`;
+    PANEL_L=[['Purge',()=>s.seq==='purge','g'],['Pilot',()=>s.seq==='pilot','g'],['Main',()=>s.seq==='main'||s.flame,'g'],['Post',()=>s.seq==='post','g'],['Trip',()=>s.lockout||s.seq==='trip','r']];
+  }
+  const lamps=PANEL_L.map((l,i)=>{const cx=454+(i%3)*50,cy=214+Math.floor(i/3)*18;return `<circle id="bmL${i}" cx="${cx}" cy="${cy}" r="5" fill="#3a4448" stroke="#1b2321"/><text class="small" x="${cx+8}" y="${cy+3}" style="fill:${face==='bms'?'#d6dad3':'#2b3436'}">${l[0]}</text>`;}).join('');
+  return `<text class="small" x="${x0+w/2}" y="${y0-4}" text-anchor="middle">${name} · ${M.maker}</text>
+    <rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="6" fill="${col}" stroke="#1b2321" stroke-width="2"/>${deco}${lamps}<text class="small" x="${x0+w/2}" y="246" text-anchor="middle" style="font-size:8px;${face==='bms'?'fill:#d6dad3':''}">glyph provisional</text>`;
+}
+
 function buildMimic(){
-  let tubes='';for(let i=0;i<11;i++){const x=366+i*6;tubes+=`<line x1="${x}" y1="112" x2="${x}" y2="402"/>`;}
-  const pump=M.egCirc?`<path d="M330 170 H290 V236 M290 268 V340 H330" fill="none" stroke="#6b4a3a" stroke-width="3"/>
-  <circle id="bmPump" cx="290" cy="252" r="16" fill="#9aa49d" stroke="#1b2321" stroke-width="2"/>
-  <path d="M283 252 H297 M290 245 V259" stroke="#1b2321" stroke-width="1.5"/>
-  <text class="small" x="268" y="256" text-anchor="end">EG circ</text>`:'';
-  $('mimic').innerHTML=`<svg viewBox="0 0 960 490" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Composite boiler: exhaust gas bank on the left, oil furnace and burner on the right">
+  let tubes='';for(let i=0;i<9;i++){const x=136+i*7;tubes+=`<line x1="${x}" y1="136" x2="${x}" y2="372"/>`;}
+  let rungs='';
+  for(let y=130;y<=276;y+=12){const k=(284-y)/170,xl=225+37*k,xr=255+27*k;rungs+=`<line x1="${xl.toFixed(1)}" y1="${y}" x2="${xr.toFixed(1)}" y2="${y}"/>`;}
+  const egc=M.egCirc?`${mmPipe('','M298 384 H322 V416','#6b4a3a')}${mmPipe('','M322 444 V456 H276 V418 H262','#6b4a3a')}${mmPump('bmPump',322,430)}
+    <text class="small" x="342" y="434">EG circ</text>`:'';
+  $('mimic').innerHTML=`<svg viewBox="0 0 1024 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Complete boiler system: composite boiler with exhaust gas bank and oil furnace, steam header, dump condenser, hot well, feed pumps, dosing, sampling and blowdown">
   <defs>
-    <linearGradient id="bmW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ad0f4"/><stop offset="1" stop-color="#2a78c0"/></linearGradient>
+    <linearGradient id="bmW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f86d6"/><stop offset="1" stop-color="#1c5db0"/></linearGradient>
     <linearGradient id="bmS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d6dad3"/><stop offset=".5" stop-color="#aeb5ad"/><stop offset="1" stop-color="#cdd2cb"/></linearGradient>
-    <linearGradient id="bmF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3efe6"/><stop offset=".7" stop-color="#e9e2d2"/><stop offset="1" stop-color="#d9d2c0"/></linearGradient>
-    <clipPath id="bmShell"><rect x="332" y="114" width="248" height="286"/></clipPath>
+    <clipPath id="bmShell"><rect x="124" y="114" width="174" height="286"/></clipPath>
   </defs>
+  <text class="small" x="8" y="14">${M.tab} · ${M.maker}</text>
 
-  <rect x="332" y="114" width="248" height="286" fill="#e4ecef"/>
+  <rect x="36" y="22" width="60" height="34" rx="3" fill="#eef3f7" stroke="#1b2321"/><text class="small" x="66" y="35" text-anchor="middle">Gauge</text><text class="small" x="66" y="47" text-anchor="middle">board</text>
+  ${mmPipe('','M96 30 H108 V114')}${mmPipe('','M96 39 H120 V114')}${mmPipe('','M96 48 H132 V114')}
+  ${mmVlv(108,92)}${mmVlv(120,92)}
+  ${mmPill('vP',66,74,72)}
+
+  <rect x="124" y="114" width="174" height="286" fill="#b4c3cb"/>
   <g clip-path="url(#bmShell)">
-    <rect id="bmWater" x="332" y="250" width="248" height="150" fill="url(#bmW)"/>
-    <rect id="bmSurf" x="332" y="250" width="248" height="3" fill="#e8f4ff"/>
+    <rect id="bmWater" x="124" y="250" width="174" height="150" fill="url(#bmW)"/>
+    <rect id="bmSurf" x="124" y="250" width="174" height="3" fill="#e8f4ff"/>
   </g>
-  <g id="bmTubes" stroke="#6b7a82" stroke-width="2.2">${tubes}</g>
-  <g id="bmPuffs" opacity="0" fill="#fff" fill-opacity=".8" stroke="#9aa49d"><circle cx="376" cy="190" r="7"/><circle cx="394" cy="250" r="8"/><circle cx="410" cy="310" r="7"/><circle cx="384" cy="350" r="8"/></g>
-  <rect x="494" y="112" width="16" height="180" fill="url(#bmS)" stroke="#1b2321"/>
-  <rect x="536" y="112" width="16" height="180" fill="url(#bmS)" stroke="#1b2321"/>
-  <rect x="330" y="112" width="252" height="290" fill="none" stroke="#1b2321" stroke-width="2"/>
+  <g id="bmTubes" stroke="#e8eef0" stroke-width="2.4">${tubes}</g>
+  <g id="bmPuffs" opacity="0" fill="#fff" fill-opacity=".85" stroke="#9aa49d"><circle cx="146" cy="190" r="7"/><circle cx="162" cy="250" r="8"/><circle cx="180" cy="310" r="7"/><circle cx="152" cy="350" r="8"/></g>
+  <polygon id="bmFlueP" points="225,284 255,284 282,114 262,114" fill="#e49a2f" fill-opacity=".95" stroke="#6b4a22" stroke-width="1.5"/>
+  <g stroke="#fff3d6" stroke-width="1.4" stroke-opacity=".85">${rungs}</g>
+  <rect x="124" y="114" width="174" height="286" fill="none" stroke="#1b2321" stroke-width="2"/>
+  <rect x="124" y="400" width="174" height="12" fill="#b9bfb7" stroke="#1b2321"/>
+  <rect x="130" y="412" width="132" height="14" fill="url(#bmS)" stroke="#1b2321"/>
+  <rect x="126" y="108" width="172" height="6" fill="#b9bfb7" stroke="#1b2321"/>
 
-  <rect x="336" y="72" width="104" height="40" fill="url(#bmS)" stroke="#1b2321"/>
-  <rect x="470" y="72" width="110" height="40" fill="url(#bmS)" stroke="#1b2321"/>
-  <rect x="346" y="64" width="84" height="8" fill="#b9bfb7" stroke="#1b2321"/>
-  <rect x="490" y="64" width="70" height="8" fill="#b9bfb7" stroke="#1b2321"/>
-  <rect x="446" y="94" width="6" height="18" fill="#c47a2c" stroke="#1b2321"/><rect x="443" y="90" width="12" height="4" fill="#8a5a2b" stroke="#1b2321"/>
-  <rect x="458" y="100" width="6" height="12" fill="#c47a2c" stroke="#1b2321"/><rect x="455" y="96" width="12" height="4" fill="#8a5a2b" stroke="#1b2321"/>
-  <rect x="334" y="402" width="246" height="8" fill="#b9bfb7" stroke="#1b2321"/>
-  <rect x="336" y="402" width="104" height="26" fill="url(#bmS)" stroke="#1b2321"/>
-  <rect x="346" y="428" width="84" height="8" fill="#b9bfb7" stroke="#1b2321"/>
-  ${mmArrow('bmEgOut',388,16,'#d98a2b')}
-  ${mmArrow('bmEgIn',388,438,'#d98a2b')}
-  ${mmArrow('bmFlue',525,16,'#7a4a22')}
-  <text class="small" x="404" y="34">EG out</text>
-  <text class="small" x="404" y="472">EG in</text>
-  <text class="small" x="548" y="34">Oil flue out</text>
-  ${mmPill('vEg',388,92,70)}
-  ${mmPill('vGas',388,415,100)}
+  <rect x="262" y="88" width="20" height="20" fill="url(#bmS)" stroke="#1b2321"/>
+  ${mmArrow('bmFlue',272,40,'#7a4a22')}
+  <text class="small" x="248" y="30" text-anchor="end">Oil flue out</text>
+  ${mmArrow('bmEgOut',165,44,'#d98a2b')}
+  <text class="small" x="165" y="36" text-anchor="middle">EG out</text>
+  ${mmPill('vEg',218,50,72)}
+  <path d="M198 112 V98 M214 112 V98" stroke="#1b2321" stroke-width="3" fill="none"/>
+  <path d="M192 98 H204 L198 86 Z M208 98 H220 L214 86 Z" fill="#e4ecef" stroke="#1b2321"/>
+  <text class="small" x="224" y="80" text-anchor="middle">Safety valves</text>
 
-  <rect x="482" y="290" width="88" height="110" fill="url(#bmF)" stroke="#1b2321" stroke-width="2"/>
-  <rect x="484" y="374" width="84" height="24" fill="#2f6f6a"/>
-  <rect x="570" y="336" width="72" height="10" fill="#7a2e22" stroke="#1b2321"/>
-  <g id="bmFlame" transform="translate(570 341) scale(.8 .8)" opacity="0">
-    <g class="bmf"><path d="M0 0 C-10 -14 -30 -22 -52 -14 C-62 -12 -70 -8 -78 -2 C-70 2 -62 8 -50 12 C-30 20 -10 12 0 0 Z" fill="#f07a1a"/>
-    <path d="M0 0 C-8 -8 -22 -12 -38 -7 C-46 -4 -52 -2 -56 0 C-50 3 -44 6 -36 8 C-22 10 -8 7 0 0 Z" fill="#ffd34a"/></g>
+  ${mmArrow('bmEgIn',165,438,'#d98a2b')}
+  <text class="small" x="150" y="472" text-anchor="end">EG in</text>
+  ${mmPill('vGas',205,419,100)}
+
+  <rect x="52" y="112" width="22" height="72" rx="8" fill="#eef3f7" stroke="#1b2321" stroke-width="1.5"/>
+  <rect id="bmGlassW" x="55" y="140" width="16" height="40" rx="5" fill="#2f7fc4"/>
+  ${mmPipe('','M74 127 H124')}${mmPipe('','M74 155 H124')}${mmVlv(100,127)}${mmVlv(100,155)}
+  <text class="small" x="63" y="106" text-anchor="middle">Gauge glass</text>
+  ${mmPill('vL',63,194,66)}
+  <rect x="322" y="112" width="24" height="72" rx="8" fill="#eef3f7" stroke="#1b2321" stroke-width="1.5"/>
+  <rect id="bmColR" x="325" y="140" width="18" height="40" rx="5" fill="#2f7fc4"/>
+  ${mmPipe('','M298 127 H322')}${mmPipe('','M298 155 H322')}${mmVlv(310,127)}${mmVlv(310,155)}
+  <text class="small" x="334" y="106" text-anchor="middle">Level switch</text>
+  ${mmPill('vSw',334,196,66)}
+
+  ${mmPipe('','M124 205 H88 V500')}${mmVlv(106,205)}
+  ${mmPipe('','M124 388 H88')}${mmVlv(106,388,'bmBd')}${mmVlv(88,486)}
+  <g id="bmBdArr" opacity=".15">${mmArrowDn('',88,548,'#6b7a82')}</g>
+  <text class="small" x="88" y="560" text-anchor="middle">Overboard</text>
+  ${mmPill('vBd',50,440,60)}
+  <text class="small" x="106" y="192" text-anchor="start">Blowdown</text>
+
+  <rect id="bmFurn" x="204" y="284" width="96" height="72" fill="#8a6a4a" stroke="#1b2321" stroke-width="2"/>
+  <rect x="206" y="340" width="92" height="14" fill="#3a2e24"/>
+  <g id="bmFlame" transform="translate(300 321) scale(.8 .8)" opacity="0">
+    <g class="bmf"><path d="M0 0 C-10 -14 -30 -22 -52 -14 C-62 -12 -70 -8 -78 -2 C-70 2 -62 8 -50 12 C-30 20 -10 12 0 0 Z" fill="#f2551c"/>
+    <path d="M0 0 C-8 -8 -22 -12 -38 -7 C-46 -4 -52 -2 -56 0 C-50 3 -44 6 -36 8 C-22 10 -8 7 0 0 Z" fill="#ffe27a"/></g>
   </g>
-  <circle id="bmEye" cx="556" cy="305" r="5" fill="#8a948f" stroke="#1b2321"><title>Flame scanner</title></circle>
-  <circle id="bmFan" cx="668" cy="341" r="28" fill="#c8232c" stroke="#1b2321" stroke-width="2"/>
-  <circle cx="668" cy="341" r="15" fill="#2a1a18"/><path d="M656 335 H680 M656 341 H680 M656 347 H680" stroke="#e8c8c0" stroke-width="2"/>
-  <rect x="694" y="334" width="26" height="16" fill="#8a948f" stroke="#1b2321"/>
-  <text class="small" x="668" y="384" text-anchor="middle">FD fan + burner</text>
-  ${mmPill('vOil',668,300,76)}
-  <text class="small" x="668" y="286" text-anchor="middle">Oil steam</text>
-  ${mmPill('vFo',668,404,150)}
+  <circle id="bmEye" cx="292" cy="296" r="5" fill="#8a948f" stroke="#1b2321"><title>Flame scanner</title></circle>
+  <g id="bmBurner" data-slot="burner">${burnerGlyph()}</g>
+  <text class="small" x="350" y="381" text-anchor="middle">Burner (provisional)</text>
+  ${mmPipe('','M396 337 H498','#7a2e22',3)}
+  <path d="M498 337 L512 327 V332 H530 V342 H512 V347 Z" fill="#f2d13a" stroke="#1b2321"/><text class="small" x="538" y="341">Fuel</text>
+  ${mmPill('vFo',520,314,150)}
+  <path d="M440 230 H408 V322 H398" fill="none" stroke="#6b7a82" stroke-width="1.6" stroke-dasharray="4 3"/>
 
-  <rect x="318" y="124" width="8" height="274" fill="#fff" stroke="#1b2321"/>
-  <rect id="bmGlassW" x="319" y="250" width="6" height="148" fill="#2f7fc4"/>
+  <g data-slot="panel">${panelGlyph()}</g>
+  ${mmPill('vOil',515,270,110)}
 
-  ${pump}
-  <rect x="30" y="320" width="90" height="70" fill="#eef3f7" stroke="#1b2321"/>
-  <rect id="bmDistF" x="32" y="322" width="86" height="66" fill="#7fb4e0"/>
-  <text x="75" y="312" text-anchor="middle">Distillate</text>
-  <rect x="150" y="320" width="85" height="70" fill="#eef3f7" stroke="#1b2321"/>
-  <rect id="bmCascF" x="152" y="322" width="81" height="66" fill="#7fb4e0"/>
-  <text x="192" y="312" text-anchor="middle">Cascade</text>
-  <path d="M120 366 H150" stroke="#1f6db5" stroke-width="3" fill="none"/>
-  <path d="M235 366 H300 V388 H332" stroke="#1f6db5" stroke-width="3" fill="none"/>
-  ${mmPill('vDist',75,408,72)}
-  ${mmPill('vCasc',192,408,60)}
-  <text class="small" x="192" y="430" text-anchor="middle">dose / bleed</text>
+  ${mmPipe('bmFeedL','M530 470 H420 V246 H298','#aab3b8')}
+  ${mmVlv(312,246)}
+  <text class="small" x="360" y="240" text-anchor="middle">Feed</text>
+  ${mmPipe('','M298 364 H385 V520')}${mmVlv(316,364)}${mmVlv(385,460)}
+  ${mmArrowDn('',385,556,'#6b7a82')}
+  <text class="small" x="385" y="570" text-anchor="middle">Sample cooler</text>
+  ${egc}
 
-  ${mmPill('vP',459,150,62)}
-  ${mmPill('vL',459,176,62)}
-  ${mmPill('vSw',459,202,62)}
+  <rect x="445" y="410" width="40" height="38" fill="#eef3f7" stroke="#1b2321"/>
+  <rect id="bmDoseF" x="447" y="426" width="36" height="20" fill="#7fb4e0"/>
+  ${mmPill('vDose',465,430,44)}
+  <text class="small" x="465" y="378" text-anchor="middle">Chem. dosing</text>
+  <circle id="bmDoseP" cx="465" cy="396" r="8" fill="#9aa49d" stroke="#1b2321" stroke-width="1.5"/>
+  ${mmPipe('','M473 396 H497 V470')}${mmVlv(497,452)}${mmPipe('','M465 404 V410')}
 
-  <path d="M580 122 H820" stroke="#5a6e7a" stroke-width="5" fill="none"/>
-  <circle cx="640" cy="122" r="4" fill="#5a6e7a"/>
-  <path d="M640 122 V200 H690 M720 200 H770" stroke="#5a6e7a" stroke-width="4" fill="none"/>
-  <path id="bmStop" d="M685 112 L715 132 V112 L685 132 Z" fill="#c4211f" stroke="#1b2321"/>
-  <text class="small" x="700" y="104" text-anchor="middle">Steam stop</text>
-  <path id="bmDumpV" d="M690 190 L720 210 V190 L690 210 Z" fill="#9aa49d" stroke="#1b2321"/>
-  <rect x="770" y="170" width="130" height="62" fill="#d6e0e6" stroke="#1b2321"/>
-  <text class="small" x="835" y="164" text-anchor="middle">Dump condenser</text>
-  <path id="bmDumpArr" d="M780 200 H884 M872 192 L884 200 L872 208" stroke="#5a6e7a" stroke-width="3" fill="none" opacity="0"/>
-  ${mmPill('vDump',705,230,80)}
-  <rect x="820" y="98" width="120" height="50" fill="#e0e6ea" stroke="#1b2321"/>
-  <text class="small" x="880" y="92" text-anchor="middle">Steam range</text>
-  ${mmPill('vDem',880,128,92)}
+  ${mmPipe('','M530 444 V494')}${mmPipe('','M625 444 V494')}
+  ${mmPipe('','M530 444 H625')}${mmPipe('','M530 494 H625')}
+  ${mmPump('bmFeedP1',577,444)}${mmPump('',577,494)}
+  ${mmVlv(548,444)}${mmVlv(607,444)}${mmVlv(548,494)}${mmVlv(607,494)}
+  ${mmPill('vFeed',577,420,96)}
+  <text class="small" x="577" y="470" text-anchor="middle">Feed pumps</text>
 
-  <text class="small" x="700" y="434" text-anchor="middle">${M.tab} · ${M.maker}</text>
-  ${mmPill('vTot',700,452,330)}
-  <text class="small" id="vStat" x="700" y="480" text-anchor="middle">—</text>
+  ${mmPipe('','M765 470 H625')}${mmVlv(748,470)}${mmVlv(690,470)}
+  ${mmPipe('','M661 470 V498')}${mmPipe('','M700 470 V498')}${mmVlv(661,486)}${mmVlv(700,486)}
+  <rect x="630" y="498" width="92" height="26" fill="#eef3f7" stroke="#1b2321"/>
+  <circle id="bmSal" cx="645" cy="511" r="6" fill="#1c8446" stroke="#1b2321"/>
+  ${mmPill('vSal',692,511,56)}
+  <text class="small" x="730" y="515">Salinometer</text>
+  ${mmPipe('','M676 524 V532')}${mmArrowDn('',676,562,'#6b7a82',28)}<text class="small" x="700" y="560">Drain</text>
+
+  ${mmPipe('bmRetL','M697 206 V405 H765','#aab3b8')}${mmVlv(697,230)}${mmVlv(748,405)}
+  <rect x="855" y="348" width="40" height="42" fill="#eef3f7" stroke="#1b2321"/><circle cx="875" cy="362" r="6" fill="none" stroke="#1b2321"/>
+  <rect x="765" y="390" width="130" height="96" fill="#fff" stroke="#1b2321" stroke-width="2"/>
+  <rect id="bmCascF" x="767" y="440" width="126" height="44" fill="#2b78c0"/>
+  <path d="M765 390 L895 486 M895 390 L765 486" stroke="#f4f6f5" stroke-width="2" opacity=".8"/>
+  <rect x="765" y="390" width="130" height="96" fill="none" stroke="#1b2321" stroke-width="2"/>
+  <text class="small" x="805" y="384" text-anchor="middle">Hot well</text>
+  ${mmPill('vCasc',830,438,56)}
+  ${mmVlv(816,490)}${mmPipe('','M816 496 V510')}${mmArrowDn('',816,552,'#6b7a82')}<text class="small" x="836" y="552">Drain</text>
+  <g id="bmCondIn" opacity=".2">${mmArrowDn('',907,304,'#f2d13a')}</g>
+  <text class="small" x="907" y="252" text-anchor="middle">Service condensate</text>
+  ${mmPipe('','M907 306 V332 H875 V348')}
+
+  <rect x="940" y="374" width="66" height="66" fill="#eef3f7" stroke="#1b2321"/>
+  <rect id="bmDistF" x="942" y="376" width="62" height="62" fill="#7fb4e0"/>
+  <text class="small" x="940" y="366">Distillate</text>
+  <text class="small" x="973" y="478" text-anchor="middle">(from hydrophore)</text>
+  ${mmPill('vDist',973,458,72)}
+  <circle id="bmBleed" cx="998" cy="372" r="5" fill="#9aa49d" stroke="#1b2321"><title>Casing bleed</title></circle>
+  <text class="small" x="998" y="360" text-anchor="middle">bleed</text>
+  ${mmPipe('','M940 406 H895')}${mmVlv(917,406)}
+
+  ${mmPipe('','M290 114 V35 H808','#5a6e7a',5)}${mmVlv(290,80,'','#f4f6f5')}
+  <text class="small" x="304" y="62">Main steam</text>
+  ${mmPill('vTot',520,58,320)}
+  <text class="small" id="vStat" x="520" y="86" text-anchor="middle">—</text>
+
+  <path id="bmStop" d="M752 25 L768 45 V25 L752 45 Z" fill="#c4211f" stroke="#1b2321"/>
+  <text class="small" x="760" y="18" text-anchor="middle">Steam stop</text>
+  <path id="bmSvcArr" d="M806 27 H826 V22 L840 35 L826 48 V43 H806 Z" fill="#f2d13a" stroke="#1b2321"/>
+  <text class="small" x="850" y="32">Service</text><text class="small" x="850" y="44">steam</text>
+  ${mmPill('vDem',900,66,96)}
+
+  ${mmPipe('bmDumpL','M697 35 V100','#5a6e7a',4)}${mmPipe('','M697 100 V172','#5a6e7a',4)}
+  ${mmPipe('','M697 76 H730 V126 H697','#5a6e7a',3)}${mmVlv(730,100)}
+  <path id="bmDumpV" d="M691 94 L703 106 V94 L691 106 Z" fill="#9aa49d" stroke="#1b2321" stroke-width="1.4"/>
+  <text class="small" x="668" y="100" text-anchor="end">Dump valve</text>
+  ${mmPill('vDump',770,146,76)}
+  <rect x="650" y="172" width="130" height="34" rx="14" fill="#d6e0e6" stroke="#1b2321" stroke-width="2"/>
+  <rect x="640" y="178" width="10" height="22" fill="#9aa49d" stroke="#1b2321"/><rect x="780" y="178" width="10" height="22" fill="#9aa49d" stroke="#1b2321"/>
+  <text class="small" x="742" y="222" text-anchor="middle">Dump condenser</text>
+  <path d="M832 182 H802 M810 176 L802 182 L810 188 M802 196 H832 M824 190 L832 196 L824 202" stroke="#2b78c0" stroke-width="2.4" fill="none"/>
+  <text class="small" x="838" y="186">Cooling water</text><text class="small" x="838" y="198">(assumed available)</text>
+  <g id="bmLeak" opacity="0"><circle cx="740" cy="238" r="5" fill="#c4211f"/><text class="small" x="750" y="242" style="fill:#c4211f">seawater in-leak</text></g>
+
+  <path d="M130 508 H300" stroke="#1b2321" stroke-width="1"/>
+  <rect x="130" y="512" width="170" height="12" fill="#f1ece3" stroke="#1b2321"/>
+  <rect id="bmMeBar" x="131" y="513" width="0" height="10" fill="#d98a2b"/>
+  <text class="small" x="130" y="540">0</text><text class="small" x="300" y="540" text-anchor="end">100 %</text>
+  ${mmPill('vMe',215,554,150)}
   </svg>`;
   MM={};_ma.clear();MIMIC_IDS.forEach(k=>{MM[k]=$(k);});
+  for(let i=0;i<PANEL_L.length;i++)MM['bmL'+i]=$('bmL'+i);
 }
+
 function paintMimic(){
-  const set=(id,t)=>{const e=$(id);if(e)e.textContent=t;};
+  const set=(id,t)=>{const e=$(id);if(e&&e.textContent!==t)e.textContent=t;};
   const yB=398,yT=126,wy=yB-(yB-yT)*clamp(s.level,0,1);
   sa('bmWater','y',wy.toFixed(1));sa('bmWater','height',(400-wy).toFixed(1));
   sa('bmSurf','y',(wy-1).toFixed(1));
   sa('bmSurf','fill',s.trips.LLWL?'#c4211f':s.trips.LWL?'#c98a00':'#e8f4ff');
-  sa('bmGlassW','y',wy.toFixed(1));sa('bmGlassW','height',(398-wy).toFixed(1));
+  const gy=116+64*(1-clamp(s.level,0,1)),gh=64*clamp(s.level,0,1);
+  sa('bmGlassW','y',gy.toFixed(1));sa('bmGlassW','height',gh.toFixed(1));
+  sa('bmColR','y',gy.toFixed(1));sa('bmColR','height',gh.toFixed(1));
+  sa('bmColR','fill',s.trips.LLWL?'#c4211f':s.trips.LWL?'#c98a00':'#2f7fc4');
 
   const lit=s.flame||s.seq==='pilot';
   const lf=s.flame?clamp(s.load,5,100)/100:0;
   sa('bmFlame','opacity',lit?1:0);
-  sa('bmFlame','transform',s.flame?`translate(570 341) scale(${(0.35+0.65*lf).toFixed(2)} ${(0.55+0.45*lf).toFixed(2)})`:'translate(570 341) scale(.22 .3)');
-  sa('bmFan','fill',f.fdFail?'#555':u.fd?'#c8232c':'#9aa3a0');
+  sa('bmFlame','transform',s.flame?`translate(300 321) scale(${(0.35+0.65*lf).toFixed(2)} ${(0.55+0.45*lf).toFixed(2)})`:'translate(300 321) scale(.22 .3)');
+  sa('bmFurn','fill',s.flame?'#e0a050':'#8a6a4a');
+  sa('bmFan','fill',f.fdFail?'#555':u.fd?(BURNER_COL[M.id]||'#c8232c'):'#9aa3a0');
   sa('bmEye','fill',f.flameEye?'#c4211f':s.flame?'#1c8446':'#8a948f');
 
   const egFrac=clamp(s.egSteam/(M.steamEgMax||1),0,1),egOp=s.egSteam>0.02?(0.35+0.65*egFrac).toFixed(2):0.12;
   sa('bmEgIn','opacity',egOp);sa('bmEgOut','opacity',egOp);
   sa('bmFlue','opacity',s.flame?0.95:0.12);
   sa('bmFlue','fill',s.smoke>0.5?'#3b3b3b':'#7a4a22');
-  sa('bmTubes','stroke',f.egSoot?'#2a2523':'#6b7a82');
+  sa('bmFlueP','fill',s.flame?(s.smoke>0.5?'#5b5148':'#e49a2f'):'#9a9a94');
+  sa('bmTubes','stroke',f.egSoot?'#2a2523':'#e8eef0');
   sa('bmPuffs','opacity',s.sootBlowT>0?1:0);
 
   sa('bmStop','fill',u.steamStop?'#1c8446':'#c4211f');
+  const svcOn=u.steamStop&&u.demand>0.01;
+  sa('bmSvcArr','opacity',svcOn?1:0.2);sa('bmCondIn','opacity',svcOn?1:0.2);
   sa('bmDumpV','fill',s.dump>1?'#c98a00':'#9aa49d');
   sa('bmDumpV','stroke',f.dumpStuck?'#c4211f':'#1b2321');
-  sa('bmDumpArr','opacity',clamp(s.dump/100,0,1).toFixed(2));
+  sa('bmDumpL','stroke',s.dump>1?'#c98a00':'#5a6e7a');
+  sa('bmRetL','stroke',(s.retKg||0)>0.005?'#2b78c0':'#aab3b8');
+  sa('bmLeak','opacity',f.cascLeak?1:0);
 
-  const df=clamp(s.dist/M.distKg,0,1),cf=clamp(s.casc/M.cascKg,0,1);
-  sa('bmDistF','y',(388-66*df).toFixed(1));sa('bmDistF','height',(66*df).toFixed(1));
+  sa('bmBd','fill',u.blowdown>0?'#1c8446':'#f4f6f5');
+  sa('bmBdArr','opacity',u.blowdown>0?1:0.15);
+
+  const df=clamp(s.dist/M.distKg,0,1),cf=clamp(s.casc/M.cascKg,0,1),dsf=clamp(s.dose/M.doseKg,0,1);
+  sa('bmDistF','y',(438-62*df).toFixed(1));sa('bmDistF','height',(62*df).toFixed(1));
   sa('bmDistF','fill',s.airBound?'#d9b36b':'#7fb4e0');
-  sa('bmCascF','y',(388-66*cf).toFixed(1));sa('bmCascF','height',(66*cf).toFixed(1));
-  sa('bmCascF','fill',cf<0.1?'#c4211f':'#7fb4e0');
+  sa('bmCascF','y',(484-94*cf).toFixed(1));sa('bmCascF','height',(94*cf).toFixed(1));
+  sa('bmCascF','fill',cf<0.1?'#c4211f':'#2b78c0');
+  sa('bmBleed','fill',s.bleedOpen||u.bleed?'#1c8446':s.airBound?'#c98a00':'#9aa49d');
+  sa('bmDoseF','y',(446-20*dsf).toFixed(1));sa('bmDoseF','height',(20*dsf).toFixed(1));
+  const doseRun=u.dose&&!f.doseEmpty&&s.dose>1;
+  sa('bmDoseP','fill',doseRun?'#1c8446':(f.doseEmpty||s.dose<=1)?'#c4211f':'#9aa49d');
+  sa('bmFeedP1','fill',u.feed?((s.feedKg||0)>0.01?'#1c8446':'#7fb48f'):'#9aa49d');
+  sa('bmFeedL','stroke',(s.feedKg||0)>0.01?'#2b78c0':u.feed?'#7fa6c8':'#aab3b8');
   sa('bmPump','fill',u.egCirc?'#1c8446':s.egDryTrip?'#c4211f':'#9aa49d');
+  sa('bmSal','fill',s.chem.Cl>80?'#c4211f':s.chem.Cl>40?'#c98a00':'#1c8446');
+  sa('bmMeBar','width',(168*(s.exhAvail?clamp(u.meLoad,0,1):0)).toFixed(1));
+  sa('bmLoadBar','width',(132*clamp(s.load,0,100)/100).toFixed(1));
 
-  set('vDist',(s.dist/M.distKg*100).toFixed(0)+'%'+ (s.airBound?' AIR':''));
+  PANEL_L.forEach((l,i)=>sa('bmL'+i,'fill',l[1]()?(l[2]==='r'?'#e0342c':'#2fbf5f'):'#3a4448'));
+
+  set('vScr1',M.face==='bms'?s.seq.toUpperCase()+(s.lockout?' LOCKOUT':''):(u.mode.toUpperCase()+' · '+(s.flame?'FIRING':s.seq.toUpperCase())));
+  set('vScr2',M.face==='bms'?'FLAME '+(s.flame?'OK':'—'):s.P.toFixed(1)+' bar · '+s.load.toFixed(0)+'%');
+  set('vDist',(s.dist/M.distKg*100).toFixed(0)+'%'+(s.airBound?' AIR':''));
   set('vCasc',(s.casc/M.cascKg*100).toFixed(0)+'%');
-  set('vP',s.P.toFixed(2)+' bar');
-  set('vL',(s.level*100).toFixed(0)+'% ind');
+  set('vDose',(s.dose/M.doseKg*100).toFixed(0)+'%');
+  set('vFeed','Feed '+((s.feedKg||0)*3.6).toFixed(2)+' t/h');
+  set('vP','P '+s.P.toFixed(2)+' bar');
+  set('vL','L '+(s.level*100).toFixed(0)+'%');
   set('vSw',s.swell>0.015?'swell':(s.swell<-0.015?'shrink':'mass '+(s.levelTrue*100).toFixed(0)+'%'));
-  set('vOil',s.oilSteam.toFixed(2)+' t/h');
-  set('vEg',s.egSteam.toFixed(2)+' t/h');
+  set('vOil','Oil '+s.oilSteam.toFixed(2)+' t/h');
+  set('vEg','EG '+s.egSteam.toFixed(2)+' t/h');
   set('vGas',s.egT.toFixed(0)+'° ΔP '+s.egDP.toFixed(2));
   set('vFo','FO '+s.FO_T.toFixed(0)+'°C · '+s.FO_P.toFixed(1)+' bar');
   set('vDump',s.dump.toFixed(0)+'% '+(u.dumpAuto?'A':'M'));
   set('vDem',u.steamStop?(u.demand*M.steamOil).toFixed(2)+' t/h':'stop shut');
+  set('vBd','BD '+(+u.blowdown||0).toFixed(0)+'%');
+  set('vSal','Cl '+s.chem.Cl.toFixed(0));
+  set('vMe','ME load '+(s.exhAvail?(u.meLoad*100).toFixed(0)+'%':'— no exhaust'));
   set('vTot','Total '+s.totalSteam.toFixed(2)+' t/h · demand '+(u.demand*M.steamOil).toFixed(2));
   set('vStat',s.statusLine);
 }
@@ -1378,6 +1552,9 @@ function paintActual(){
   <tr><td>FO viscosity gate</td><td class="v">${u.fuel} ≥ ${(FUELS[u.fuel]||M.FO).Tmin} °C</td><td>Grade table estimated</td></tr>
   <tr><td>Shrink/swell</td><td class="v">${(s.swell*100).toFixed(1)} % bias</td><td>Teaching, not class calc</td></tr>
   <tr><td>EG circ dry-run</td><td class="v">${M.egCirc?(s.egDryTrip?'TRIP':'armed'):'n/a'}</td><td>SAACKE when fitted</td></tr>
+  <tr><td>Condensate return</td><td class="v">dump 100 % · service ${Math.round(COND_RET*100)} % @ ${COND_T} °C</td><td class="basis-est">Estimated — not from a manual</td></tr>
+  <tr><td>Burner / panel glyphs</td><td class="v">${M.maker}</td><td class="basis-est">Provisional until maker drawings are filed</td></tr>
+  <tr><td>Dump condenser cooling water</td><td class="v">assumed available</td><td class="basis-est">Not modelled</td></tr>
   <tr><td>Feed sensible heat</td><td class="v">no economiser</td><td>Cold cascade feed cools the drum</td></tr>
   <tr><td>Soot / FO filter</td><td class="v">${s.sootBlowT>0?'blowing':f.egSoot?'sooted':'clean'} / ${f.foFilter?'dirty':'clean'}</td><td>Local actions</td></tr>
   <tr><td>Scanner / seawater leak</td><td class="v">${f.flameEye?'dirty':'clean'} / ${f.cascLeak?'open':'none'}</td><td>Clean, then reset. Isolate, or chloride rebounds. Leak rate is a drill.</td></tr>
