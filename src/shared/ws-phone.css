@@ -27,7 +27,7 @@ html{-webkit-text-size-adjust:100%}
 .vp input[type=range]{width:100%;height:32px}
 #wsPop{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:8px calc(8px + var(--sr)) 8px calc(8px + var(--sl));background:rgba(3,10,14,.66);animation:pF .14s ease-out}
 #wsPop[hidden]{display:none}@keyframes pF{from{opacity:0}}
-.popBox{width:min(900px,100%);height:100%;display:flex;flex-direction:column;background:linear-gradient(155deg,#18323e,#0b1b24);border:1px solid rgba(190,240,240,.34);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.7);overflow:hidden;animation:pB .17s cubic-bezier(.2,.8,.3,1.1)}@keyframes pB{from{transform:translateY(12px) scale(.97)}}
+.popBox{position:relative;width:min(1100px,100%);height:100%;display:flex;flex-direction:column;background:linear-gradient(155deg,#18323e,#0b1b24);border:1px solid rgba(190,240,240,.34);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.7);overflow:hidden;animation:pB .17s cubic-bezier(.2,.8,.3,1.1)}@keyframes pB{from{transform:translateY(12px) scale(.97)}}
 .popHd{flex:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 4px 0 12px;background:rgba(0,0,0,.28);border-bottom:1px solid rgba(170,230,235,.18)}.popHd b{flex:none;font:700 16px var(--disp);letter-spacing:.05em;text-transform:uppercase}
 #popTabs{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}#popTabs::-webkit-scrollbar{display:none}
 #popTabs button{flex:none;min-height:34px;padding:0 11px;border:1px solid rgba(170,230,235,.3);border-radius:99px;background:rgba(255,255,255,.06);color:var(--ink-2);font:600 13.5px var(--disp)}#popTabs button[aria-selected="true"]{background:var(--teal);color:#04272a;border-color:var(--teal)}
@@ -46,4 +46,24 @@ html{-webkit-text-size-adjust:100%}
 #popBody .prose{columns:auto}#popBody th{position:static}
 .runv{grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start}.runv .seg{grid-column:1/-1;display:flex}.runv .seg button{flex:1;min-height:42px}.runv select{grid-column:1/-1;width:100%;max-width:100%;min-height:42px}.runv .tbtn{min-height:42px}
 .sbtn,.tbtn,.dbtn{min-height:38px}.stw{grid-template-columns:44px minmax(0,1fr) 44px}.stp{height:40px;font-size:24px}
-@media(orientation:portrait){body::before{content:"Turn your phone sideways";position:fixed;inset:0;height:auto;z-index:99;display:flex;align-items:center;justify-content:center;background:#0a161d;color:#fff;font:600 22px var(--disp,system-ui)}}
+@media(orientation:portrait) and (max-width:560px){body::before{content:"Turn your phone sideways";position:fixed;inset:0;height:auto;z-index:99;display:flex;align-items:center;justify-content:center;background:#0a161d;color:#fff;font:600 22px var(--disp,system-ui)}}
+
+/* scenario lives in the top bar; the bar scrolls sideways rather than crowding anything out */
+.bar .wsScen{flex:0 1 190px;min-width:96px;width:auto;max-width:none;min-height:34px;font-size:13px;text-overflow:ellipsis}.bar .wsScen select{width:100%;min-width:0;min-height:34px;font-size:13px;text-overflow:ellipsis}
+@media(max-width:1000px){.bar .brand{display:none}.bar .wsScen{flex-basis:150px}}
+@media(max-width:860px){.bar .mode{display:none}}
+@media(max-width:1100px){.bar .clock{display:none}}
+/* swipe handles: small tabs at the middle of each side, so the screen corners and the system back gesture stay clear */
+.wsEdge{position:fixed;z-index:30;display:grid;place-items:center;padding:0;border:1px solid rgba(160,220,225,.4);background:rgba(8,24,30,.66);color:rgba(232,246,244,.9);font:600 11px var(--disp,system-ui);letter-spacing:.05em;text-transform:uppercase;opacity:.62;transition:opacity .15s}
+.wsEdge:active,.wsEdge:focus-visible{opacity:1}
+.wsEdge[data-s=l],.wsEdge[data-s=r]{top:50%;width:20px;height:84px;margin-top:-42px;writing-mode:vertical-rl}
+.wsEdge[data-s=l]{left:var(--sl);border-right:0;border-radius:10px 0 0 10px;transform:rotate(180deg)}
+.wsEdge[data-s=r]{right:var(--sr);border-right:0;border-radius:10px 0 0 10px}
+.wsEdge[data-s=t],.wsEdge[data-s=b]{left:50%;width:84px;height:20px;margin-left:-42px}
+.wsEdge[data-s=t]{top:0;border-top:0;border-radius:0 0 10px 10px}
+.wsEdge[data-s=b]{bottom:0;border-bottom:0;border-radius:10px 10px 0 0}
+.wsEdge[data-s=l] span{transform:none}
+.wsUi .wsEdge{display:none}
+#popGo{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--teal);border-radius:99px;background:var(--teal);color:#04272a;font:700 13.5px var(--disp,system-ui);white-space:nowrap}#popGo[hidden]{display:none}
+#popBody.top .view.on{margin:0 auto}
+.bar .scBox{flex:0 1 270px;flex-wrap:nowrap;gap:4px;min-width:130px}.bar .scBox .scLab{display:none}.bar .scBox select{flex:1 1 0;min-width:0}.bar .scBox #scInit{flex:none}
