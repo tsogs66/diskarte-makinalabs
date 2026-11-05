@@ -4,7 +4,13 @@ const ROOT=path.join(__dirname,'..'),SRC=path.join(ROOT,'src'),WWW=path.join(ROO
 /* Vault first (owner live edits), else sim-source in this repo. Missing purifier/fwg on cloud is OK — skip those pages. */
 const simFile=f=>{const a=path.join(SIM_VAULT,f),b=path.join(SIM_REPO,f);if(fs.existsSync(a))return a;if(fs.existsSync(b))return b;return null;};
 const S=f=>fs.readFileSync(path.join(SRC,'shared',f),'utf8'),wsCss=S('ws.css'),wsPhone=S('ws-phone.css'),wsJs=S('ws.js').replace('__STAMP__',()=>S('makinalabs-wordmark.svg').replace(/"/g,"'").replace(/ width='\d+' height='\d+'/,''));
-const lay=(t,phone)=>{const i=t.lastIndexOf('</script>');return t.slice(0,i+9)+'\n<style>'+wsCss+(phone?wsPhone:'')+'</style>\n<script>\nwindow.WS_PHONE='+phone+';\n'+wsJs+'</script>\n'+t.slice(i+9);};
+/* The phone sheet is always in the page but switched off (media="not all"). dk-pre.js picks phone or desktop from the device when the page opens, so one page serves both; `phone` here is only the default used inside the apps (?app=1). The DK companion layer (dk-data.js, dk.js, dk.css) goes in after the workspace. */
+/* Each page carries only its own plant's DK data (alarm advice, lessons, quiz, safety, fidelity). The purifier and FWG pages, which go on the website, hold no boiler text. */
+const vm=require('vm'),dkAll=vm.runInNewContext(S('dk-data.js')+';DK_DATA'),DKPL=['pur','fwg','boiler'];
+const dkData=plant=>{const o={};for(const k in dkAll){const v=dkAll[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&DKPL.some(p=>p in v)){o[k]={};for(const kk in v)if(!DKPL.includes(kk)||kk===plant)o[k][kk]=v[kk];}else o[k]=v;}
+ return 'var DK_DATA='+JSON.stringify(o,(k,v)=>Object.prototype.toString.call(v)==='[object RegExp]'?'@@RE'+v.toString()+'@@':v).replace(/"@@RE(.*?)@@"/g,(m,s)=>JSON.parse('"'+s+'"'))+';';};
+const dkPre=S('dk-pre.js'),dkCss=S('dk.css'),dkCode=S('dk.js');
+const lay=(t,phone,plant)=>{const dkJs=dkData(plant)+'\n'+dkCode;const i=t.lastIndexOf('</script>');return t.slice(0,i+9)+'\n<style>'+wsCss+'</style>\n<style id="dkPhoneCss" media="not all">'+wsPhone+'</style>\n<script>\n'+dkPre+'\nwindow.WS_PHONE=DK_PRE.pick('+phone+');if(window.WS_PHONE)document.getElementById("dkPhoneCss").media="all";\n'+wsJs+'</script>\n<style>'+dkCss+'</style>\n<script>\n'+dkJs+'</script>\n'+t.slice(i+9);};
 fs.rmSync(WWW,{recursive:true,force:true});fs.mkdirSync(path.join(WWW,'fonts'),{recursive:true});
 
 const FONTS=[['barlow','Barlow',[400,500,600]],['barlow-condensed','Barlow Condensed',[500,600,700]],['share-tech-mono','Share Tech Mono',[400]]];
@@ -20,7 +26,7 @@ const page=b=>'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta 
 for(const [src,out,desk] of [['purifier-simulator.html','mobile-purifier.html','purifier.html'],['fwg-simulator.html','mobile-fwg.html','fwg-simulator-app.html'],['boiler-simulator.html','mobile-boiler.html','boiler-simulator-app.html']]){
  const pathSrc=simFile(src);if(!pathSrc){console.warn('skip missing simulator '+src);continue;}
  const raw=fs.readFileSync(pathSrc,'utf8').replace(/\r\n/g,'\n').replace('<meta name="claude:viewport-fit-sides" content="cover">\n','');
- const d=lay(raw,false),t=lay(raw,true);
+ const plant={'purifier-simulator.html':'pur','fwg-simulator.html':'fwg','boiler-simulator.html':'boiler'}[src],d=lay(raw,false,plant),t=lay(raw,true,plant);
  try{fs.writeFileSync(path.join(SIM_VAULT,'app-'+desk),d);fs.writeFileSync(path.join(SIM_VAULT,out),page(t));}catch(e){}
  fs.writeFileSync(path.join(WWW,desk),page(offline(d)));
  fs.writeFileSync(path.join(WWW,out),page(offline(t)));

@@ -24,7 +24,8 @@ for(const p of PAGES){
     js=js.replace('const ISOV={p605:1,p626:1,s826:1,sj30g:1,sj30gh:1};','const ISOV={};').replace("const isoOn=()=>{try{return localStorage.getItem('pur.iso')==='1';}catch(e){return false;}};",'const isoOn=()=>false;');
     const src=`var __mkl_b=${JSON.stringify(id)};`+js;
     const out=O.obfuscate(src,{compact:true,simplify:true,target:'browser',identifierNamesGenerator:'hexadecimal',renameGlobals:false,
-      stringArray:true,stringArrayEncoding:['base64'],stringArrayThreshold:0.75,stringArrayRotate:true,stringArrayShuffle:true,stringArrayWrappersCount:1,
+      /* no base64 on the string array: with the companion layer's many long strings it made the FWG page take 11 s to start (0.5 s without). The strings stay moved out, shuffled and rotated. */
+      stringArray:true,stringArrayEncoding:[],stringArrayThreshold:0.75,stringArrayRotate:true,stringArrayShuffle:true,stringArrayWrappersCount:1,
       reservedStrings:['^data:','^[A-Za-z0-9+/=]{200,}$'],controlFlowFlattening:false,deadCodeInjection:false,selfDefending:true,transformObjectKeys:false,unicodeEscapeSequence:false,
       domainLock:DOMAINS,domainLockRedirectUrl:'https://makinalabs.net/#licence',seed:crypto.randomInt(1,2**30)}).getObfuscatedCode();
     return '<script>'+out.replace(/<\/script/gi,'<\\/script')+'</script>';});
