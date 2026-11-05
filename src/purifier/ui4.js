@@ -137,6 +137,8 @@ function switchUnit(k){key=k;bind();logN=0;$('log').innerHTML='';for(const id in
 function render(){if(document.hidden)return;renderMode();renderMimic();renderGauges();renderCP();renderCtl();renderTbl();renderStrips();renderTiles();renderLog();renderSteps();renderBowl();renderSeq();renderDrill();if(!$('actDx').closest('[hidden]'))renderActVals();}
 function init(){
  for(const k in MODELS)$('st_'+k).onclick=()=>switchUnit(k);
+ /* "went to the starter panel": the panel is on screen (any layout, tab, floated window or phone sheet) or was touched */
+ {const el=$('starter');if(el){if('IntersectionObserver'in window)new IntersectionObserver(es=>{stVis=es.some(x=>x.isIntersecting);if(stVis&&stShown())u.stSeen=1;},{threshold:.2}).observe(el);el.addEventListener('pointerdown',()=>{if(stShown())u.stSeen=1;});}}
  $('speed').innerHTML=[1,4,16,60].map(v=>`<button data-v="${v}" aria-pressed="${v===1}">x${v}</button>`).join('');for(const b of $('speed').children)b.onclick=()=>{speed=+b.dataset.v;for(const c of $('speed').children)c.setAttribute('aria-pressed',c===b);};
  $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause';};
  $('motion').onclick=()=>{motion=!motion;$('motion').setAttribute('aria-pressed',motion);$('motion').textContent=motion?'Motion on':'Motion off';document.body.classList.toggle('noanim',!motion);};

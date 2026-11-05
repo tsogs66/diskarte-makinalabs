@@ -132,11 +132,12 @@ function coachTick(){
  if(Mode.v!=='train')return;const p=readProc();if(!p)return;const ok=okOf(p),cur=ok.indexOf(false);
  if(Coach.key!==p.key){Coach.key=p.key;Coach.prev=null;Coach.sc={ooo:0,undo:0,blk:0,hint:0,ok:0};Coach.finished=false;Coach.fb=[];}
  const pv=Coach.prev;
- if(pv&&pv.ok.length===ok.length){const recent=now()-Coach.userAt<1800,pc=pv.ok.indexOf(false);
+ if(pv&&pv.ok.length===ok.length){const recent=now()-Coach.userAt<1800,pc=pv.ok.indexOf(false),
+   reset=ok.reduce((n,v,i)=>n+(pv.ok[i]&&!v?1:0),0)>2; /* three or more steps going back at once is a scenario reload or reset, not the student undoing work */
   for(let i=0;i<ok.length;i++){
    if(!pv.ok[i]&&ok[i]){if(i===pc){Coach.sc.ok++;say('ok','Step '+(i+1)+' done: '+p.items[i].t);}
     else if(pc>=0&&i>pc&&!ok[pc]&&recent){Coach.sc.ooo++;say('warn','Out of order. You did step '+(i+1)+' before step '+(pc+1)+'. Next: '+p.items[pc].t);}}
-   if(pv.ok[i]&&!ok[i]&&recent&&!p.items[i].sticky){Coach.sc.undo++;say('warn','You undid step '+(i+1)+': '+p.items[i].t);}}}
+   if(pv.ok[i]&&!ok[i]&&recent&&!reset&&!p.items[i].sticky){Coach.sc.undo++;say('warn','You undid step '+(i+1)+': '+p.items[i].t);}}}
  Coach.prev={ok,cur};
  if(cur<0&&!Coach.finished&&p.items.length){Coach.finished=true;if(Coach.sc.ok>=Math.ceil(p.items.length/2)){const r={t:now(),plant:PLANT,unit:P.tab(),proc:p.title,score:score(),ooo:Coach.sc.ooo,undo:Coach.sc.undo,blk:Coach.sc.blk,hint:Coach.sc.hint};const L=store.get('learn',{}),runs=L.runs||[];runs.unshift(r);L.runs=runs.slice(0,40);store.set('learn',L);say('ok',p.title+' complete. Score '+r.score+'.');bus.emit('run',r);}}
  drawCoach(p,ok,cur);}

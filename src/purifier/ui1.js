@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id),fx=(v,n=1)=>(v==null||!isFinite(v))?'–
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 let key='s826',M=MODELS[key],u,s,f,speed=1,paused=false,auto=false,proc='start',horn=false,motion=true,logN=0,acc=0,alAcc=0,hist=[],curDrill=null,seven='t',typed={},fuelId='ref';
 const UNITS={};
-function mkUnit(k){const m=MODELS[k],x=coldInputs(k);x.fuel=Object.assign({},F0,FUELS[0]);x.disc=m.discs?bestDisc(m,x.fuel,98,m.Q380):null;x.pw=m.attached?0:1;x.chk=0;x.lmOn=0;
+function mkUnit(k){const m=MODELS[k],x=coldInputs(k);x.fuel=Object.assign({},F0,FUELS[0]);x.disc=m.discs?bestDisc(m,x.fuel,98,m.Q380):null;x.pw=m.attached?0:1;x.oilChk=0;x.stSeen=0;x.lmOn=0;
  return {u:x,s:coldState(m),f:{},hist:[],typed:{}};}
 for(const k in MODELS)UNITS[k]=mkUnit(k);
 function bind(){const o=UNITS[key];u=o.u;s=o.s;f=o.f;hist=o.hist;typed=o.typed;M=MODELS[key];}
@@ -43,8 +43,13 @@ function resetAl(){if(s.ph==='estop'&&s.rpm>0){note('Emergency stop resets only 
 function clearBowl(){if(s.rpm>0){note('Stop and wait for zero speed before opening the bowl.','w');return;}s.foul=0;s.hard=0;s.Vs=0;s.Vw=0;s.Voil=0;f.stack=false;f.unbal=false;f.nozzle=false;f.pilot=false;f.sealRing=false;f.closeLeak=false;note('Bowl opened, cleaned and reassembled');renderFaults();}
 
 /* --- procedures --- */
+/* Step 1 is something the operator can actually do on the plant: click the bottom of the bowl to read the sump
+   oil level (and top it up if it is low, the check only counts once the level is at the mark), open the starter
+   panel, and have the brake off. No hidden flag. */
+const preStart=()=>!!u.oilChk&&!!u.stSeen&&!u.brake;
+const preAct=()=>{f.dryOil=false;u.oilChk=1;u.stSeen=1;u.brake=0;};
 const A_START=()=>[
- ['Check sump oil level, supply frequency and brake off',()=>u.chk,()=>{u.chk=1;u.brake=0;},'Too much or too little oil damages the bearings. A wrong frequency overspeeds the bowl.'],
+ ['Check sump oil level and brake off',preStart,preAct,'Click the bottom of the bowl in the system view to read the sump oil level, then open the starter panel and see that the brake is off. Too much or too little oil damages the bearings.'],
  ['Open control air, '+M.Pa.join(' to ')+' bar',()=>u.aOn,()=>u.aOn=1,'Air moves the change-over valve.'],
  ['Open operating water, '+M.Pw.join(' to ')+' bar',()=>u.wOn,()=>u.wOn=1,'Water closes and opens the bowl.'],
  ['Line up tank suction, recirculation, outlet and sludge tank valves',()=>u.suc&&u.ret&&u.out&&u.slv,()=>{u.suc=1;u.ret=1;u.out=1;u.slv=1;},'The sludge valve must be open, or a discharge has nowhere to go.'],
@@ -66,7 +71,7 @@ const A_STOP=()=>[
  ['Wait for standstill, '+Math.round(M.tStop/60)+' min without brake',()=>s.rpm<=0,null,'Do not start dismantling until rotation has stopped.'],
  ['Close steam, operating water and air',()=>!u.stm&&!u.wOn&&!u.aOn,()=>{u.stm=0;u.wOn=0;u.aOn=0;},'Close the source valve: water reaching a stopped machine can enter the gear oil.']];
 const J_START=()=>[
- ['Check gear oil, brake off, frequency',()=>u.chk,()=>{u.chk=1;u.brake=0;},''],
+ ['Check gear oil level and brake off',preStart,preAct,'Click the bottom of the bowl in the system view to read the gear oil level, then open the starter panel and see that the brake is off.'],
  ['Confirm V5 to V10 and the sludge tank valve are open, air 0.5 to 0.9 MPa, water 0.3 to 0.5 MPa',()=>u.suc&&u.ret&&u.out&&u.aOn&&u.wOn&&u.slv,()=>{u.suc=1;u.ret=1;u.out=1;u.aOn=1;u.wOn=1;u.slv=1;},''],
  ['Starter breaker ON',()=>u.mccb,()=>{u.mccb=1;},'Power goes on in this order: starter, automatic control panel, Multi-Monitor.'],
  ['CONT. SOURCE ON at the automatic control panel: panel and Multi-Monitor light',()=>u.pw,()=>u.pw=1,'Always in that order.'],
@@ -88,7 +93,7 @@ const J_STOP=()=>[
 const steps=()=>isA()?(proc==='start'?A_START():A_STOP()):(proc==='start'?J_START():J_STOP());
 function runAuto(){const st=steps();for(const r of st){if(r[1]())continue;if(r[2])r[2]();return;}auto=false;setAutoBtn();note('Procedure complete');}
 function setAutoBtn(){$('auto').setAttribute('aria-pressed',auto);$('auto').textContent=auto?'Stop auto-run':'Auto-run these steps';}
-function jumpRun(){u.slv=1;u.chk=1;u.brake=0;u.aOn=u.wOn=u.stm=u.suc=u.ret=u.out=1;u.pw=1;u.mccb=1;u.lmOn=isA()?0:1;u.wd=1;u.v12=1;s.heaterOn=1;s.pump=1;s.motor=1;s.rpm=1;s.T=u.Ts;s.Q=u.q;s.asked=0;s.c=1;s.closed=true;s.bowlOpen=false;s.sc=null;s.stopAfter=0;s.sv=SV0();
+function jumpRun(){u.slv=1;u.oilChk=1;u.stSeen=1;u.brake=0;u.aOn=u.wOn=u.stm=u.suc=u.ret=u.out=1;u.pw=1;u.mccb=1;u.lmOn=isA()?0:1;u.wd=1;u.v12=1;s.heaterOn=1;s.pump=1;s.motor=1;s.rpm=1;s.T=u.Ts;s.Q=u.q;s.asked=0;s.c=1;s.closed=true;s.bowlOpen=false;s.sc=null;s.stopAfter=0;s.sv=SV0();
  s.Vs=.15*M.Vsm;const p=perf(s,u,f,M);s.Vw=CL(M)?.7:needW(M,Math.min(p.ri,M.Rb),s.Vs);s.Voil=M.Vb-s.Vs-s.Vw;s.ph='sep';s.tSince=120;s.Pout=M.Pb;s.tRun=M.tRun+40;s.I=clamp((u.q/3600*.93*2.05*(u.Ts-u.Tt))/M.heat);s.cAlSi=p.alOut;s.cW=p.wOut;s.cNa=p.naOut;step(s,u,f,M,.01);note('Jumped to normal running');}
 
 /* --- alarms --- */
