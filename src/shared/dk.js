@@ -390,11 +390,16 @@ function menuItems(){return[['mode',Mode.v==='pro'?'Switch to Training':'Switch 
  ...(Mode.v==='train'?[['coach','Coach',openCoach]]:[]),['ctl',PLANT==='pur'?'Control unit + starters':PLANT==='boiler'?'HMI + local panel':'Control panel + controls',()=>floatSet(PLANT==='pur'?['cp','starter']:PLANT==='boiler'?['hmi','door']:['door','controls'])],
  ['reading','Actual reading + result',()=>floatSet(PLANT==='fwg'?['act','calc','dx']:['act','dx'])],['alarm','Alarm log',()=>openAlarms()],['comp','Companion',openComp],['learn','Learn',openLearn],['panels','Float a panel',openPanels],['safety','Safety',openSafety],['fid','Fidelity',openFid],['gear','Settings',openSet]];}
 function menuDraw(){menu.innerHTML=menuItems().map((m,i)=>'<button type="button" role="menuitem" data-i="'+i+'">'+ico(m[0])+'<span>'+esc(m[1])+'</span></button>').join('');}
-function menuOpen(v){menu.hidden=!v;orb.setAttribute('aria-expanded',v);dock.classList.toggle('open',v);if(v){menuDraw();const r=dock.getBoundingClientRect();dock.dataset.up=r.top>VH()/2?'1':'0';dock.dataset.left=r.left>VW()/2?'1':'0';}}
-menu.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const m=menuItems()[+b.dataset.i];menuOpen(false);if(m)m[2]();});
+/* Open up or down from where the ORB is (measured before the menu shows: measuring the dock with the menu in it flipped the layout under the finger, and the click that follows a quick tap then hit the last item, Settings). */
+let menuAt=0;
+function menuOpen(v){let r=null;if(v){r=orb.getBoundingClientRect();const up=r.top+r.height/2>VH()/2;dock.dataset.up=up?'1':'0';dock.dataset.left=r.left+r.width/2<VW()/2?'1':'0';menuDraw();menu.style.maxHeight=Math.max(120,Math.floor(up?r.top-10:VH()-r.bottom-26))+'px';menuAt=now();}
+ menu.hidden=!v;orb.setAttribute('aria-expanded',v);dock.classList.toggle('open',v);
+ /* the orb stays under the finger: the dock grows around it, so move the dock back by however far the orb shifted */
+ if(v){const r1=orb.getBoundingClientRect();dock.style.transform='translate3d('+(dpos.x+r.left-r1.left)+'px,'+(dpos.y+r.top-r1.top)+'px,0)';}else dockPlace();}
+menu.addEventListener('click',e=>{if(now()-menuAt<450)return;const b=e.target.closest('button');if(!b)return;const m=menuItems()[+b.dataset.i];menuOpen(false);if(m)m[2]();});
 D.addEventListener('pointerdown',e=>{if(!menu.hidden&&!dock.contains(e.target))menuOpen(false);});
 orb.addEventListener('pointerdown',ev=>{if(ev.button>0)return;orb.setPointerCapture(ev.pointerId);const sx=ev.clientX,sy=ev.clientY,ox=dpos.x,oy=dpos.y;let moved=false,raf=0;
- const mv=m=>{const dx=m.clientX-sx,dy=m.clientY-sy;if(!moved&&Math.hypot(dx,dy)<7)return;moved=true;dpos.x=clamp(ox+dx,-(VW()-70),0+8);dpos.y=clamp(oy+dy,-(VH()-120),20);if(!raf)raf=requestAnimationFrame(()=>{raf=0;dockPlace();});};
+ const mv=m=>{const dx=m.clientX-sx,dy=m.clientY-sy;if(!moved&&Math.hypot(dx,dy)<7)return;if(!moved&&!menu.hidden)menuOpen(false);moved=true;dpos.x=clamp(ox+dx,-(VW()-70),0+8);dpos.y=clamp(oy+dy,-(VH()-120),20);if(!raf)raf=requestAnimationFrame(()=>{raf=0;dockPlace();});};
  const up=()=>{orb.removeEventListener('pointermove',mv);orb.removeEventListener('pointerup',up);orb.removeEventListener('pointercancel',up);if(moved){G.set('dock',dpos);}else menuOpen(menu.hidden);};
  orb.addEventListener('pointermove',mv);orb.addEventListener('pointerup',up);orb.addEventListener('pointercancel',up);});
 function dockPlace(){dpos.x=clamp(dpos.x,-(VW()-70),8);dpos.y=clamp(dpos.y,-(VH()-120),20);dock.style.transform='translate3d('+dpos.x+'px,'+dpos.y+'px,0)';}

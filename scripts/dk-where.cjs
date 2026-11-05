@@ -46,7 +46,7 @@ const J=x=>JSON.parse(x);
   /* floating control unit / HMI and the actual reading + result */
   const fl=J(await p.eval(`JSON.stringify((()=>{DK.menuOpen(true);const items=[...document.querySelectorAll('#dkMenu button span')].map(e=>e.textContent);DK.menuOpen(false);return items;})())`));
   ok(fl.some(t=>/Control|HMI/i.test(t)),plant+' orb menu offers the control unit / HMI: '+fl.join(' | '));ok(fl.some(t=>/Actual reading/i.test(t)),plant+' orb menu offers actual reading + result');
-  const clickMenu=async re=>{await p.eval(`(()=>{DK.menuOpen(true);const b=[...document.querySelectorAll('#dkMenu button')].find(e=>/${re}/i.test(e.textContent));b&&b.click();})()`);await sleep(500);};
+  const clickMenu=async re=>{await p.eval('DK.menuOpen(true);1');await sleep(520);await p.eval(`(()=>{const b=[...document.querySelectorAll('#dkMenu button')].find(e=>/${re}/i.test(e.textContent));b&&b.click();})()`);await sleep(500);};
   await clickMenu('Actual reading');
   const f1=J(await p.eval(`JSON.stringify(Object.keys(DK.FLOAT).map(k=>({k,open:DK.FLOAT[k].win.isOpen(),w:DK.FLOAT[k].win.st.w,h:DK.FLOAT[k].win.st.h,x:DK.FLOAT[k].win.st.x,sh:document.querySelector('.wsp.b_'+k).getBoundingClientRect().height})))`));
   ok(f1.some(x=>x.k==='act')&&(plant==='boiler'||f1.some(x=>x.k==='dx')),plant+' act and dx floated: '+f1.map(x=>x.k));ok(await p.eval(`!!document.getElementById('actDx')&&!!document.getElementById('actDx').closest('.dkw')`),plant+' the result and advice sit in a floated window');
