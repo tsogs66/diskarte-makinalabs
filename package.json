@@ -1,6 +1,6 @@
 {
     "name": "diskarte",
-    "version": "2.8.4",
+    "version": "2.9.0",
     "private": true,
     "description": "Diskarte by MakinaLabs: marine engineer simulators for Android and Windows",
     "scripts": {
