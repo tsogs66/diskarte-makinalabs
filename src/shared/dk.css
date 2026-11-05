@@ -88,3 +88,13 @@ html[data-dk-tier=mid] svg .vlv,html[data-dk-tier=mid] svg .pmp,html[data-dk-tie
 html[data-dk-motion=reduced] *,html[data-dk-motion=reduced] *::before,html[data-dk-motion=reduced] *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 /* the old phone page asks you to turn sideways. The companion works in portrait, so that cover is lifted. */
 @media(orientation:portrait) and (max-width:560px){html[data-dk-dev] body::before{display:none!important}}
+
+/* where / wait: the coach names the exact control, or says to wait */
+.dkwhere,.dkwait{margin:8px 0 2px;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.4}
+.dkwhere{border:1px solid rgba(63,224,207,.55);background:rgba(63,224,207,.1)}.dkwhere b,.dkwait b{font:700 11px var(--mono,monospace);letter-spacing:.14em;padding:2px 7px;border-radius:5px;margin-right:8px}
+.dkwhere b{background:#3fe0cf;color:#052b30}.dkwhere span,.dkwait span{font-weight:600}.dkwhere p,.dkwait p{margin:4px 0 0!important;font-size:14px!important;font-weight:400!important}
+.dkwait{border:1px solid #f0ab1e;background:repeating-linear-gradient(135deg,rgba(240,171,30,.16) 0 10px,rgba(240,171,30,.07) 10px 20px)}.dkwait b{background:#f0ab1e;color:#2a1a00;animation:dkWaitB 1.2s ease-in-out infinite}
+@keyframes dkWaitB{50%{opacity:.45}}.dkc-now.dkwaiting{border-color:#f0ab1e}.dkc-btns button[disabled]{opacity:.4;cursor:not-allowed}
+.dkfb .wait{border-color:#f0ab1e;background:rgba(240,171,30,.14)}.dkToast.wait{border-color:#f0ab1e;background:rgba(60,40,0,.92)}
+html[data-dk-tier=low] .dkwait b,html[data-dk-motion=reduced] .dkwait b{animation:none}
+.dkw-c .wsp.dkAdopted .pkdoor,.dkw-c .wsp.dkAdopted svg.face{max-width:100%;height:auto}

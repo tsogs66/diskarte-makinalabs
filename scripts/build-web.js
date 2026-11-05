@@ -6,7 +6,7 @@ const simFile=f=>{const a=path.join(SIM_VAULT,f),b=path.join(SIM_REPO,f);if(fs.e
 const S=f=>fs.readFileSync(path.join(SRC,'shared',f),'utf8'),wsCss=S('ws.css'),wsPhone=S('ws-phone.css'),wsJs=S('ws.js').replace('__STAMP__',()=>S('makinalabs-wordmark.svg').replace(/"/g,"'").replace(/ width='\d+' height='\d+'/,''));
 /* The phone sheet is always in the page but switched off (media="not all"). dk-pre.js picks phone or desktop from the device when the page opens, so one page serves both; `phone` here is only the default used inside the apps (?app=1). The DK companion layer (dk-data.js, dk.js, dk.css) goes in after the workspace. */
 /* Each page carries only its own plant's DK data (alarm advice, lessons, quiz, safety, fidelity). The purifier and FWG pages, which go on the website, hold no boiler text. */
-const vm=require('vm'),dkAll=vm.runInNewContext(S('dk-data.js')+';DK_DATA'),DKPL=['pur','fwg','boiler'];
+const vm=require('vm'),dkAll=vm.runInNewContext(S('dk-data.js')+'\n'+S('dk-where.js')+'\n'+S('dk-quiz.js')+';DK_DATA.where=DK_WHERE;DK_DATA.quizBank=DK_QUIZ;DK_DATA'),DKPL=['pur','fwg','boiler'];
 const dkData=plant=>{const o={};for(const k in dkAll){const v=dkAll[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&DKPL.some(p=>p in v)){o[k]={};for(const kk in v)if(!DKPL.includes(kk)||kk===plant)o[k][kk]=v[kk];}else o[k]=v;}
  return 'var DK_DATA='+JSON.stringify(o,(k,v)=>Object.prototype.toString.call(v)==='[object RegExp]'?'@@RE'+v.toString()+'@@':v).replace(/"@@RE(.*?)@@"/g,(m,s)=>JSON.parse('"'+s+'"'))+';';};
 const dkPre=S('dk-pre.js'),dkCss=S('dk.css'),dkCode=S('dk.js');

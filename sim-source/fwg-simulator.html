@@ -681,7 +681,7 @@ const START=[
  {t:'Close the vacuum valve. Keep jacket water valves shut and the bypass fully open',why:'Any open air path stops the ejector pulling vacuum. The bypass stays open so no heat enters yet.',
   ok:()=>u.vent===0&&cfOf()===0&&u.byp===0,act:dt=>{ramp('vent',0,40*dt);u.jwIn=0;u.jwOut=0;ramp('byp',0,40*dt);},k:['vent','jwIn','jwOut','byp']},
  {t:'Open sea suction, overboard and condenser sea water valves',why:'Always open the overboard first, then suction. Starting against a shut overboard over-pressurises the line.',
-  ok:()=>u.ov>=95&&u.sv>=95&&u.cv>=50,act:dt=>{ramp('ov',100,30*dt);if(u.ov>=95)u.sv=100;},k:['ov','sv','cv']},
+  ok:()=>u.ov>=95&&u.sv>=95&&u.cv>=50,act:dt=>{ramp('ov',100,30*dt);if(u.ov>=95){u.sv=100;ramp('cv',100,30*dt);}},k:['ov','sv','cv']},
  {get t(){return 'Start the ejector pump. Confirm SW inlet pressure of at least '+fx(3+M.dc,1)+' bar';},get why(){return 'This one pump cools the condenser, supplies the feed and drives the ejector, in that order. SW inlet pressure is read at the pump discharge, so the ejector and the feed take-off see about '+fx(M.dc,1)+' bar less.';},
   ok:()=>s.rpm>0.9&&s.d.Pe>=3,act:()=>{setPump(true);},k:['pump']},
  {get t(){return 'Wait for vacuum of '+(M.id==='aqua'?85:90)+' % or better';},why:'Boiling temperature follows chamber pressure. Heating early makes the plates boil at high temperature and scale up.',

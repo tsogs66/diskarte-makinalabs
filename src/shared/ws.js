@@ -69,7 +69,8 @@
   /* the scenario stays in the top bar: it is the one control you reach for while the plant runs */
   {const sc=q('#scenario');if(sc){let h=sc;while(h.parentElement&&h.parentElement!==q('.bar'))h=h.parentElement;rb.after(h);h.classList.add('wsScen');}}
   q('.b_basisP,.b_about')?.querySelector('.wsb')?.prepend(info);
-  go=t=>{const p=where[t];if(p)open(p.replace(/\d$/,''),+p.slice(-1));};
+  /* go('plant') closes the sheet; a page name from the old tab list (fuel, act...) or any view id (ctrl1, steps0...) opens that sheet. DK uses this to show the exact page of a control. */
+  go=t=>{if(t==='plant'){closePop();document.documentElement.classList.remove('wsUi');return;}const p=where[t]||(views[t]&&t!=='run'?t:null);if(p){document.documentElement.classList.remove('wsUi');open(p.replace(/\d+$/,''),+p.match(/\d+$/)[0]);}};
   root.append(rail,main);document.body.append(pop);
   /* the plant keeps the whole screen: Home, models and sections sit behind this button */
   const mb=document.createElement('button');mb.id='mMenu';mb.type='button';mb.setAttribute('aria-label','Menu');mb.innerHTML=I('<path d="M4 7h16M4 12h16M4 17h16"/>')+'<b hidden></b>';document.body.append(mb);const ui=v=>document.documentElement.classList.toggle('wsUi',v);mb.addEventListener('click',()=>ui());rail.addEventListener('click',()=>ui(false));rb.addEventListener('click',()=>ui(false));q('#mimic').addEventListener('pointerdown',()=>ui(false));

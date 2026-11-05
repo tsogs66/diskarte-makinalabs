@@ -28,6 +28,8 @@ const IC={orb:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18
  coach:'<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>',
  alarm:'<path d="M12 3a6 6 0 0 1 6 6c0 6 2 7 2 8H4c0-1 2-2 2-8a6 6 0 0 1 6-6zM10 20a2 2 0 0 0 4 0"/>',
  comp:'<path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"/>',
+ ctl:'<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="9" cy="9" r="1.800"/><circle cx="15" cy="9" r="1.800"/><path d="M8 15h8"/>',
+ reading:'<path d="M4 5h9M4 10h9M4 15h6"/><path d="M16 8l3 3 3-4M15 16h7M15 20h7"/>',
  learn:'<path d="M3 8l9-4 9 4-9 4zM7 10v5c0 1.5 2.2 3 5 3s5-1.500 5-3v-5"/>',
  panels:'<rect x="3" y="4" width="11" height="9" rx="1.5"/><rect x="10" y="11" width="11" height="9" rx="1.5"/>',
  safety:'<path d="M12 3l9 16H3zM12 10v4M12 17v.5"/>',
@@ -105,9 +107,18 @@ function fitAll(){for(const k in WIN)if(WIN[k].isOpen())WIN[k].fit();}
 setInterval(()=>{const t=now();for(const k in WIN){const w=WIN[k];if(w.isOpen()&&w.st.auto&&t-w.act>9000&&!w.el.matches(':hover')&&!w.el.contains(D.activeElement))w.min();}},1000);
 /* a panel from the simulator can be lifted onto the plant as a floating window and put back on close */
 const FLOAT={};
-function floatPanel(k,title){const p=q('.wsp.b_'+k);if(!p)return false;if(FLOAT[k]){FLOAT[k].win.show();return true;}
- const ph=D.createComment('dk-'+k);p.before(ph);const w=win('p_'+k,{title,w:340,h:300,onHide(){if(ph.parentNode)ph.replaceWith(p);p.classList.remove('dkAdopted');delete FLOAT[k];}});w.body.append(p);p.classList.add('dkAdopted');FLOAT[k]={win:w};w.show();dispatchEvent(new Event('resize'));return true;}
-const FLOATABLE=[['gauges','Gauges'],['tiles','Alarm tiles'],['read','Readings'],['trend','Trends'],['steps','Procedure'],['alist','Alarm list'],['water','Water test']];
+/* the window object is kept after it closes, so the hide handler is set again on every lift: it must put back the panel that is in the window now */
+function floatPanel(k,title,w0,h0){const p=q('.wsp.b_'+k);if(!p)return false;if(FLOAT[k]){FLOAT[k].win.show();return true;}
+ const ph=D.createComment('dk-'+k),back=()=>{if(ph.parentNode)ph.replaceWith(p);p.classList.remove('dkAdopted');delete FLOAT[k];};p.before(ph);
+ const w=win('p_'+k,{title,w:w0||340,h:h0||300,onHide:back});w.o.onHide=back;w.title(title);w.body.append(p);p.classList.add('dkAdopted');FLOAT[k]={win:w};w.show();dispatchEvent(new Event('resize'));return true;}
+/* [panel, title, width, height]. Only the ones this plant has are offered. */
+const FLOATABLE=[['cp','Control unit',470,400],['starter','Starter panels',560,360],['hmi','HMI',540,440],['door',PLANT==='boiler'?'Local panel':'Control panel',540,440],['starters','Starters',380,440],['controls','Controls',380,420],['ship','Ship conditions',340,280],['vblock','Valves',380,320],['settings','Settings',380,320],
+ ['act','Actual readings',390,460],['calc','Calculator',380,400],['dx','Result and actions',420,460],['gauges','Gauges',340,300],['tiles','Alarm tiles',340,300],['read','Readings',340,300],['trend','Trends',340,300],['steps','Procedure',340,300],['alist','Alarm list',340,300],['water','Water test',340,300]];
+/* a set of panels laid side by side (stacked on a phone) so the input, the result and the advice can be seen together */
+function floatSet(keys){const L=keys.map(k=>FLOATABLE.find(x=>x[0]===k)).filter(x=>x&&(q('.wsp.b_'+x[0])||FLOAT[x[0]]));if(!L.length){toast('This plant has no such panel.',{kind:'warn',ms:3000});return;}
+ const ph=dev.cls==='phone',w0=VW(),gap=8,each=ph?w0-12:Math.max(260,Math.min(480,Math.floor((w0-16-gap*(L.length-1))/L.length)));
+ L.forEach((x,i)=>{floatPanel(x[0],x[1],Math.min(x[2],each),x[3]);const w=FLOAT[x[0]]&&FLOAT[x[0]].win;if(!w)return;if(!ph){w.st.w=Math.min(x[2],each);w.st.h=Math.min(x[3],VH()-100);w.st.x=8+i*(each+gap);w.st.y=62;w.fit();}else{w.st.x=6;w.st.y=70+i*34;w.fit();}});
+ dispatchEvent(new Event('resize'));}
 
 /* ---------- mode: Training or Professional ---------- */
 const Mode={v:G.get('mode','train')};
@@ -139,27 +150,63 @@ function coachTick(){
     else if(pc>=0&&i>pc&&!ok[pc]&&recent){Coach.sc.ooo++;say('warn','Out of order. You did step '+(i+1)+' before step '+(pc+1)+'. Next: '+p.items[pc].t);}}
    if(pv.ok[i]&&!ok[i]&&recent&&!reset&&!p.items[i].sticky){Coach.sc.undo++;say('warn','You undid step '+(i+1)+': '+p.items[i].t);}}}
  Coach.prev={ok,cur};
+ /* when the step turns into a wait, say so once: nothing is to be pressed until it ends */
+ if(cur>=0){const w=whereOf(p.items[cur]),k=p.key+':'+cur+':'+(w?w.idx:'x');if(Coach.wk!==k){Coach.wk=k;if(w&&w.wait){const m='Wait. '+w.say.replace(/^(Wait|Nothing to operate)\.\s*/,'');Coach.fb.unshift({kind:'wait',msg:m,t:now()});if(Coach.fb.length>30)Coach.fb.pop();toast(m,{kind:'wait',ms:5000});}}}
  if(cur<0&&!Coach.finished&&p.items.length){Coach.finished=true;if(Coach.sc.ok>=Math.ceil(p.items.length/2)){const r={t:now(),plant:PLANT,unit:P.tab(),proc:p.title,score:score(),ooo:Coach.sc.ooo,undo:Coach.sc.undo,blk:Coach.sc.blk,hint:Coach.sc.hint};const L=store.get('learn',{}),runs=L.runs||[];runs.unshift(r);L.runs=runs.slice(0,40);store.set('learn',L);say('ok',p.title+' complete. Score '+r.score+'.');bus.emit('run',r);}}
  drawCoach(p,ok,cur);}
 setInterval(coachTick,350);
 /* FWG already blocks steps out of order. Training mode explains why. Professional mode lets everything through. */
 if(PLANT==='fwg'&&typeof window.allow==='function'){const o0=window.allow;window.allow=function(k){if(Mode.v==='pro')return true;const r=o0.apply(this,arguments);if(r===false&&Mode.v==='train'){const p=readProc(),c=p?okOf(p).indexOf(false):-1;Coach.sc.blk++;say('bad','Blocked. That control belongs to a later step.'+(c>=0?' Do this first: '+p.items[c].t:''));}return r;};}
 function drawCoach(p,ok,cur){const w=WIN.coach;if(!w||!w.isOpen())return;if(!p){p=readProc();if(!p){w.body.innerHTML='<p class="dkn">No procedure on this page.</p>';return;}ok=okOf(p);cur=ok.indexOf(false);}
- const n=p.items.length,d=ok.filter(Boolean).length,it=cur>=0?p.items[cur]:null,safe=sessionStorage.getItem('dk.safe')==='1';
+ const n=p.items.length,d=ok.filter(Boolean).length,it=cur>=0?p.items[cur]:null,wh=whereOf(it),safe=sessionStorage.getItem('dk.safe')==='1';
  w.body.innerHTML='<div class="dkc-top"><div class="dkbar"><i style="width:'+Math.round(d/Math.max(1,n)*100)+'%"></i></div><span>'+d+'/'+n+'</span><b class="dkscore" title="Training score">'+score()+'</b></div>'
  +(safe?'':'<button type="button" class="dkwarn" data-act="safety">Safety check not done yet. Tap to read it.</button>')
- +'<div class="dkc-now">'+(it?'<small>'+esc(p.title)+' · step '+(cur+1)+' of '+n+'</small><p>'+esc(it.t)+'</p>'+(Coach.showWhy===p.key+cur&&it.why?'<p class="dkwhy">'+esc(it.why)+'</p>':'')
-  +'<div class="dkc-btns"><button type="button" data-act="why">Why?</button><button type="button" data-act="where">Show me</button><button type="button" data-act="do">Do it for me</button></div>':'<p class="dkok">All steps done.</p><p class="dkn">Nothing left to coach. Load a cold plant to practise the start from the beginning.</p><div class="dkc-btns"><button type="button" data-act="cold">Practise a cold start</button></div>')+'</div>'
+ +'<div class="dkc-now'+(wh&&wh.wait?' dkwaiting':'')+'">'+(it?'<small>'+esc(p.title)+' · step '+(cur+1)+' of '+n+'</small><p>'+esc(it.t)+'</p>'+(Coach.showWhy===p.key+cur&&it.why?'<p class="dkwhy">'+esc(it.why)+'</p>':'')
+  +(wh?(wh.wait?'<div class="dkwait" role="status"><b>WAIT</b><span>'+esc(wh.wait==='you'?'Nothing to operate':wh.wait==='control unit'?'The control unit is working':wh.wait==='bowl'?'The bowl is working':'The plant is working')+'</span><p>'+esc(wh.say)+'</p></div>'
+    :'<div class="dkwhere"><b>Operate</b><span>'+esc(PNAME[wh.pnl]||'')+'</span><p>'+esc(wh.say)+'</p></div>'):'')
+  +'<div class="dkc-btns"><button type="button" data-act="why">Why?</button><button type="button" data-act="where">'+(wh&&wh.wait?'Where to watch':'Show me')+'</button><button type="button" data-act="do"'+(wh&&wh.wait?' disabled title="Nothing to do for this step. Wait."':'')+'>Do it for me</button></div>':'<p class="dkok">All steps done.</p><p class="dkn">Nothing left to coach. Load a cold plant to practise the start from the beginning.</p><div class="dkc-btns"><button type="button" data-act="cold">Practise a cold start</button></div>')+'</div>'
  +'<div class="dkfb">'+Coach.fb.slice(0,8).map(f=>'<div class="'+f.kind+'"><i>'+wall(f.t)+'</i>'+esc(f.msg)+'</div>').join('')+'</div>'
  +'<details class="dkall"><summary>All steps</summary><ol>'+p.items.map((x,i)=>'<li class="'+(ok[i]?'done':i===cur?'now':'')+'">'+esc(x.t)+'</li>').join('')+'</ol></details>';}
 function openCoach(){const w=win('coach',{title:'Coach',w:350,h:430,onShow:()=>drawCoach()});w.show();return w;}
 /* the hint ladder: why, where, then do it. Each use costs points. */
 function locate(text){const toks=(String(text).match(/\b(?:SV|PT|RV|CV|V)\s?-?\d+[A-Za-z]?\b|\bAUTO (?:START|STOP)\b|\bSTART\b|\bSTOP\b/gi)||[]).map(t=>t.replace(/[\s-]/g,'').toLowerCase());if(!toks.length)return null;
  const nodes=qa('#mimic text, #mimic tspan');for(const t of toks){const n=nodes.find(x=>x.textContent.replace(/[\s-]/g,'').toLowerCase()===t);if(n)return n.closest('g')||n;}return null;}
-function ring(target){if(!target||!target.getBoundingClientRect)return false;const r=el('div','dkring');layer.append(r);const t0=now();const f=()=>{const b=target.getBoundingClientRect(),s=Math.max(36,Math.max(b.width,b.height)+16);r.style.cssText='left:'+(b.left+b.width/2-s/2)+'px;top:'+(b.top+b.height/2-s/2)+'px;width:'+s+'px;height:'+s+'px';if(now()-t0<6000)requestAnimationFrame(f);else r.remove();};f();return true;}
+/* target is an element or a function that finds it again: the boiler screens repaint their panels, which replaces the element. The ring follows the new one, and the first second and a half it also scrolls the control into view. */
+function ring(target,scroll){const get=typeof target==='function'?target:()=>target;if(!get())return false;qa('.dkring').forEach(x=>{x.dataset.gone='1';x.remove();});const r=el('div','dkring');layer.append(r);const t0=now();let last=null;
+ const f=()=>{if(r.dataset.gone)return;const t=get();if(t&&t.getBoundingClientRect){if(scroll&&t!==last&&now()-t0<1500){try{t.scrollIntoView({block:'center',inline:'center'});}catch(e){}}last=t;const b=t.getBoundingClientRect(),s=Math.max(36,Math.max(b.width,b.height)+16);r.style.cssText='left:'+(b.left+b.width/2-s/2)+'px;top:'+(b.top+b.height/2-s/2)+'px;width:'+s+'px;height:'+s+'px;z-index:2147483000';}else r.style.cssText='display:none';if(now()-t0<6000)requestAnimationFrame(f);else r.remove();};f();return true;}
+/* ---------- where: the exact control for each step, or a wait ----------
+   dk-where.js lists, for every step, the parts to do in order. The coach shows the first part that is not done yet:
+   a control to operate (with the panel it is on) or a wait (the plant or the control unit is working). */
+const WH=((DATA.where||{})[PLANT])||[],CHKF={};
+const chkv=ex=>{const f=CHKF[ex]||(CHKF[ex]=R(ex));return !!f();};
+const PNAME={mimic:'Plant page',cp:'Control unit',starter:'Starter panel',vblock:'Valves',hmi:'HMI',door:PLANT==='fwg'?'Control panel':'Local panel',starters:'Starters page',controls:'Controls page',ship:'Ship page',water:'Water page'};
+function whereOf(it){if(!it)return null;let L=null;for(const r of WH){if(r.m&&r.m.test(it.t)){L=r.p;break;}}if(!L)return null;const un=P.unit();L=L.filter(x=>!x.un||x.un.includes(un));if(!L.length)return null;
+ let i=L.findIndex(x=>!chkv(x.chk));if(i<0){i=L.map(x=>!x.wait).lastIndexOf(true);if(i<0)i=L.length-1;}
+ const pt=L[i];return Object.assign({idx:i,n:L.length},pt);}
+const panelEl=k=>q('.wsp.b_'+k)||(k==='mimic'?q('#mimic'):null);
+function findTarget(pt){const pn=panelEl(pt.pnl);if(!pn)return{pn:null,t:null,via:null};const root=pn;let t=null,via=null;
+ if(pt.css)for(const s of pt.css.split(',')){try{t=q(s.trim(),root);}catch(e){t=null;}if(t)break;}
+ if(!t&&pt.lab){const lb=pt.lab.toLowerCase();t=qa('[aria-label],[title],button',root).find(e=>((e.getAttribute('aria-label')||e.getAttribute('title')||e.textContent||'').trim().toLowerCase()).indexOf(lb)>=0)||null;}
+ if(!t&&pt.via)for(const s of pt.via.split(',')){try{via=q(s.trim(),root);}catch(e){via=null;}if(via)break;}
+ return{pn,t,via};}
+/* bring the page that holds the panel to the front: a tab on the laptop, a sheet on the phone, or the floating window if the panel was lifted out */
+function reveal(pt){const pn=panelEl(pt.pnl);if(!pn)return;const fw=pn.closest('.dkw');if(fw){fw.style.zIndex=++zTop;return;}
+ const v=pn.closest('.view'),id=v&&v.dataset.v,go=window.__ws&&window.__ws.go;
+ if(v&&v.classList.contains('hideCG')&&['cp','door','gauges'].includes(pt.pnl)){const b=$('wsCG');if(b)b.click();}
+ if(go&&id)go(id);}
+/* a window that sits on the control being pointed at is moved to the other side, or folded away if there is no free side */
+function clearOf(w,t){if(!w||!w.isOpen()||!t)return;const hit=()=>{const a=w.el.getBoundingClientRect(),b=t.getBoundingClientRect(),m=24;return a.left<b.right+m&&a.right>b.left-m&&a.top<b.bottom+m&&a.bottom>b.top-m;};
+ if(!hit())return;const cx=t.getBoundingClientRect().left+t.getBoundingClientRect().width/2;
+ for(const x of [cx<VW()/2?VW()-w.st.w-12:12,12,VW()-w.st.w-12]){w.st.x=x;w.fit();if(!hit())return;}
+ for(const y of [VH()-w.st.h-8,6]){w.st.y=y;w.fit();if(!hit())return;}w.min();}
+function showMe(wh){reveal(wh);const ph=dev.cls==='phone';
+ const nm=PNAME[wh.pnl]||'panel';
+ setTimeout(()=>{const f=findTarget(wh),t=f.t||f.via||f.pn,msg=(wh.wait?'Watch the ':'Go to the ')+nm+'. '+(f.t||wh.wait||!f.via?wh.say:'The control is on another page of the '+nm+'. Open the page shown, then: '+wh.say);
+  if(t){for(const k in WIN)if(WIN[k].isOpen())clearOf(WIN[k],t);setTimeout(()=>ring(()=>{const g=findTarget(wh);return g.t||g.via||g.pn;},true),120);}
+  if(ph)toast(msg,{ms:9000});else say('warn',msg);},ph?420:260);}
 function coachAct(a){const p=readProc();if(!p)return;const ok=okOf(p),cur=ok.indexOf(false);if(cur<0)return;const it=p.items[cur];Coach.sc.hint++;
  if(a==='why'){Coach.showWhy=p.key+cur;if(!it.why)say('warn','No extra reason is written for this step.');drawCoach();}
- else if(a==='where'){const t=locate(it.t);if(t&&ring(t)){say('warn','Look at the pulsing ring on the plant.');}else say('warn','Use the control named in the step. It is on the Control or Starter page.');}
+ else if(a==='where'){const wh=whereOf(it);if(wh)showMe(wh);else{const t=locate(it.t);if(t&&ring(t)){say('warn','Look at the pulsing ring on the plant.');}else say('warn','Use the control named in the step. It is on the Control or Starter page.');}}
  else if(a==='do'){if(!it.act){say('warn','This step is a wait or a check. Watch the plant until it is satisfied.');return;}let n=0;clearInterval(Coach.busy);Coach.busy=setInterval(()=>{const pp=readProc();if(!pp||++n>40){clearInterval(Coach.busy);return;}const o2=okOf(pp);const c2=o2.indexOf(false);if(c2<0||pp.items[c2].t!==it.t){clearInterval(Coach.busy);return;}try{pp.items[c2].act(.2);}catch(e){clearInterval(Coach.busy);}},200);say('warn','Coach did the step for you. It costs points.');}
  drawCoach();}
 
@@ -254,7 +301,7 @@ function openComp(){const w=win('comp',{title:'Companion',w:400,h:520,onShow:com
 
 /* ---------- lessons and quizzes ---------- */
 const Learn={L:store.get('learn',{}),view:'list',mod:null,quiz:null,role:G.get('role','cadet')};
-const LD=((DATA.learn||{})[PLANT])||{mods:[],quiz:[]};
+const LD=Object.assign({mods:[],quiz:[]},(DATA.learn||{})[PLANT]),QB=(DATA.quizBank||{})[PLANT],QN=7;if(QB&&QB.length)LD.quiz=QB; /* the bank: about 50 per system. Each quiz draws QN at random. */
 const keepL=()=>store.set('learn',Learn.L);
 /* a cold plant to practise on: the FWG and boiler pick it from the scenario list, the purifier from its Drills page */
 function loadCold(){const sel=$('scenario'),i=sel?[...sel.options].findIndex(o=>/cold/i.test(o.textContent)):-1;
@@ -263,10 +310,15 @@ function loadCold(){const sel=$('scenario'),i=sel?[...sel.options].findIndex(o=>
 function lessonOp(m){setMode('train',true);const ok=loadCold(),tb=m.op==='start'?$('tabStart'):null;if(tb)tb.click();openCoach();if(ok){Learn.L.op=Learn.L.op||{};Learn.L.op[m.id]=true;keepL();}
  toast(ok?'Cold start loaded. Follow the coach.':'Could not load the cold start here. Pick it from the scenarios.',{ms:4000,kind:ok?'':'warn'});}
 function quizQs(){const r=Learn.role,all=LD.quiz||[];return all.filter(x=>r==='cadet'?x.lv<=2:r==='engineer'?x.lv>=2:true);}
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+/* QN questions at random from the bank for this role. Questions seen in the last quizzes are left out until the bank runs low, and the options are shuffled each time. */
+function quizPick(){const pool=quizQs(),seen=new Set(Learn.L.seenQ||[]);let fresh=pool.filter(x=>!seen.has(x.q));if(fresh.length<QN){Learn.L.seenQ=[];fresh=pool.slice();}
+ const qs=shuf(fresh).slice(0,Math.min(QN,fresh.length)).map(x=>{const ix=shuf(x.o.map((t,i)=>i));return{lv:x.lv,q:x.q,why:x.why,o:ix.map(i=>x.o[i]),a:ix.indexOf(x.a)};});
+ const cap=Math.max(0,pool.length-QN),all=(Learn.L.seenQ||[]).concat(qs.map(x=>x.q));Learn.L.seenQ=cap?all.slice(Math.max(0,all.length-cap)):[];keepL();return qs;}
 function learnDraw(){const w=WIN.learn;if(!w||!w.isOpen())return;let h='';const th=Learn.L.th||{},op=Learn.L.op||{},best=(Learn.L.quiz||{}).best;
  const tabs='<div class="dkseg"><button type="button" data-act="lv" data-v="list" aria-pressed="'+(Learn.view==='list'||Learn.view==='mod')+'">Lessons</button><button type="button" data-act="lv" data-v="quiz" aria-pressed="'+(Learn.view==='quiz')+'">Quiz</button><button type="button" data-act="lv" data-v="prog" aria-pressed="'+(Learn.view==='prog')+'">Progress</button></div>';
  if(Learn.view==='mod'){const m=LD.mods.find(x=>x.id===Learn.mod);h=tabs+'<h4>'+esc(m.t)+'</h4><ul class="dkth">'+m.th.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul><div class="dkc-btns"><button type="button" data-act="thread" data-id="'+m.id+'">'+(th[m.id]?'Theory read ✓':'Mark theory read')+'</button>'+(m.op?'<button type="button" data-act="op" data-id="'+m.id+'">Practise: cold start with the coach</button>':'')+'<button type="button" data-act="drills">Drills and faults</button><button type="button" data-act="lv" data-v="list">Back</button></div>';}
- else if(Learn.view==='quiz'){const z=Learn.quiz;if(!z){const n=quizQs().length;h=tabs+'<p>Role: <b>'+Learn.role+'</b>. '+n+' questions. '+(best!=null?'Best score '+best+' %.':'')+'</p><div class="dkc-btns"><button type="button" data-act="qstart">Start quiz</button></div>';}
+ else if(Learn.view==='quiz'){const z=Learn.quiz;if(!z){const n=quizQs().length;h=tabs+'<p>Role: <b>'+Learn.role+'</b>. Each quiz asks '+Math.min(QN,n)+' questions chosen at random from a bank of '+n+'. '+(best!=null?'Best score '+best+' %.':'')+'</p><div class="dkc-btns"><button type="button" data-act="qstart">Start quiz</button></div>';}
   else if(z.i>=z.qs.length){const pc=Math.round(z.ok/z.qs.length*100);h=tabs+'<h4>Score '+z.ok+' of '+z.qs.length+' ('+pc+' %)</h4><div class="dkc-btns"><button type="button" data-act="qstart">Try again</button></div>';}
   else{const x=z.qs[z.i];h=tabs+'<small>Question '+(z.i+1)+' of '+z.qs.length+'</small><p class="dkqq">'+esc(x.q)+'</p>'+x.o.map((o,j)=>'<button type="button" class="dkopt'+(z.pick!=null?(j===x.a?' right':j===z.pick?' wrong':''):'')+'" data-act="qpick" data-j="'+j+'"'+(z.pick!=null?' disabled':'')+'>'+esc(o)+'</button>').join('')+(z.pick!=null?'<p class="dkwhy">'+esc(x.why)+'</p><div class="dkc-btns"><button type="button" data-act="qnext">'+(z.i+1<z.qs.length?'Next':'Finish')+'</button></div>':'');}}
  else if(Learn.view==='prog'){const runs=Learn.L.runs||[];h=tabs+'<p>Role <select class="dkin" data-act="role">'+['cadet','rating','engineer'].map(r=>'<option'+(Learn.role===r?' selected':'')+'>'+r+'</option>').join('')+'</select></p><p>Theory read: '+Object.keys(th).length+' of '+LD.mods.length+'. Practised: '+Object.keys(op).length+'. Best quiz: '+(best!=null?best+' %':'none')+'.</p><h5>Procedure runs</h5>'+(runs.length?'<table class="dkt"><tr><th>When</th><th>Run</th><th>Score</th></tr>'+runs.slice(0,12).map(r=>'<tr><td>'+new Date(r.t).toLocaleDateString()+'</td><td>'+esc(r.unit+' · '+r.proc)+'</td><td class="v">'+r.score+'</td></tr>').join('')+'</table>':'<p class="dkn">No runs yet. Practise a start with the coach.</p>')+'<div class="dkc-btns"><button type="button" data-act="lexp">Export my record</button></div>';}
@@ -294,7 +346,7 @@ function setDraw(){const w=WIN.set;if(!w||!w.isOpen())return;const tm=G.get('tie
  +'<h5>Layout</h5><p class="dkn">Screen: '+dev.cls+' · '+dev.orient+' · '+innerWidth+'×'+innerHeight+'. Layout in use: '+(window.WS_PHONE?'phone':'desktop')+'.</p><div class="dkseg"><button type="button" data-act="lay" data-v="phone">Phone layout</button><button type="button" data-act="lay" data-v="desktop">Desktop layout</button><button type="button" data-act="lay" data-v="auto">Auto</button></div>'
  +'<h5>Data</h5><div class="dkc-btns"><button type="button" data-act="clr">Clear saved companion data</button></div><p class="dkmeta">Diskarte companion layer '+VER+'</p>';}
 function openPanels(){const w=win('panels',{title:'Float a panel',w:300,h:320,auto:true,onShow:panelsDraw});w.show();panelsDraw();return w;}
-function panelsDraw(){const w=WIN.panels;if(!w||!w.isOpen())return;const L=FLOATABLE.filter(x=>q('.wsp.b_'+x[0]));w.body.innerHTML='<p class="dkn">Lift a panel onto the plant. Drag it by its title. Close it to put it back.</p>'+L.map(x=>'<button type="button" class="dkmod" data-act="float" data-k="'+x[0]+'" data-t="'+esc(x[1])+'"><span>'+esc(x[1])+'</span><i>'+(FLOAT[x[0]]?'●':'○')+'</i></button>').join('');}
+function panelsDraw(){const w=WIN.panels;if(!w||!w.isOpen())return;const L=FLOATABLE.filter(x=>q('.wsp.b_'+x[0])||FLOAT[x[0]]);w.body.innerHTML='<p class="dkn">Lift a panel onto the plant. Drag it by its title. Close it to put it back.</p>'+L.map(x=>'<button type="button" class="dkmod" data-act="float" data-k="'+x[0]+'" data-t="'+esc(x[1])+'" data-w="'+x[2]+'" data-h="'+x[3]+'"><span>'+esc(x[1])+'</span><i>'+(FLOAT[x[0]]?'●':'○')+'</i></button>').join('');}
 
 /* ---------- one click handler for every window ---------- */
 layer.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.tagName==='SELECT'||b.type==='checkbox')return;const a=b.dataset.act,go=window.__ws&&window.__ws.go;
@@ -318,7 +370,7 @@ layer.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b|
  else if(a==='thread'){Learn.L.th=Learn.L.th||{};Learn.L.th[b.dataset.id]=true;keepL();learnDraw();}
  else if(a==='op'){lessonOp(LD.mods.find(m=>m.id===b.dataset.id));learnDraw();}
  else if(a==='drills'){if(go)go('drill');}
- else if(a==='qstart'){const qs=quizQs().slice();for(let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]];}Learn.quiz={qs,i:0,ok:0,pick:null};Learn.view='quiz';learnDraw();}
+ else if(a==='qstart'){const qs=quizPick();Learn.quiz={qs,i:0,ok:0,pick:null};Learn.view='quiz';learnDraw();}
  else if(a==='qpick'){const z=Learn.quiz;if(z.pick!=null)return;z.pick=+b.dataset.j;if(z.pick===z.qs[z.i].a)z.ok++;learnDraw();}
  else if(a==='qnext'){const z=Learn.quiz;z.i++;z.pick=null;if(z.i>=z.qs.length){const pc=Math.round(z.ok/z.qs.length*100);Learn.L.quiz=Learn.L.quiz||{};Learn.L.quiz.best=Math.max(Learn.L.quiz.best||0,pc);Learn.L.quiz.last=pc;keepL();}learnDraw();}
  else if(a==='lexp')exportRecord();
@@ -326,7 +378,7 @@ layer.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b|
  else if(a==='tier'){G.set('tier.mode',b.dataset.v);if(b.dataset.v==='auto')setTier(tierStart(),'auto');else setTier(b.dataset.v,'user');G.set('tier.'+dev.cls,perf.tier);setDraw();}
  else if(a==='lay'){const p=new URLSearchParams(location.search);if(b.dataset.v==='auto')p.delete('layout');else p.set('layout',b.dataset.v);try{sessionStorage.removeItem('dk.lay.no');}catch(x){}location.search=p.toString();}
  else if(a==='clr'){try{Object.keys(localStorage).filter(k=>k.startsWith('dk.')).forEach(k=>localStorage.removeItem(k));}catch(x){}toast('Cleared. Reload to start fresh.',{ms:3000});}
- else if(a==='float'){floatPanel(b.dataset.k,b.dataset.t);panelsDraw();}});
+ else if(a==='float'){floatPanel(b.dataset.k,b.dataset.t,+b.dataset.w||0,+b.dataset.h||0);panelsDraw();}});
 layer.addEventListener('input',e=>{const t=e.target;if(t.classList.contains('dkin')&&t.dataset.k){const v=parseFloat(t.value);if(t.value===''||!Number.isFinite(v))delete Comp.boil[t.dataset.k];else Comp.boil[t.dataset.k]=v;store.set('boil',Comp.boil);compLive();}});
 layer.addEventListener('change',e=>{const t=e.target,a=t.dataset.act;if(a==='role'){Learn.role=t.value;G.set('role',t.value);}else if(a==='reduce'){G.set('reduce',t.checked);motion();}else if(a==='hud'){if(t.checked){perf.hud=el('div','dkhud');body.append(perf.hud);}else if(perf.hud){perf.hud.remove();perf.hud=null;}}});
 
@@ -335,7 +387,8 @@ const dock=el('div','dkDock');dock.id='dkDock';dock.innerHTML='<nav id="dkMenu" 
 const menu=$('dkMenu'),orb=$('dkOrb'),dpos=G.get('dock',{x:0,y:0});
 function setOrb(){const l=$('dkOrbL');if(l)l.textContent=Mode.v==='pro'?'PRO':'TRAIN';dock.dataset.m=Mode.v;}
 function menuItems(){return[['mode',Mode.v==='pro'?'Switch to Training':'Switch to Professional',()=>setMode(Mode.v==='pro'?'train':'pro')],
- ...(Mode.v==='train'?[['coach','Coach',openCoach]]:[]),['alarm','Alarm log',()=>openAlarms()],['comp','Companion',openComp],['learn','Learn',openLearn],['panels','Float a panel',openPanels],['safety','Safety',openSafety],['fid','Fidelity',openFid],['gear','Settings',openSet]];}
+ ...(Mode.v==='train'?[['coach','Coach',openCoach]]:[]),['ctl',PLANT==='pur'?'Control unit + starters':PLANT==='boiler'?'HMI + local panel':'Control panel + controls',()=>floatSet(PLANT==='pur'?['cp','starter']:PLANT==='boiler'?['hmi','door']:['door','controls'])],
+ ['reading','Actual reading + result',()=>floatSet(PLANT==='fwg'?['act','calc','dx']:['act','dx'])],['alarm','Alarm log',()=>openAlarms()],['comp','Companion',openComp],['learn','Learn',openLearn],['panels','Float a panel',openPanels],['safety','Safety',openSafety],['fid','Fidelity',openFid],['gear','Settings',openSet]];}
 function menuDraw(){menu.innerHTML=menuItems().map((m,i)=>'<button type="button" role="menuitem" data-i="'+i+'">'+ico(m[0])+'<span>'+esc(m[1])+'</span></button>').join('');}
 function menuOpen(v){menu.hidden=!v;orb.setAttribute('aria-expanded',v);dock.classList.toggle('open',v);if(v){menuDraw();const r=dock.getBoundingClientRect();dock.dataset.up=r.top>VH()/2?'1':'0';dock.dataset.left=r.left>VW()/2?'1':'0';}}
 menu.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const m=menuItems()[+b.dataset.i];menuOpen(false);if(m)m[2]();});
@@ -365,5 +418,5 @@ if(Q.get('perf')==='1'){perf.hud=el('div','dkhud');body.append(perf.hud);}
 welcome();
 if(Mode.v==='train'&&G.get('welcome',0)>=1&&dev.cls!=='phone'&&Q.get('dk')!=='quiet'&&store.get('coachOpen',false))openCoach();
 bus.on('win',e=>{if(e.id==='coach')store.set('coachOpen',e.open);});
-window.DK={ver:VER,plant:PLANT,dev,perf,Mode,Coach,AlR,Comp,Learn,WIN,bus,store,win,toast,setMode,setTier,openCoach,openAlarms,openComp,openLearn,openSafety,openFid,openSet,openPanels,floatPanel,readProc,okOf,coachTick,alarmTick,boilerDx,compData,kb,locate,menuOpen,data:DATA};
+window.DK={ver:VER,plant:PLANT,dev,perf,Mode,Coach,AlR,Comp,Learn,WIN,bus,store,win,toast,setMode,setTier,openCoach,openAlarms,openComp,openLearn,openSafety,openFid,openSet,openPanels,floatPanel,floatSet,FLOAT,whereOf,findTarget,showMe,quizPick,quizQs,readProc,okOf,coachTick,alarmTick,boilerDx,compData,kb,locate,menuOpen,data:DATA};
 })();
