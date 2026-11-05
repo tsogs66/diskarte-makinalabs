@@ -3,14 +3,26 @@
 const par=(k,d)=>{u.par=u.par||{};return u.par[k]??d;};
 const wired=(g,st)=>({g,s:st});
 const limW=k=>wired(()=>u.lim[k],v=>{u.lim[k]=v;});
-const LP=()=>[
+const LP_S826=()=>[
  ['Pr 1','Time to discharge',120,1,300,1,'min',wired(()=>u.iv,v=>{u.iv=v;syncSet();})],['Pr 2','Oil type','HF380'],['Pr 3','Control location','OPloc'],
  ['Pr 4','Alcap 1 On, 0 Stb.',1,0,1,1,'',wired(()=>u.pr4,v=>{u.pr4=v;if($('pr4'))$('pr4').checked=!v;})],['Pr 5','Service timer x1000 h',0,0,10,.1,''],['Pr 6','Type of service',0,0,9,1,''],['Pr 7','Info keys, 1 timers',0,0,2,1,''],
  ['Pr 10','High oil pressure',3,0,6,.1,'bar',limW('hiO')],['Pr 11','Low oil pressure',1,0,6,.1,'bar',limW('loO')],['Pr 12','High water pressure',5.5,0,6,.1,'bar'],['Pr 13','Low water pressure',.2,0,6,.1,'bar',limW('loW')],
  ['Pr 14','High feed pressure',3,0,6,.1,'bar',limW('hiF')],['Pr 15','Low feed pressure',.2,0,6,.05,'bar'],['Pr 16','HFO high temp limit',105,0,115,1,'C',limW('hiT')],['Pr 17','HFO low temp limit',85,0,115,1,'C',limW('loT')],
  ['Pr 18','HFO temp setpoint',95,0,110,1,'C',wired(()=>u.Ts,v=>{u.Ts=v;syncSet();})],['Pr 19','DO high temp limit',40,0,115,1,'C'],['Pr 20','DO low temp limit',20,0,115,1,'C'],['Pr 21','DO temp setpoint',30,0,110,1,'C'],
  ['Pr 22','P-constant',40,10,500,1,'%'],['Pr 23','I-constant',1.2,.1,10,.1,'min'],['Pr 24','Heater location',0,0,9,1,''],['Pr 25','Sludge tank delay',2,0,240,1,'s'],['Pr 40','Test sludge in bowl',60,0,100,1,'dis'],['Pr 41','Max less displ. water',15,0,100,1,'%']];
-const LI=()=>[['In 1','Language','en'],['In 3','Separator type','Alcap'],['In 4','Separator size','826'],['In 5','Separator identity',1,1,9,1,''],['In 17','C or F','C'],['In 18','Heater type','Steam'],['In 20','Steam valve run time',120,0,999,1,'s'],['In 22','Alarm delay time',15,0,30,1,'s'],['In 23','V1 temp alarm delay',15,0,240,1,'s'],['In 24','V1 action, extra alarm','No'],['In 31','Feed pump controlled','No'],['In 32','Flow display unit','m3/h']];
+/* P605 under an EPC 50 panel: gravity disc, no Alcap transducer, so the Alcap-only rows (Pr 4, Pr 40, Pr 41, water pressure limits) drop out and a gravity-disc relief row (RV1) takes their place. */
+const LP_P605=()=>[
+ ['Pr 1','Time to discharge',30,1,120,1,'min',wired(()=>u.iv,v=>{u.iv=v;syncSet();})],['Pr 2','Oil type','HF380'],['Pr 3','Control location','OPloc'],
+ ['Pr 5','Service timer x1000 h',0,0,10,.1,''],['Pr 6','Type of service',0,0,9,1,''],['Pr 7','Info keys, 1 timers',0,0,2,1,''],
+ ['Pr 9','Gravity disc, RV1 open',50,0,100,1,'%',wired(()=>u.rv,v=>{u.rv=v;})],
+ ['Pr 10','High oil pressure',3,0,6,.1,'bar',limW('hiO')],['Pr 11','Low oil pressure',1,0,6,.1,'bar',limW('loO')],
+ ['Pr 14','High feed pressure',3,0,6,.1,'bar',limW('hiF')],['Pr 15','Low feed pressure',.2,0,6,.05,'bar'],['Pr 16','HFO high temp limit',105,0,115,1,'C',limW('hiT')],['Pr 17','HFO low temp limit',85,0,115,1,'C',limW('loT')],
+ ['Pr 18','HFO temp setpoint',95,0,110,1,'C',wired(()=>u.Ts,v=>{u.Ts=v;syncSet();})],
+ ['Pr 22','P-constant',40,10,500,1,'%'],['Pr 23','I-constant',1.2,.1,10,.1,'min'],['Pr 24','Heater location',0,0,9,1,'']];
+const LP=()=>M.id==='p605'?LP_P605():LP_S826();
+const LI_S826=()=>[['In 1','Language','en'],['In 3','Separator type','Alcap'],['In 4','Separator size','826'],['In 5','Separator identity',1,1,9,1,''],['In 17','C or F','C'],['In 18','Heater type','Steam'],['In 20','Steam valve run time',120,0,999,1,'s'],['In 22','Alarm delay time',15,0,30,1,'s'],['In 23','V1 temp alarm delay',15,0,240,1,'s'],['In 24','V1 action, extra alarm','No'],['In 31','Feed pump controlled','No'],['In 32','Flow display unit','m3/h']];
+const LI_P605=()=>[['In 1','Language','en'],['In 3','Separator type','Gravity disc'],['In 4','Separator size','605'],['In 5','Separator identity',1,1,9,1,''],['In 17','C or F','C'],['In 18','Heater type','Steam'],['In 20','Steam valve run time',120,0,999,1,'s'],['In 22','Alarm delay time',15,0,30,1,'s'],['In 32','Flow display unit','m3/h']];
+const LI=()=>M.id==='p605'?LI_P605():LI_S826();
 const tiW=(lab)=>wired(()=>{const r=Object.values(M.scr).flat().find(x=>x[0].startsWith(lab+' '));return r?r[1]:null;},v=>{for(const r of Object.values(M.scr).flat())if(r[0].startsWith(lab+' '))r[1]=v;});
 const LF=()=>[['Fa 3','Conditioning water',.16,.1,99,.01,'L'],['Fa 6','PT4 bowl filled rise',.2,0,9.9,.1,'bar'],['Fa 10','High speed',13300,0,14000,100,'rpm'],['Fa 11','Low speed',11000,0,14000,100,'rpm'],['Fa 12','Speed drop, discharge',300,0,2000,10,'rpm'],
  ['Fa 21','Trigger limit HFO',100,0,250,1,'%'],['Fa 25','Drain pulse time',25,0,250,1,'s'],['Fa 26','Drain pause',5,0,30,1,'s'],['Fa 27','Stop draining below',70,0,100,1,'%'],['Fa 28','Limit HFO drainings',5,0,20,1,''],

@@ -19,7 +19,7 @@ const MODELS={
    ref:[['Ti 62 Close bowl, SV16',15,{close:1}],['Ti 63 Conditioning water, SV10',11,{seal:1}],['Ti 64 Oil feed on, V1',60,{feed:1}],['Ti 65 Transducer test',15,{feed:1}],['Ti 66 Bowl leak test, V4 shut',10,{v4x:1}],['Ti 67 Transducer reference',60,{feed:1}]],
    dis:[['Ti 70 Oil feed off',15,{}],['Ti 71 Displacement of oil, V4 and SV10',20,{seal:1,v4x:1}],['Ti 72 Displacement water, SV10',40,{seal:1}],['Ti 73 Drain valve open, V5',10,{drain:1}],['Ti 74 Discharge, SV15',3,{open:1}],['Ti 75 Pause, discharge feedback',15,{}]],
    stop:[['Ti 81 Close bowl, SV16',15,{close:1}],['Ti 82 Water to 80 % bowl, V4 and SV10',150,{seal:1,v4x:1}],['Ti 83 Drain valve open, V5',10,{drain:1}]]}},
- p605:{id:'p605',tab:'P 605',name:'Alfa Laval P 605',ctrl:'EPC 60',alcap:false,Q380:900,Qpump:1300,Qmax:2200,rpmR:9512,kW:2.2,fla:4.8,
+ p605:{id:'p605',tab:'P 605',name:'Alfa Laval P 605',ctrl:'EPC 50',alcap:false,Q380:900,Qpump:1300,Qmax:2200,rpmR:9512,kW:2.2,fla:4.8,
   tRun:170,tStop:840,tBrake:210,Vb:1.5,Rb:99,R0:30,ro:22,riT:75,riMin:67,riMax:92,kq:23,discs:[50.5,52,54,57,61,66,73],Vsm:.6,Vdis:1,Qseal:8,Qopen:18,Qclose:.9,heat:24,Pb:1.5,P1:.25,Pmax:2.5,
   iv:30,ivMin:2,ivMax:60,vibW:7,vibS:9,dip:.04,tCl:30,mk:15,mkT:2,Pw:[1.5,6],Pa:[5,8],rhoMax:991,trig:.5,
   tag:{feed:'V1',seal:'206',open:'372',close:'373',airFeed:'SV1',flow:'RV4',back:'RV1',pIn:'PT1',pOut:'PT4',tt:'TT1'},
@@ -42,6 +42,12 @@ MODELS.sj30gh=Object.assign({},MODELS.sj30g,{kW:7.5,fla:12.7,id:'sj30gh',tab:'SJ
   dis:[['Feed to bypass, replacement water SV3',12,{seal:1}],['Interval',15,{}],['Opening bowl, SV1',3,{open:1}],['Interval',15,{}],['Closing water, SV2',5,{close:1}],['Interval',15,{}],['Sealing water, SV3',4,{seal:1}]],
   disS:[['Feed to bypass, replacement water SV3',12,{seal:1}],['Interval',15,{}],['Opening bowl, SV1',3,{open:1}],['Interval',15,{}]],
   par:[['Feed valve closed, SV4',5,{}],['Closing water, SV2',5,{close:1}],['Replacement water, partial, SV3',5,{seal:1}],['Partial discharge, SV9',.6,{par:1}],['Closing water, SV2',5,{close:1}]]}});
+/* Flex P605 / P626: P 605 bowl principle on the Flex platform (P 626 leaflet): EPC 60, CentriShoot discharge, no operating water tank. One water block feeds conditioning C1 (SV10), opening C2 (SV15) and closing C3 (SV16) straight from the 2 to 8 bar line.
+   Seal and displacement times follow P 605 manual 8.3.1, opening and closing follow the Flex S sequence on the same water block. Bowl figures are the P 605 ones until a P 626 manual is to hand. */
+MODELS.p626=Object.assign({},MODELS.p605,{id:'p626',tab:'Flex P605/P626',name:'Alfa Laval Flex P605 / P626',ctrl:'EPC 60',notank:true,Qclose:2.8,Qopen:11,tCl:12,Pw:[2,8],Pa:[5,8],
+ tag:{feed:'V1',seal:'SV10',open:'SV15',close:'SV16',airFeed:'SV1',flow:'RV4',back:'RV1',pIn:'PT1',pOut:'PT4',tt:'TT1'},
+ scr:{start:[['Discharge, SV15 (C2)',3,{open:1}],['Pause, draining',15,{}],['Close bowl, SV16 (C3)',15,{close:1}],['Water seal, SV10 (C1)',12,{seal:1}]],
+  dis:[['Feed off, displacement water SV10 (C1)',8,{seal:1}],['Bowl opening, SV15 (C2)',3,{open:1}],['Pause, discharge feedback',5,{}],['Close bowl, SV16 (C3)',15,{close:1}],['Water seal, SV10 (C1)',12,{seal:1}]]}});
 /* maker's treating capacity: Selfjector Table 3-1, SJ30G column, against viscosity at treating temperature. Other units scale by Q380. */
 const CAP=[[3,12000],[14,7800],[23.8,4500],[38.1,3200],[45.1,2550],[50.6,2250],[55.6,2050],[120,900]];
 
@@ -78,6 +84,8 @@ function coldState(M){return {t:0,ph:M.attached?'off':'standst',msg:'',q:0,rpm:0
  tSince:0,tMk:0,tBusy:0,nDis:0,nDrain:0,tDrain:0,drainHold:0,foul:0,hard:0,seal:0,brk:0,Pout:0,Pin:0,Pwo:0,Pa:0,Pw:0,vib:0,amps:0,mtW:0,wOut:0,Qo:0,duty:0,v1:0,tStart:0,nores:0,sludgeT:20,sludgeL:0,slBack:0,loss:0,lossD:0,waste:0,oilIn:0,cAlSi:10,cW:.05,cNa:20,fb:0,dipT:0,alarm:{},tAl30:0,mem:0,lmT:0,lmHold:0,ndT:0,pendDis:0,estop:0,heaterOn:0,lvS:.75,lvD:.6,xfer:0,Pwd:0,tPar:0,nFast:0,parP:0,nPar:0,pumpOffT:0,asked:0,dnPT4:0,d:{}};}
 
 /* quality and hydraulics at this instant, used by step and by the actual plant comparison */
+/* a wrong disc fitted: the next size up or down from the one chosen */
+function discNow(M,d,f){const L=M.discs;if(!L||!(f.discBig||f.discSmall))return d;const i=Math.max(0,L.indexOf(d)),j=f.discBig?Math.min(L.length-1,i+2):Math.max(0,i-2);return L[j];}
 function perf(s,u,f,M,over){
  const cl=CL(M),o=over||{},fl=Object.assign({},u.fuel,o.fuel||{}),T=o.T??s.T,Q=o.Q??s.Q,rpm=o.rpm??s.rpm;
  const rO=rhoOil(fl.rho,T),seaW=fl.sea?1025-0.5*(T-15):rhoWater(T),nu=viscAt(fl,T);
@@ -86,7 +94,7 @@ function perf(s,u,f,M,over){
  const dc=6*Math.sqrt(Math.max(load,.02)/sigma*(1500/(2400-rO)));
  const dcW=dc*Math.sqrt(1500/Math.max(4,Math.abs(seaW-rO)));
  /* interface */
- let ri=cl?Math.sqrt(Math.max(0,M.Rb*M.Rb-clamp((s.Vw+Vs)/M.Vb)*(M.Rb*M.Rb-M.R0*M.R0))):interfaceR(M,o.disc??u.disc,rO,seaW,Q,nu);
+ let ri=cl?Math.sqrt(Math.max(0,M.Rb*M.Rb-clamp((s.Vw+Vs)/M.Vb)*(M.Rb*M.Rb-M.R0*M.R0))):interfaceR(M,discNow(M,o.disc??u.disc,f),rO,seaW,Q,nu);
  const Pmax=Math.max(.4*M.Pmax,M.Pmax-(M.Pmax*.15)*load*load*Math.pow(nu/37.5,.3));
  const em=clamp((fl.fame||0)/100*.9+(fl.ulo||0)*.5+(fl.stab>=3?.1:0));
  const we=(fl.water||0)+(u.wash||0),etaW=(1-Math.exp(-Math.pow(70/dcW,2)))*(1-em*.5);
@@ -194,7 +202,7 @@ function step(s,u,f,M,dt){
  if(f.ttFail)s.T=Math.min(s.T,130);
  /* bowl */
  const wf=(l)=>l/60*wFlow; /* L/s */
- const qSeal=s.sv.seal?wf(M.Qseal):0,qClose=s.sv.close?wf(M.Qclose):0,qOpen=s.sv.open?wf(M.Qopen):0;
+ const qSeal=s.sv.seal&&!f.sealNo?wf(M.Qseal)*(f.dispShort&&s.sc&&s.sc.n==='dis'?.1:1):0,qClose=s.sv.close?wf(M.Qclose):0,qOpen=s.sv.open?wf(M.Qopen):0;
  const spinning=s.rpm>.6;
  if(spinning){
   if(qClose>0&&!f.sv16)s.c=clamp(s.c+qClose/M.Qclose*60/M.tCl*dt);
@@ -210,7 +218,7 @@ function step(s,u,f,M,dt){
  const Qact=u.act&&u.act.Q!=null?u.act.Q:s.Q;
  const flowIn=(v1&&spinning)?Qact/3600:0; /* L/s to bowl */
  s.toBowl=flowIn*3600;
- let oilOutW=0,leakS=0;
+ let oilOutW=0,leakS=0,dispO=0;
  const need=cl?M.Scap||.7:needW(M,Math.min(p.ri,M.Rb),s.Vs);s.needW=need;
  if(s.closed){
   /* solids and water arrive with the oil */
@@ -226,12 +234,14 @@ function step(s,u,f,M,dt){
    if(drainV){const dq=Math.min(s.Vw,M.qDrain/3600*dt);s.Vw-=dq;s.sludgeL+=dq;s.waste+=dq;}
   }else if(M.hid){if(s.sv.par&&!s.parP&&wFlow>.5)partial(s,M);
   }else{
-   const tgt=flowIn>0?need:Math.max(need,room*.97);
+   /* displacement: with the feed off and 206 open the water goes on filling until all the oil is pushed out to the paring disc */
+   const dsp=!flowIn&&s.sv.seal&&s.sc&&s.sc.n==='dis',tgt=flowIn>0?need:dsp?room:Math.max(need,room*.97);
    if(s.Vw>tgt){const dq=(s.Vw-tgt)*clamp(dt/2);s.Vw-=dq;s.sludgeL+=dq;s.waste+=dq;}
   }
-  s.Vw=Math.min(s.Vw,room);
+  const o0=s.Voil;s.Vw=Math.min(s.Vw,room);
   s.Voil=Math.max(0,room-s.Vw)*(flowIn>0||s.Voil>0?1:0);
   if(flowIn>0&&s.Voil<room-s.Vw)s.Voil=room-s.Vw;
+  if(!flowIn&&s.Voil<o0)dispO=(o0-s.Voil)/dt;
   /* broken seal: oil over the gravity disc */
   const pb=(s.Pout||0),pmx=cl?M.Pmax:p.Pmax;const over=pb>pmx?clamp((pb-pmx)/.6):0;
   const leak=flowIn>0?Math.max(p.brk,over,!p.sealOK&&!cl?.9:0,f.sealRing?.3:0):0;s.brk=leak;
@@ -250,7 +260,7 @@ function step(s,u,f,M,dt){
  if(s.Vs>1.5*M.Vsm)s.hard=Math.max(s.hard,.6);
  s.foul=clamp(s.foul+dt*flowIn*3600/M.Q380*(p.fl.stab>=3?4e-6*p.fl.stab:2.5e-7)*(p.dust>.3?5:1));
  /* streams */
- const Qo=Math.max(0,(flowIn-oilOutW)*3600*(1-p.we/100));s.Qo=Qo;
+ const Qo=Math.max(0,(flowIn-oilOutW)*3600*(1-p.we/100)+dispO*3600);s.Qo=Qo;
  const Pdn=.3+(u.out?0:6)+(s.sv.v4x?1.2:0);
  const Kb=(M.Pb-.3)*.25;
  const Pact=spinning?Pdn+(Kb*Math.pow(Qo/M.Q380,2)/Math.pow(clamp(u.rv/100,.04,1),2)*(1+.0015*(p.nu-37.5))):0;
@@ -271,7 +281,7 @@ function step(s,u,f,M,dt){
  if(s.slp&&u.slv)s.sludgeL=Math.max(0,s.sludgeL-dt*(f.slpFail?0:.08));s.slPrev=s.sludgeL;
  /* multi monitor leakage logic */
  if(flowIn>0&&s.ph==='sep'){s.lmT+=dt;if(s.lmT>30&&s.lmT<31)s.mem=s.Pout;}else{s.lmT=0;s.lmHold=0;}
- s.mtW=showW;
+ s.mtW=f.mtFail?0:showW;s.mtFl=!!f.mtFail;
  const ampsRun=.55+.13*s.Q/M.Q380+(s.closed?0:.1)+(f.bearing?.1:0);
  s.amps=!s.motor&&s.rpm>0?0:s.motor?M.fla*(s.rpm<.98?1.15-.25*s.rpm:ampsRun)+(s.dipT>0?M.fla*.3:0):0;
  const crit=4.5*Math.exp(-Math.pow((s.rpm-.33)/.05,2))*(s.rpm>.05?1:0);
@@ -302,7 +312,7 @@ function alarmRows(M){const A=!M.attached;const run=s=>s.ph==='sep';
  ['foulS','Sludge space full',1,(s)=>s.Vs>1.05*M.Vsm]];
  if(!A)rows.push(['hidens','03 Hidens alarm (HI-AL)',2,M.hid?(s,u)=>s.nFast>=3||(s.rpm>.9&&s.Q>0&&u.fuel.rho>M.rhoMax):(s,u)=>s.rpm>.9&&s.Q>0&&(s.wOut>.6||u.fuel.rho>M.rhoMax)]);
  if(M.alcap)rows.push(['feedH','Feed pressure PT1 - HIGH',1,(s,u)=>run(s)&&s.Pin>u.lim.hiF]);
- if(M.alcap)rows.push(['tHi','Transducer value - HIGH',1,(s)=>run(s)&&s.mtW>1.2],
+ if(M.alcap)rows.push(['tHi','Transducer value - HIGH',1,(s)=>run(s)&&s.mtW>1.2],['tFail','Water transducer - FAILURE',1,(s)=>run(s)&&!!s.mtFl],
   ['dinsuf','Water drain - INSUFFICIENT',1,(s)=>s.nDrain>=5&&s.mtW>=.7*M.trig],
   ['ldf','LO DRAINING FREQUENTLY',1,(s)=>s.nDrain>=6&&s.tSince<15*60],
   ['pt5','Pressure in water outlet PT5 - LOW',1,(s,u)=>run(s)&&!s.sv.drain&&s.Pwo<u.lim.loW&&s.tSince>120],

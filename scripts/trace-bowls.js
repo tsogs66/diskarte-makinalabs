@@ -22,9 +22,9 @@ const line=p=>trace(p.width,p.height,i=>{const c=px(p,i);return inked(c)&&dark(c
 const solid=p=>trace(p.width,p.height,i=>inked(px(p,i)),{turd:6,tol:.5});
 const mask=(n)=>{const p=rd(n);return trace(p.width,p.height,i=>px(p,i)[0]>127,{turd:6,tol:.5,alpha:.8});};
 (async()=>{const A={};
- for(const[x,col]of[['s',0],['p',0],['j',1]]){const b=rd(`bowl-${x}-base`),sl=rd(`bowl-${x}-slide`),a={line:await line(b),slideLine:await line(sl)};
+ for(const[x,col]of[['s',1],['p',1],['j',1]]){const b=rd(`bowl-${x}-base`),sl=rd(`bowl-${x}-slide`),a={line:await line(b),slideLine:await line(sl)};
   a.fill=col?await layers(b,10):[];
-  a.slideFill=col?await layers(sl,6):[['#fff',await solid(sl)]];
+  a.slideFill=x!=='s'?await layers(sl,6):[['#fff',await solid(sl)]];
   a.clip={main:await mask(`bowl-${x}-m-main`),hood:await mask(`bowl-${x}-m-hood`),clean:await mask(`bowl-${x}-m-clean`),feed:await mask(`bowl-${x}-m-feed`)};
   if(x==='p')a.clip.tank=await mask('bowl-p-m-tank');
   if(x==='j'){for(const k of['pl','pr']){const q=rd(`bowl-j-${k}`);a[k]={fill:await layers(q,4),line:await line(q)};}}

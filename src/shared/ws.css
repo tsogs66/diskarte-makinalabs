@@ -22,7 +22,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 .view{position:absolute;inset:0;display:grid;gap:10px;padding:10px;visibility:hidden;opacity:0;transform:translateY(8px) scale(.994);transition:opacity .2s,transform .22s cubic-bezier(.2,.8,.3,1);min-height:0}
 .view.on{visibility:visible;opacity:1;transform:none}
 .view>*{min-width:0;min-height:0}
-.view[data-l=plant]{grid-template-columns:minmax(0,1fr) minmax(460px,44%);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"m c" "m g"}.b_mimic{grid-area:m}.b_cp,.b_door{grid-area:c}.b_gauges{grid-area:g}
+.view[data-l=plant]{grid-template-columns:minmax(0,1fr) minmax(460px,44%);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"m c" "m g"}.view[data-l=plant] .b_mimic{grid-area:m}.view[data-l=plant] .b_cp,.view[data-l=plant] .b_door{grid-area:c}.view[data-l=plant] .b_gauges{grid-area:g}
 .view[data-l=oper]{grid-template-columns:minmax(0,2.5fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 .view[data-l=c1]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 .view[data-l=c2]{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}

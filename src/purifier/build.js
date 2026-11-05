@@ -12,7 +12,7 @@ const head=`<title>Oil Purifier Simulator</title>
 ${rd('extra.css')}
 ${SH('polish.css')}</style>
 `;
-const js=rd('model.js').replace(/if\(typeof module[^\n]*\n/,'')+rd('data.js')+rd('kit.js')+rd('ui1.js')+rd('mimic2.js')+rd('mimic3.js')+rd('bowlart.js')+rd('bowl3.js')+rd('mimic4.js')+rd('bowl2.js')+rd('ui2.js')+rd('ui3.js')+rd('faces.js')+rd('panels.js')+rd('epc50menu.js')+SH('chrome.js')+'addEventListener("DOMContentLoaded",()=>0);\nchrome('+JSON.stringify(SH('info-purifier.html'))+',"pur");\n'+rd('ui4.js');
+const js=rd('model.js').replace(/if\(typeof module[^\n]*\n/,'')+rd('data.js')+rd('kit.js')+rd('ui1.js')+rd('mimic2.js')+SH('sym3d.js')+rd('mimic3.js')+rd('bowlart.js')+rd('bowlimg.js')+rd('bowl3.js')+rd('mimic4.js')+rd('iso.js')+rd('bowl2.js')+rd('ui2.js')+rd('ui3.js')+rd('faces.js')+rd('panels.js')+rd('epc50menu.js')+SH('chrome.js')+'addEventListener("DOMContentLoaded",()=>0);\nchrome('+JSON.stringify(SH('info-purifier.html'))+',"pur");\n'+rd('ui4.js');
 new Function(js);
 const html=head+rd('body.html')+'<script>\n'+js+'</script>\n';
 const out='C:/Users/ts0gs/project-mind/vault/projects/upaw/purifier-simulator.html';

@@ -10,7 +10,7 @@
   --enamel:#d3d7d0;--enamel-2:#e3e6df;--enamel-3:#c2c7bf;--paper:#f2f3ee;
   --ink:#1b2321;--ink-2:#4b5652;--ink-3:#6d7873;--line:#9aa49d;
   --screen:#111a1b;--screen-2:#1e2a2b;--screen-ink:#dfe8e2;--screen-dim:#7f918b;
-  --sw:#1d8458;--jw:#c4502a;--dist:#1f6db5;--brine:#6b5b95;--air:#7c8791;
+  --sw:#1ca468;--jw:#e0582a;--dist:#1877d4;--brine:#8166c9;--air:#8294a0;
   --good:#1c8446;--warn:#c98a00;--bad:#c4211f;--led:#54e08c;
   --disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"Barlow","Segoe UI",Arial,sans-serif;
@@ -68,8 +68,10 @@ a.tbtn{text-decoration:none;display:inline-block}
 .mimic svg{display:block;width:100%;min-width:760px;height:auto}
 .mimic text{font-family:var(--disp);font-size:13px;fill:var(--ink);font-weight:600}
 .mimic text.small{font-size:11px;fill:var(--ink-2);font-weight:500}
-.mimic text.tagv{font-family:var(--mono);font-size:13px;fill:var(--led);font-weight:400}
+.mimic text.tagv{font-family:var(--mono);font-size:13px;fill:var(--led);font-weight:400;paint-order:stroke;stroke:#063018;stroke-width:2.5;filter:drop-shadow(0 0 2.5px rgba(84,224,140,.6))}
 .mimic text.tagl{font-size:10.5px;fill:var(--ink-2);font-weight:600;letter-spacing:.02em}
+.mimic svg{shape-rendering:geometricPrecision}
+.mimic .vlv,.mimic .pmp,.mimic .dosebox{filter:drop-shadow(0 2px 2px rgba(10,20,20,.3))}
 .vlv{cursor:pointer}
 .vlv path{stroke:var(--ink);stroke-width:1.2}
 .vlv text{font-family:var(--mono);font-size:11px;font-weight:400}
@@ -1058,7 +1060,7 @@ const LAY={
    ['Qf',495,438,'Feed m³/h',4],['Tf',495,468,'Feed °C',4],['Qb',705,514,'Brine m³/h',4],['Sb',630,514,'Brine ppm',5],['Tji',170,288,'JW in °C',5],['Tjo',170,380,'JW out °C',5],['Qj',370,333,'JW FWG m³/h',3],
    ['Qd',400,170,'Dist m³/h',4],['Pd',268,122,'Dist bar',4],['Td',400,205,'Dist °C',4],['Out',275,30,'Output t/day',4],['Sal',205,196,'Salinity ppm',4]],
   clip:'M560 40 H690 Q800 50 800 270 Q800 490 690 500 H560 Z',
-  vessel:()=>`<path d="M560 40 H690 Q800 50 800 270 Q800 490 690 500 H560 Z" fill="#eef1ec" stroke="var(--ink)" stroke-width="2.5"/>
+  vessel:()=>`<path d="M560 40 H690 Q800 50 800 270 Q800 490 690 500 H560 Z" fill="url(#mBody)" stroke="var(--ink)" stroke-width="2.5"/>
    <rect x="562" y="124" width="128" height="104" fill="#dcecdf" stroke="var(--sw)"/>
    <rect x="562" y="300" width="128" height="94" fill="#f5e1d7" stroke="var(--jw)"/>
    <rect id="evapLvl" x="563" y="393" width="126" height="0" fill="#2f9e77" fill-opacity=".55"/>
@@ -1097,7 +1099,7 @@ const LAY={
    <text x="530" y="402" text-anchor="middle" style="paint-order:stroke;stroke:#efc4b4;stroke-width:8px">Evaporation (red)</text>`,
   over:()=>`<text x="530" y="225" text-anchor="middle" class="small" style="${HALO}">Separation (grey), one plate pair</text>
    <circle cx="445" cy="100" r="5" fill="#fff" stroke="var(--ink)"/><circle cx="615" cy="130" r="5" fill="#fff" stroke="var(--ink)"/><circle cx="445" cy="377" r="5" fill="#fff" stroke="var(--ink)"/><circle cx="445" cy="437" r="5" fill="#fff" stroke="var(--ink)"/><circle cx="445" cy="488" r="5" fill="#fff" stroke="var(--ink)"/><circle cx="462" cy="498" r="5" fill="#fff" stroke="var(--ink)"/>`,
-  well:{svg:'<path d="M468 158 H592 L530 212 Z" fill="#fff" stroke="var(--ink-2)" stroke-width="1.5"/>',clip:'<path d="M469 159 H591 L530 211 Z"/>',x:469,w:122,b:211,h:52,tx:530,ty:176},
+  well:{svg:'<path d="M468 158 H592 L530 212 Z" fill="url(#mBody)" stroke="var(--ink-2)" stroke-width="1.5"/>',clip:'<path d="M469 159 H591 L530 211 Z"/>',x:469,w:122,b:211,h:52,tx:530,ty:176},
   sump:{x:431,w:198,b:511,h:44},info:[530,258],lamps:[474,332],dem:{y:236,lbl:[530,240],band:[432,226,196,18]},
   vap:[{p:[[470,328],[452,262],[452,190],[482,140],[500,100]],jx:12,jy:0},{p:[[590,328],[608,262],[608,190],[578,140],[560,100]],jx:12,jy:0}],vapEnd:0.72,bub:[440,620,336,466],rain:[440,620,468],cond:[486,574,64,150]},
 
@@ -1112,7 +1114,7 @@ const LAY={
    ['Qf',656,356,'Feed m³/h',4],['Tf',656,392,'Feed °C',4],['Qb',592,528,'Brine m³/h',4],['Sb',656,528,'Brine ppm',5],['Tji',175,230,'JW in °C',5],['Tjo',175,328,'JW out °C',5],['Qj',175,362,'JW FWG m³/h',3],
    ['Qd',592,405,'Dist m³/h',4],['Pd',420,396,'Dist bar',4],['Td',270,402,'',0],['Out',75,500,'Output t/day',4],['Sal',350,466,'Salinity ppm',4]],
   clip:'M240 40 H560 V345 H240 Z',
-  vessel:()=>`<rect x="240" y="40" width="320" height="305" rx="6" fill="#eef1ec" stroke="var(--ink)" stroke-width="2.5"/>
+  vessel:()=>`<rect x="240" y="40" width="320" height="305" rx="6" fill="url(#mBody)" stroke="var(--ink)" stroke-width="2.5"/>
    ${tubeSheet('tsC',420,58,130,76,'var(--sw)','#dcecdf')}
    <text x="485" y="100" text-anchor="middle" style="${HALO}">Condenser</text>
    <path d="M248 108 q6 -6 12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0" fill="none" stroke="#3bb8c4" stroke-width="2.5"/>
@@ -1124,7 +1126,7 @@ const LAY={
    <path id="ovfl" d="M396 220 Q403 215 408 222 V343" fill="none" stroke="var(--brine)" stroke-width="3" stroke-linecap="round" opacity="0"/>
    <text x="470" y="292" text-anchor="middle" class="small" style="${HALO}">Brine</text>
    <path d="M275 40 V22 M267 22 h16 l-8 -12 z" stroke="var(--ink)" fill="#fff"/><text class="small" x="290" y="20">Relief</text>`,
-  well:{svg:'<path d="M396 148 H556 V178 H462 Z" fill="#fff" stroke="var(--ink-2)" stroke-width="2"/>',clip:'<path d="M398 149 H555 V177 H463 Z"/>',x:398,w:157,b:177,h:28,tx:505,ty:160,floor:x=>148+(x-396)*14/31},
+  well:{svg:'<path d="M396 148 H556 V178 H462 Z" fill="url(#mBody)" stroke="var(--ink-2)" stroke-width="2"/>',clip:'<path d="M398 149 H555 V177 H463 Z"/>',x:398,w:157,b:177,h:28,tx:505,ty:160,floor:x=>148+(x-396)*14/31},
   sump:{x:404,w:154,b:343,h:80},weir:0.25,ovf:[405,411,222],heat:{x:242,w:158,b:343,h:122},info:[365,55],liq:[466,205],lamps:[254,52],dem:{y:136,to:175,ceil:[385,176,416,190],lbl:[330,198],band:[248,108,148,28]},
   vap:[[280,216,300],[340,214,322],[262,222,350]].map(([x,y,m])=>({p:[[x,y],[365,204],[402,195],[424,197],[432,186],[414,172],[392,163],[352,150],[m,146],[m,100],[395,62],[445,90]],jx:4,jy:2})),vapEnd:0.86,flash:[[432,186],[414,172],[392,163],[352,150]],bub:[252,392,232,335],cond:[412,552,133,145]}
 };
@@ -1132,22 +1134,86 @@ let G=LAY.jwp;
 function tag(id,x,y,l,ch=4){if(!ch)return `<text id="m_${id}" display="none"></text>`;const w=ch*7+8;return `<g transform="translate(${x-w/2} ${y})"><text class="tagl" x="${w/2}" y="-3" text-anchor="middle">${l.split('|').map((p,i,a)=>`<tspan x="${w/2}" dy="${i?12:(1-a.length)*12}">${p}</tspan>`).join('')}</text><rect width="${w}" height="17" rx="1" fill="var(--screen)"/><text class="tagv" id="m_${id}" x="${w/2}" y="13" text-anchor="middle">--</text></g>`;}
 function pipeSvg(a){const air=a[1]==='ai';
   return `<path id="pb_${a[0]}" d="${a[2]}" fill="none" stroke="${COL[a[1]]}" stroke-width="7" stroke-linejoin="round"/><path id="fl_${a[0]}" d="${a[2]}" fill="none" stroke="#fff" stroke-width="${air?2.6:3.4}" stroke-linecap="round" stroke-dasharray="${air?'0.1 8':'0.1 13'}"/>`;}
+/*SYM3D*/
+/* --- shaded plant symbols shared by the purifier, FWG and boiler mimics: flanged valve bodies with hand wheels, actuators and solenoid coils,
+   transmitter heads, dial gauges, thermometers, pumps with motors, heater shells and strainer covers. Every symbol keeps the caller's
+   state element (the valve body, pump casing, heater shell, strainer box) so live colouring still works; light and shade are laid over it.
+   Needs x3Defs() inside the SVG once. Copied into fwg-simulator.html and boiler-simulator.html between the SYM3D markers. --- */
+const x3Defs=()=>`<linearGradient id="x3Steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f6f7"/><stop offset=".45" stop-color="#b9c1c6"/><stop offset=".55" stop-color="#9aa4ab"/><stop offset="1" stop-color="#d7dde0"/></linearGradient>
+ <linearGradient id="x3SteelV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8f99a0"/><stop offset=".35" stop-color="#f1f4f5"/><stop offset=".6" stop-color="#c3cacf"/><stop offset="1" stop-color="#7d878e"/></linearGradient>
+ <linearGradient id="x3Brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7dd8a"/><stop offset=".5" stop-color="#c99a2e"/><stop offset="1" stop-color="#8a6516"/></linearGradient>
+ <linearGradient id="x3Wheel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef6a5e"/><stop offset=".5" stop-color="#b8231a"/><stop offset="1" stop-color="#6e120c"/></linearGradient>
+ <linearGradient id="x3Act" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fc3ea"/><stop offset=".55" stop-color="#3e74b8"/><stop offset="1" stop-color="#22487a"/></linearGradient>
+ <linearGradient id="x3Coil" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2a2f33"/><stop offset=".4" stop-color="#5d666c"/><stop offset="1" stop-color="#1c2023"/></linearGradient>
+ <linearGradient id="x3Motor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fa3c9"/><stop offset=".5" stop-color="#2f5d93"/><stop offset="1" stop-color="#173459"/></linearGradient>
+ <linearGradient id="x3Hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".65"/><stop offset=".45" stop-color="#fff" stop-opacity=".08"/><stop offset=".55" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>
+ <linearGradient id="x3HiV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".3" stop-color="#fff" stop-opacity=".45"/><stop offset=".55" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>
+ <radialGradient id="x3HiR" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset=".45" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>
+ <radialGradient id="x3Dial" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#ffffff"/><stop offset=".85" stop-color="#eef0ee"/><stop offset="1" stop-color="#c9cfcc"/></radialGradient>
+ <linearGradient id="x3Glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+const X3SH='filter:drop-shadow(0 1.5px 1.2px rgba(8,18,22,.38))';
+/* flanges either side of a valve body, half length a, half height b */
+const x3Fl=(x,y,a,b)=>{const t=Math.max(2,a*.22),h=b*1.35;return `<rect x="${x-a-t}" y="${y-h}" width="${t}" height="${2*h}" rx="${t*.3}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".9"/><rect x="${x+a}" y="${y-h}" width="${t}" height="${2*h}" rx="${t*.3}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".9"/>`;};
+/* valve: body path keeps the caller's id and fill (state); kind: hand, dome, press, flow, sol, none */
+/* the top of a valve: hand wheel, actuator, solenoid coil or adjusting arrow */
+function x3Top(x,y,a,b,k){let top='';
+  if(k==='hand'){const wy=y-b*1.55,rx=a*.55,ry=Math.max(1.6,b*.26);top=`<rect x="${x-a*.09}" y="${wy}" width="${a*.18}" height="${b*1.55-b*.35}" fill="url(#x3SteelV)" stroke="#2b3436" stroke-width=".6"/><ellipse cx="${x}" cy="${wy}" rx="${rx}" ry="${ry}" fill="url(#x3Wheel)" stroke="#4a0d08" stroke-width=".8"/><path d="M${x-rx*.8} ${wy}H${x+rx*.8}M${x} ${wy-ry*.8}V${wy+ry*.8}" stroke="#ffd9d3" stroke-width=".6" opacity=".7"/>`;}
+  else if(k==='dome'||k==='press'){const dy=y-b*1.9,w=a*.8;top=`<rect x="${x-a*.08}" y="${dy+b*.5}" width="${a*.16}" height="${b*1.1}" fill="url(#x3SteelV)" stroke="#2b3436" stroke-width=".6"/><path d="M${x-w} ${dy+b*.55}a${w} ${b*.75} 0 0 1 ${2*w} 0Z" fill="url(#x3Act)" stroke="#173459" stroke-width=".9"/><rect x="${x-w-1}" y="${dy+b*.5}" width="${2*w+2}" height="${Math.max(1.6,b*.16)}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".5"/>${k==='press'?`<path d="M${x} ${dy-b*.2}V${dy+b*.1}" stroke="#2b3436" stroke-width="${Math.max(1,a*.12)}"/><circle cx="${x}" cy="${dy-b*.25}" r="${Math.max(1.4,a*.12)}" fill="url(#x3Brass)" stroke="#5a4210" stroke-width=".5"/>`:''}`;}
+  else if(k==='sol'){const w=a*.62,h=b*1.1,cy=y-b*1.75;top=`<rect x="${x-a*.08}" y="${cy+h*.5}" width="${a*.16}" height="${b*.8}" fill="url(#x3SteelV)"/><rect x="${x-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="${w*.12}" fill="url(#x3Coil)" stroke="#111" stroke-width=".8"/><rect x="${x-w/2+1}" y="${cy-h/2+1}" width="${w*.3}" height="${h-2}" fill="#fff" opacity=".12"/>`;}
+  else if(k==='flow'){top=`<path d="M${x-a*.95} ${y+b*1.45}L${x+a*.9} ${y-b*1.6}M${x+a*.55} ${y-b*1.6}H${x+a*.9}V${y-b*1.25}" fill="none" stroke="#1b2321" stroke-width="${Math.max(1.2,a*.09)}" stroke-linecap="round"/><circle cx="${x}" cy="${y-b*1.5}" r="${Math.max(1.6,a*.14)}" fill="url(#x3Brass)" stroke="#5a4210" stroke-width=".5"/>`;}
+  return top;}
+function x3Valve(x,y,a,b,id,fill,kind,sw){
+  const body=`M${x-a} ${y-b}L${x+a} ${y+b}V${y-b}L${x-a} ${y+b}Z`,st=sw||Math.max(1,a*.09),top=x3Top(x,y,a,b,kind||'hand');
+  return `<g style="${X3SH}">${x3Fl(x,y,a,b)}${top}<path ${id?`id="${id}" `:''}d="${body}" fill="${fill||'#111'}" stroke="#1b2321" stroke-width="${st}" stroke-linejoin="round"/><path d="${body}" fill="url(#x3Hi)" pointer-events="none"/><circle cx="${x}" cy="${y}" r="${Math.max(1.6,b*.32)}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".6"/></g>`;}
+/* three-way valve: ports left, right and down (inlet); the left and right port bodies keep the caller's ids for open (white) or shut (black) */
+function x3Valve3(x,y,a,b,idL,idR,fillL,fillR,kind){
+  const L=`M${x-a} ${y-b}L${x} ${y}L${x-a} ${y+b}Z`,Rt=`M${x+a} ${y-b}L${x} ${y}L${x+a} ${y+b}Z`,D=`M${x-b} ${y+a}L${x} ${y}L${x+b} ${y+a}Z`,t=Math.max(2,a*.22),h=b*1.35;
+  const top=x3Top(x,y,a,b,kind||'dome');
+  return `<g style="${X3SH}">${x3Fl(x,y,a,b)}<rect x="${x-h}" y="${y+a}" width="${2*h}" height="${t}" rx="${t*.3}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".9"/>${top}
+   <path id="${idL}" d="${L}" fill="${fillL||'#fff'}" stroke="#1b2321" stroke-width="2" stroke-linejoin="round"/><path d="${L}" fill="url(#x3Hi)" pointer-events="none"/>
+   <path id="${idR}" d="${Rt}" fill="${fillR||'#111'}" stroke="#1b2321" stroke-width="2" stroke-linejoin="round"/><path d="${Rt}" fill="url(#x3Hi)" pointer-events="none"/>
+   <path d="${D}" fill="#fff" stroke="#1b2321" stroke-width="2" stroke-linejoin="round"/><path d="${D}" fill="url(#x3Hi)" pointer-events="none"/>
+   <circle cx="${x}" cy="${y}" r="${Math.max(2,b*.36)}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".7"/></g>`;}
+/* transmitter head on a short neck: replaces the flat ISA bubble, keeps the tag on a white face */
+function x3Tx(x,y,label,hw,col){const w=Math.max(16,hw||20),h=24;return `<g style="${X3SH}"><rect x="${x-w}" y="${y-h/2}" width="${2*w}" height="${h}" rx="${h/2}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width="1.6"/><rect x="${x-w+4}" y="${y-h/2+4}" width="${2*w-8}" height="${h-8}" rx="${(h-8)/2}" fill="#fff" stroke="#9aa4ab" stroke-width=".8"/><rect x="${x-w}" y="${y-h/2}" width="${2*w}" height="${h}" rx="${h/2}" fill="url(#x3Hi)" opacity=".55" pointer-events="none"/><circle cx="${x+w-3}" cy="${y}" r="2.2" fill="${col||'#2fbf5f'}" stroke="#1b2321" stroke-width=".5"/><text x="${x-2}" y="${y+4}" text-anchor="middle" class="sn" style="font-weight:700;font-size:${Math.max(8,Math.min(12,w*.5))}px">${label}</text></g>`;}
+/* dial pressure gauge: bezel, face, ticks, needle id for live angle (rotate about x,y) */
+function x3Gauge(x,y,r,id,ang){let t='';for(let i=0;i<=10;i++){const a=(-225+27*i)*Math.PI/180,r1=r*.78,r2=i%5?r*.68:r*.6;t+=`<path d="M${(x+r1*Math.cos(a)).toFixed(1)} ${(y+r1*Math.sin(a)).toFixed(1)}L${(x+r2*Math.cos(a)).toFixed(1)} ${(y+r2*Math.sin(a)).toFixed(1)}" stroke="#1b2321" stroke-width="${i%5?.7:1.2}"/>`;}
+  return `<g style="${X3SH}"><circle cx="${x}" cy="${y}" r="${r+2.5}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width="1"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#x3Dial)" stroke="#5d666c" stroke-width=".8"/>${t}<path d="M${x+r*.62*Math.cos(-0.785)} ${y+r*.62*Math.sin(-0.785)} A${r*.62} ${r*.62} 0 0 1 ${x+r*.62} ${y+r*.25}" fill="none" stroke="#c4211f" stroke-width="${r*.09}"/><g ${id?`id="${id}" `:''}transform="rotate(${ang??-45} ${x} ${y})"><path d="M${x-r*.08} ${y}L${x} ${y-r*.72}L${x+r*.08} ${y}Z" fill="#c4211f"/></g><circle cx="${x}" cy="${y}" r="${r*.1}" fill="#1b2321"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#x3Glass)" pointer-events="none"/><rect x="${x-r*.18}" y="${y+r+2}" width="${r*.36}" height="${r*.35}" fill="url(#x3Brass)" stroke="#5a4210" stroke-width=".5"/></g>`;}
+/* dial thermometer on a stem into the pipe at (x,yp) */
+function x3Therm(x,yp,r){const y=yp-r-8;return `<g style="${X3SH}"><rect x="${x-1.6}" y="${y+r}" width="3.2" height="${yp-y-r+3}" fill="url(#x3SteelV)" stroke="#2b3436" stroke-width=".5"/>${x3Gauge(x,y,r,'',-80)}</g>`;}
+/* pump casing (caller's id keeps the state fill) with volute outlet, motor and coupling */
+function x3Pump(x,y,r,id,fill,dir){
+  const casing=`<circle ${id?`id="${id}" `:''}cx="${x}" cy="${y}" r="${r}" fill="${fill||'url(#x3Steel)'}" stroke="#1b2321" stroke-width="${Math.max(1.2,r*.1)}"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#x3HiR)" pointer-events="none"/>`;
+  /* pipe through both sides: motor hangs below the casing */
+  if(dir==='d'){const mw=r*1.1,mh=r*1.3,my=y+r*1.05;return `<g style="${X3SH}"><rect x="${x-mw/2}" y="${my}" width="${mw}" height="${mh}" rx="${r*.18}" fill="url(#x3Motor)" stroke="#0f2340" stroke-width="1"/>${[.3,.6].map(f=>`<path d="M${x-mw/2} ${my+mh*f}H${x+mw/2}" stroke="#0f2340" stroke-width=".7" opacity=".6"/>`).join('')}${casing}</g>`;}
+  const d=dir||-1,mx=x+d*(r*1.15),mw=r*1.35,mh=r*1.15,ml=d<0?mx-mw:mx;
+  const fins=[.25,.5,.75].map(f=>`<path d="M${ml+mw*f} ${y-mh/2}V${y+mh/2}" stroke="#0f2340" stroke-width=".7" opacity=".6"/>`).join('');
+  return `<g style="${X3SH}"><rect x="${d<0?mx:x+r*.7}" y="${y-r*.18}" width="${r*.5}" height="${r*.36}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".6"/><rect x="${ml}" y="${y-mh/2}" width="${mw}" height="${mh}" rx="${r*.18}" fill="url(#x3Motor)" stroke="#0f2340" stroke-width="1"/>${fins}<rect x="${x-r*.35}" y="${y-r*1.32}" width="${r*.7}" height="${r*.45}" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".7"/><rect x="${x-r*.85}" y="${y+r*.85}" width="${r*1.7}" height="${r*.28}" fill="#5d666c" stroke="#2b3436" stroke-width=".6"/><circle ${id?`id="${id}" `:''}cx="${x}" cy="${y}" r="${r}" fill="${fill||'url(#x3Steel)'}" stroke="#1b2321" stroke-width="${Math.max(1.2,r*.1)}"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#x3HiR)" pointer-events="none"/></g>`;}
+/* shading for a vertical vessel or heater shell drawn by the caller as a rect: end caps, flanges and a cylinder sheen */
+const x3Shell=(x,y,w,h)=>`<g pointer-events="none"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#x3HiV)"/><rect x="${x-3}" y="${y-4}" width="${w+6}" height="6" rx="2" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".8"/><rect x="${x-3}" y="${y+h-2}" width="${w+6}" height="6" rx="2" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".8"/>${[.2,.5,.8].map(f=>`<circle cx="${x+w*f}" cy="${y-1}" r="1.1" fill="#2b3436"/><circle cx="${x+w*f}" cy="${y+h+1}" r="1.1" fill="#2b3436"/>`).join('')}</g>`;
+/* same idea lying down */
+const x3ShellH=(x,y,w,h)=>`<g pointer-events="none"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h*.18}" fill="url(#x3Hi)"/><rect x="${x-4}" y="${y-3}" width="6" height="${h+6}" rx="2" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".8"/><rect x="${x+w-2}" y="${y-3}" width="6" height="${h+6}" rx="2" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".8"/></g>`;
+/* basket strainer cover on the caller's box */
+const x3Strainer=(x,y,s)=>`<g pointer-events="none"><rect x="${x-s}" y="${y-s}" width="${2*s}" height="${2*s}" fill="url(#x3Hi)"/><rect x="${x-s*.8}" y="${y-s-5}" width="${s*1.6}" height="5" rx="1.5" fill="url(#x3Steel)" stroke="#2b3436" stroke-width=".7"/><rect x="${x-2}" y="${y-s-9}" width="4" height="4" fill="url(#x3Brass)" stroke="#5a4210" stroke-width=".4"/><circle cx="${x-s*.6}" cy="${y-s-2.5}" r=".9" fill="#2b3436"/><circle cx="${x+s*.6}" cy="${y-s-2.5}" r=".9" fill="#2b3436"/></g>`;
+/*SYM3D-END*/
 function pumpSvg(n,x,y,r,label,ly){
   const b=[0,120,240].map(a=>`<path d="M${x} ${y} q${r*.15} ${-r*.45} ${r*.62} ${-r*.5}" transform="rotate(${a} ${x} ${y})" fill="none" stroke="var(--ink)" stroke-width="${r>20?3.4:2.6}" stroke-linecap="round"/>`).join('');
-  return `<g class="pmp" data-p="${n}" role="button" tabindex="0" aria-label="${label}, click to start or stop"><circle id="ring${n}" cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="var(--ink)" stroke-width="3"/><g id="rot${n}">${b}</g><circle cx="${x}" cy="${y}" r="3" fill="var(--ink)"/>
+  return `<g class="pmp" data-p="${n}" role="button" tabindex="0" aria-label="${label}, click to start or stop"><g style="${X3SH}"><rect x="${x-r*.9}" y="${y+r*.82}" width="${r*1.8}" height="${r*.3}" rx="2" fill="#5d666c" stroke="var(--ink)" stroke-width=".8"/><circle id="ring${n}" cx="${x}" cy="${y}" r="${r}" fill="url(#mDome)" stroke="var(--ink)" stroke-width="3"/></g><g id="rot${n}">${b}</g><circle cx="${x}" cy="${y}" r="${r}" fill="url(#x3HiR)" pointer-events="none"/><circle cx="${x}" cy="${y}" r="3.5" fill="url(#x3Steel)" stroke="var(--ink)"/>
   <text class="small" x="${x}" y="${ly}" text-anchor="middle">${label}</text><text id="run${n}" class="small" x="${x+r+4}" y="${y-r+4}">OFF</text></g>`;}
 function buildMimic(){
   G=LAY[M.id];
   const p=G.pipes.filter(a=>!a[3]).map(pipeSvg).join(''),top=G.pipes.filter(a=>a[3]).map(pipeSvg).join('');
   const v=G.valves.map(([k,l,x,y,o,,lx,vb])=>{const r=o==='v'?`rotate(90 ${x} ${y})`:'';
-    return `<g class="vlv" data-k="${k}" role="button" tabindex="0" aria-label="${l.replace('|',' ')} valve"><rect x="${x-20}" y="${y-20}" width="40" height="40" fill="transparent"/><g transform="${r}"><path id="v_${k}" d="M${x-14} ${y-10} L${x+14} ${y+10} V${y-10} L${x-14} ${y+10}Z" fill="#111"/></g>
-    <text id="vt_${k}" x="${o==='v'?x+17:x}" y="${o==='v'?y+5:vb?y+36:y-14}" text-anchor="${o==='v'?'start':'middle'}">0</text>
-    <text class="small" x="${o==='v'?x+17:lx||x}" y="${o==='v'?y-8:y+23}" text-anchor="${o==='v'?'start':'middle'}">${l.split('|').map((p,i)=>`<tspan x="${o==='v'?x+17:lx||x}" dy="${i?12:0}">${p}</tspan>`).join('')}</text></g>`;}).join('');
+    return `<g class="vlv" data-k="${k}" role="button" tabindex="0" aria-label="${l.replace('|',' ')} valve"><rect x="${x-20}" y="${y-20}" width="40" height="40" fill="transparent"/><g transform="${r}">${x3Valve(x,y,13,9,'v_'+k,'#111','hand',1.4)}</g>
+    <text id="vt_${k}" x="${o==='v'?x+24:x}" y="${o==='v'?y+5:vb?y+36:y-21}" text-anchor="${o==='v'?'start':'middle'}">0</text>
+    <text class="small" x="${o==='v'?x+24:lx||x}" y="${o==='v'?y-8:y+23}" text-anchor="${o==='v'?'start':'middle'}">${l.split('|').map((p,i)=>`<tspan x="${o==='v'?x+24:lx||x}" dy="${i?12:0}">${p}</tspan>`).join('')}</text></g>`;}).join('');
   const [sx,sy]=G.sea,[tx,ty]=G.str,[ox,oy]=G.ob,[mx,my]=G.me,[kx,ky]=G.tank,[cx,cy]=G.cell,[dx,dy,dl]=G.dump,[ax,ay]=G.dose,W=G.well,S=G.sump;
   $('mimic').innerHTML=`<svg viewBox="0 0 960 640" role="img" aria-label="Process diagram of the ${M.tab} fresh water generator with live values">
-  <defs><clipPath id="clipS"><path d="${G.clip}"/></clipPath><clipPath id="clipV"><path d="${G.clip}"/></clipPath><clipPath id="clipW">${W.clip}</clipPath>
+  <defs>${x3Defs()}<clipPath id="clipS"><path d="${G.clip}"/></clipPath><clipPath id="clipV"><path d="${G.clip}"/></clipPath><clipPath id="clipW">${W.clip}</clipPath>
   <pattern id="froth" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#2f9e77" fill-opacity=".18"/><circle cx="2" cy="2" r="1.6" fill="#fff"/><circle cx="6" cy="6" r="1.2" fill="#fff"/></pattern>
-  <pattern id="mesh" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 L6 6 M6 0 L0 6" stroke="#8b958f" stroke-width=".7"/></pattern></defs>
+  <pattern id="mesh" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 L6 6 M6 0 L0 6" stroke="#8b958f" stroke-width=".7"/></pattern>
+  <linearGradient id="mBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#eef1f0"/><stop offset="1" stop-color="#d7dcd9"/></linearGradient>
+  <radialGradient id="mDome" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d2d8d5"/></radialGradient></defs>
   ${p}${G.vessel()}
   ${G.heat?`<rect id="heatLvl" x="${G.heat.x}" y="${G.heat.b}" width="${G.heat.w}" height="0" fill="#7fb3a0" fill-opacity=".45"/>`:''}
   <rect id="sumpLvl" x="${S.x}" y="${S.b}" width="${S.w}" height="0" fill="var(--brine)" fill-opacity=".5" clip-path="url(#clipS)"/>
@@ -1155,25 +1221,26 @@ function buildMimic(){
   <rect id="demBand" x="${G.dem.band[0]}" y="${G.dem.band[1]}" width="${G.dem.band[2]}" height="${G.dem.band[3]}" fill="#fff" fill-opacity="0" clip-path="url(#clipV)"/>
   <g id="px" clip-path="url(#clipV)"></g>
   ${G.over()}
+  <path d="${G.clip}" fill="url(#x3HiV)" opacity=".6" pointer-events="none"/>
   <text x="${W.tx}" y="${W.ty}" text-anchor="middle" class="small" style="paint-order:stroke;stroke:#fff;stroke-width:3px">${W.lbl||'Condensate well'}</text>
   <text id="m_well" x="${W.tx}" y="${W.ty+15}" text-anchor="middle" style="paint-order:stroke;stroke:#fff;stroke-width:4px">0 %</text>
   ${top}<text id="m_dem" x="${G.dem.lbl[0]}" y="${G.dem.lbl[1]}" text-anchor="middle" class="small" style="${HALO}"></text>${info(G.info[0],G.info[1],M.id==='isf')}${lamps(G.lamps[0],G.lamps[1],M.id==='isf')}
   <text id="m_sump" x="${S.x+S.w/2}" y="${S.b-8}" text-anchor="middle" style="${HALO}${MONO}font-size:12px">0 %</text>
   <g class="vlv" id="seaBox" role="button" tabindex="0" aria-label="Set sea water inlet temperature"><rect x="${sx}" y="${sy}" width="50" height="44" fill="#cfe5da" stroke="var(--sw)" stroke-width="1.5"/><text x="${sx+25}" y="${sy+17}" text-anchor="middle">Sea</text><text id="m_seaT" x="${sx+25}" y="${sy+34}" text-anchor="middle" style="${MONO}font-size:12px">32 °C</text></g>
-  <rect x="${tx-15}" y="${ty-13}" width="30" height="26" fill="#fff" stroke="var(--ink)"/><path d="M${tx-11} ${ty-9} l22 18 M${tx-11} ${ty+9} l22 -18" stroke="var(--ink)"/><text class="small" x="${tx}" y="${ty+27}" text-anchor="middle">Strainer</text>
+  <rect x="${tx-15}" y="${ty-13}" width="30" height="26" fill="url(#mBody)" stroke="var(--ink)"/><path d="M${tx-11} ${ty-9} l22 18 M${tx-11} ${ty+9} l22 -18" stroke="var(--ink)"/><text class="small" x="${tx}" y="${ty+27}" text-anchor="middle">Strainer</text>
   ${pumpSvg(1,G.p1[0],G.p1[1],G.p1[2],'Ejector pump',G.p1[3])}
-  <g transform="translate(${G.ej[0]} ${G.ej[1]})"><path d="M600 572 L648 578 L676 578 L722 572 V598 L676 592 L648 592 L600 598Z" fill="#fff" stroke="var(--ink)" stroke-width="2"/><text x="${M.id==='isf'?705:660}" y="${M.id==='isf'?565:612}" text-anchor="middle" class="small">${M.id==='jwp'?'Two-stage brine / air ejector':'Brine / air ejector'}</text></g>
+  <g transform="translate(${G.ej[0]} ${G.ej[1]})"><path d="M600 572 L648 578 L676 578 L722 572 V598 L676 592 L648 592 L600 598Z" fill="url(#mBody)" stroke="var(--ink)" stroke-width="2"/><text x="${M.id==='isf'?705:660}" y="${M.id==='isf'?565:612}" text-anchor="middle" class="small">${M.id==='jwp'?'Two-stage brine / air ejector':'Brine / air ejector'}</text></g>
   <rect x="${ox}" y="${oy}" width="44" height="38" fill="#cfe5da" stroke="var(--sw)"/><text x="${ox+22}" y="${oy+16}" text-anchor="middle" class="small">Over-</text><text x="${ox+22}" y="${oy+29}" text-anchor="middle" class="small">board</text>
   <rect x="${mx}" y="${my}" width="${M.id==='isf'?92:112}" height="${M.id==='isf'?120:100}" fill="#f5e1d7" stroke="var(--jw)" stroke-width="1.5"/><text x="${mx+(M.id==='isf'?46:56)}" y="${my+34}" text-anchor="middle">Main engine</text>
   <text class="small" x="${mx+(M.id==='isf'?46:56)}" y="${my+50}" text-anchor="middle">jacket water</text><text id="m_load" class="small" x="${mx+(M.id==='isf'?46:56)}" y="${my+66}" text-anchor="middle">85 % load</text>
-  <rect x="${kx}" y="${ky}" width="140" height="105" fill="#fff" stroke="var(--dist)" stroke-width="1.5"/>
+  <rect x="${kx}" y="${ky}" width="140" height="105" fill="url(#mBody)" stroke="var(--dist)" stroke-width="1.5"/>
   <rect id="tankLvl" x="${kx+1}" y="${ky+104}" width="138" height="0" fill="var(--dist)" fill-opacity=".3"/>
   <text x="${kx+70}" y="${ky+22}" text-anchor="middle">Fresh water tank</text>
   <text id="m_tank" x="${kx+70}" y="${ky+42}" text-anchor="middle" style="${MONO}">120 t</text>
   <text id="m_tanks" x="${kx+70}" y="${ky+60}" text-anchor="middle" class="small">1.5 ppm</text>
   ${pumpSvg(2,G.p2[0],G.p2[1],G.p2[2],'Distillate pump',G.p2[3])}
-  <circle cx="${cx}" cy="${cy}" r="10" fill="#fff" stroke="var(--dist)" stroke-width="2"/><text x="${cx}" y="${cy+4}" text-anchor="middle" class="small" style="fill:var(--ink)">S</text>
-  <rect x="${dx}" y="${dy}" width="56" height="20" fill="#fff" stroke="var(--dist)"/><text class="small" x="${dx+28}" y="${dy+14}" text-anchor="middle">${dl}</text>
+  <circle cx="${cx}" cy="${cy}" r="10" fill="url(#mDome)" stroke="var(--dist)" stroke-width="2"/><text x="${cx}" y="${cy+4}" text-anchor="middle" class="small" style="fill:var(--ink)">S</text>
+  <rect x="${dx}" y="${dy}" width="56" height="20" fill="url(#mBody)" stroke="var(--dist)"/><text class="small" x="${dx+28}" y="${dy+14}" text-anchor="middle">${dl}</text>
   <g class="dosebox" id="doseBox" role="button" tabindex="0" aria-pressed="false" aria-label="Antiscalant dosing pump, click to start or stop"><rect id="doseRect" x="${ax}" y="${ay}" width="62" height="40" fill="#fff" stroke="var(--ink)" stroke-width="2"/><circle id="doseLamp" cx="${ax+9}" cy="${ay+30}" r="4" fill="#9aa49d" stroke="var(--ink)"/><text class="small" x="${ax+31}" y="${ay+15}" text-anchor="middle">Antiscalant</text><text id="m_dose" class="small" x="${ax+36}" y="${ay+33}" text-anchor="middle">off</text></g>
   <path id="doseDash" d="${G.dash}" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="4 3"/>
   <g class="vlv" id="orfBox" role="button" tabindex="0" aria-label="Feed orifice diameter, click to change"><rect x="${G.orf[0]-12}" y="${G.orf[1]-14}" width="24" height="38" fill="transparent" stroke="none"/><path d="M${G.orf[0]-2} ${G.orf[1]-10} V${G.orf[1]-2} M${G.orf[0]+2} ${G.orf[1]-10} V${G.orf[1]-2} M${G.orf[0]-2} ${G.orf[1]+10} V${G.orf[1]+2} M${G.orf[0]+2} ${G.orf[1]+10} V${G.orf[1]+2}" style="stroke-width:2.4"/><text id="m_orf" class="small" x="${G.orf[0]}" y="${G.orf[1]+(G.orf[2]||22)}" text-anchor="middle">ø</text></g>

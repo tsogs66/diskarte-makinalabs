@@ -1,5 +1,5 @@
 /* --- system mimic: Alfa Laval layout follows the S-type system diagram, Mitsubishi layout follows the Samgong panel mimic --- */
-const C_={oil:'#7a4b1e',cln:'#c98a2c',wat:'#1f6db5',air:'#5d6a74',stm:'#c4502a',slg:'#5a4632'};
+const C_={oil:'#9a5f1f',cln:'#e2a233',wat:'#1877d4',air:'#6c7c87',stm:'#e0582a',slg:'#2b1d14'};
 let PIPES=[],VAL={},SEP={},GEO={};
 function vlvSvg(k,x,y,l,o){o=o||{};const r=o.v?' transform="rotate(90 '+x+' '+y+')"':'',lx=o.lx??x,ly=o.ly??y-13,an=o.an||'middle';
  return `<g class="vlv" data-k="${k}" tabindex="0" role="button" aria-label="${l}"><rect x="${x-15}" y="${y-15}" width="30" height="30" fill="transparent"/><g${r}><path id="v_${k}" d="M${x-11} ${y-7}L${x+11} ${y+7}V${y-7}L${x-11} ${y+7}Z" fill="#111"/></g><text x="${lx}" y="${ly}" text-anchor="${an}" class="small">${l}</text></g>`;}

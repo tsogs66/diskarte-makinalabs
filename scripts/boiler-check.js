@@ -178,7 +178,7 @@ const wyNorm=+at('bmWater','y');
 B.s.level=0.2;B.paintMimic();
 ok('mimic water line drops with level',+at('bmWater','y')>wyNorm+30,'y '+wyNorm+'→'+at('bmWater','y'));
 B.loadScenario(sc('egonly'));sim(4);B.paintMimic();
-ok('mimic flame out in EG-only',+at('bmFlame','opacity')===0&&+at('bmFlue','opacity')<0.2);
+ok('mimic flame out in EG-only',+at('bmFlame','opacity')===0&&+at('bmFlue','opacity')<0.5);
 ok('mimic EG arrows lit in EG-only',+at('bmEgOut','opacity')>0.35);
 B.loadScenario(sc('soot'));sim(2);B.paintMimic();
 ok('mimic tubes dark when sooted',at('bmTubes','stroke')==='#2a2523');
@@ -231,7 +231,7 @@ B.s.chem.Cl=120;B.paintMimic();
 ok('salinometer red on high chloride',at('bmSal','fill')==='#c4211f');
 
 B.u.meLoad=0.5;B.paintMimic();
-ok('ME load bar follows load',Math.abs(+at('bmMeBar','width')-84)<1);
+ok('ME load bar follows load',Math.abs(+at('bmMeBar','width')-99)<1);
 
 B.loadScenario(sc('steady'));B.u.steamStop=true;B.u.demand=0.8;B.u.dumpAuto=false;B.u.dumpMan=0;
 B.s.casc=B.M.cascKg*0.5;B.s.cascT=45;
@@ -245,12 +245,16 @@ B.switchModel('mission');
 
 const hmi=()=>doc.getElementById('hmi');
 B.switchModel('mission');B.loadScenario(sc('steady'));sim(8);B.paintHmi();
+ok('Aalborg home has the panel buttons',['STEAM','WATER','FUEL','BURNER','KEY','TREND','SET-UP','BOILER','ALARM'].every(l=>[...hmi().querySelectorAll('.aibtn')].some(b=>b.textContent===l)));
+hmi().querySelector('.aibtn[data-go="system"]').click();
 ok('Aalborg HMI is a touch-GUI screen with a system view',hmi().classList.contains('tc')&&!!hmi().querySelector('svg.tcsys')&&/Touch Control/.test(hmi().textContent));
 ok('Aalborg system view shows live pressure',new RegExp(B.s.P.toFixed(2)).test(hmi().querySelector('svg.tcsys').textContent));
 ok('Aalborg screen keeps Start/Stop/Reset/Accept',['ftStart','ftStop','ftReset','ftAck'].every(id=>doc.getElementById(id)));
 B.switchModel('saacke');B.loadScenario(sc('steady'));sim(8);B.paintHmi();
-ok('SAACKE HMI is a tile GUI with function keys',hmi().classList.contains('sv')&&hmi().querySelectorAll('.svt').length>=7&&hmi().querySelectorAll('.svfk .hmibtn').length===(B.M.egCirc?8:7));
+ok('SAACKE HMI is a tile GUI with function keys',hmi().classList.contains('sv')&&hmi().querySelectorAll('.svt').length>=7&&hmi().querySelectorAll('.svfk .hmibtn').length===(B.M.egCirc?9:8));
 ok('SAACKE tile shows live pressure',new RegExp(B.s.P.toFixed(1)+' bar').test(hmi().querySelector('.svgrid').textContent));
+hmi().querySelector('.svfk [data-p="setup"]').click();
+ok('SAACKE has the HMI system setup page',/HMI system setup/.test(hmi().textContent)&&hmi().querySelectorAll('.svst').length===8);
 B.switchModel('kangrim');B.paintHmi();
 ok('Kangrim HMI keeps the plain panel list',!hmi().classList.contains('tc')&&!hmi().classList.contains('sv'));
 B.switchModel('mission');

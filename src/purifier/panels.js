@@ -60,7 +60,7 @@ function wireChord(root){const K={k50p:'p',k50m:'m',k50e:'e'},dn=new Map();let u
   g.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();},{passive:false});g.addEventListener('touchmove',e=>{e.preventDefault();e.stopPropagation();},{passive:false});}}
 function buildCP(){KEYS={};info=0;mmRow=0;pm={i:-1,ed:false,v:0,buf:'',sub:0,lv:0,l:'Pr',m:0,tst:0};sg={mode:'mon',ad:0,v:0,ed:false};
  $('cpTitle').textContent=isA()?M.ctrl+' control unit':'Control panel and Multi-Monitor';
- $('cp').className='cpface'+(isA()?'':' two');$('cp').innerHTML=M.id==='s826'?buildEPC50():M.id==='p605'?buildEPC60():buildSG()+buildMM();
+ $('cp').className='cpface'+(isA()?'':' two');$('cp').innerHTML=M.ctrl==='EPC 50'?buildEPC50():M.ctrl==='EPC 60'?buildEPC60():buildSG()+buildMM();
  wireChord($('cp'));for(const g of $('cp').querySelectorAll('[data-key]')){const fn=e=>{if(e.detail&&g.dataset.chord)return;g.classList.add('dn');setTimeout(()=>g.classList.remove('dn'),120);KEYS[g.dataset.key]();};g.addEventListener('click',fn);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn();}});}}
 function paramStore(){const r=PARAMS()[pm.i],v=+clamp(pm.v,r[4],r[5]).toFixed(2);r[2](v);syncSet();note(`${r[0]} set to ${v} ${r[3]}`);}
 function epc60(k){const P=PARAMS();
@@ -99,9 +99,9 @@ function d60(){const P=PARAMS(),pad=t=>String(t).slice(0,31);
  if(pm.sub===3)return ['___Operation info___',`Run time ${fx(s.tRun/3600,1)} h`,`Discharges ${s.nDis}`,`Oil lost ${fx(s.loss,1)} L`];
  return ['___Settings___','1. Parameters','2. Time settings','3. Operation info'];}
 function renderCP(){const al=Object.values(s.alarm).some(a=>a.on),sepOn=['sep','dis','closing'].includes(s.ph);
- if(M.id==='s826'){sT('d50',scroll16(d50(),16));sT('d50n',d50n());
+ if(M.ctrl==='EPC 50'){sT('d50',scroll16(d50(),16));sT('d50n',d50n());
   const m={lPump:s.pump&&'g',lHeat:s.heaterOn&&'g',lV1:s.v1&&'g',lV4:u.out&&'g',lV5:s.sv.drain&&'g',lSeal:s.sv.seal&&'g',lOpen:s.sv.open&&'g',lClose:s.sv.close&&'g',lMot:s.motor&&'g',lTT:s.alarm.hiT||s.alarm.loT?'r':'g',lP1:s.alarm.feedL?'r':s.Pin>0&&'g',lP4:s.alarm.ptH||s.alarm.ptL?'r':s.Pout>0&&'g',lP5:s.alarm.pt5?'r':s.Pwo>0&&'g',lMT:s.alarm.tHi?'r':s.ph==='sep'&&'g',lsH:s.heaterOn&&'g',lsS:sepOn&&'g',lsT:['stopseq','rundown'].includes(s.ph)&&'y',lsD:s.ph==='dis'&&'y',lsO:'g',lsA:al&&'r'};for(const k in m)sL(k,m[k]);}
- else if(M.id==='p605'){d60().forEach((t,i)=>sT('d60_'+i,t));const m={lsH:s.heaterOn&&'g',lsS:sepOn&&'g',lsD:s.ph==='dis'&&'y',lsR:u.rem&&'g',lsP:s.pump&&'g',lsA:al&&'r',lsL:s.slp&&'g',lsC:0};for(const k in m)sL(k,m[k]);}
+ else if(M.ctrl==='EPC 60'){d60().forEach((t,i)=>sT('d60_'+i,t));const m={lsH:s.heaterOn&&'g',lsS:sepOn&&'g',lsD:s.ph==='dis'&&'y',lsR:u.rem&&'g',lsP:s.pump&&'g',lsA:al&&'r',lsL:s.slp&&'g',lsC:0};for(const k in m)sL(k,m[k]);}
  else{const on=u.pw,set=sg.mode==='set',L=set?SGS():SGM(),r=L[sg.ad],pad4=v=>String(Math.round(v)).padStart(4,'0'),bl=sg.ed&&Math.floor(Date.now()/350)%2;
   sT('dA',on?r[0]:'');sT('dD',!on||bl?'':pad4(sg.ed?sg.v:r[2]()));sT('dN',on?r[1]:'');sL('lMon',on&&!set&&'y');
   const m={lSV1:on&&s.sv.open&&'g',lSV2:on&&s.sv.close&&'g',lSV3:on&&s.sv.seal&&'g',lSV9:on&&s.sv.par&&'g',lSV4:on&&s.sv.feed&&'g',lMot:s.motor&&'g',lLeak:(s.alarm.leak||s.alarm.lm)&&'r',lNd:s.alarm.nodis&&'r',lHd:s.alarm.hidens&&'r',lTH:s.alarm.hiT&&'r',lTL:s.alarm.loT&&'r'};for(const k in m)sL(k,m[k]);
